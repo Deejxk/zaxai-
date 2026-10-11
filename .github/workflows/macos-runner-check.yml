@@ -1,0 +1,25 @@
+name: macOS runner check
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/macos-runner-check.yml"
+
+permissions: {}
+
+jobs:
+  check:
+    name: Verify macOS and Xcode
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check operating system and development tools
+        shell: bash
+        run: |
+          test "$(uname -s)" = "Darwin"
+          sw_vers
+          uname -m
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
+          swift --version
