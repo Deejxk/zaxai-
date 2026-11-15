@@ -1,4 +1,28 @@
-# ZaxConnect — Hotspot Billing System
+# ZaxConnect — Hotspot Billing SaaS
+
+ZaxConnect lets anyone start a Wi-Fi hotspot business. Hotspot owners sign up, brand their own captive portal, sell plans with **Flutterwave**, and manage their MikroTik routers from a sleek dashboard.
+
+This repository contains two editions:
+
+| Edition | Folder | Host on | Router link |
+|---|---|---|---|
+| **WordPress plugin (SaaS, recommended)** | `wordpress/zaxconnect/` · ready-to-upload `dist/zaxconnect.zip` | Any WordPress host, including **Hostinger Business** | Router checks in over HTTPS every 10 s (works on shared hosting and behind CGNAT) |
+| Standalone Node.js (single business) | repository root (`server.js`, `src/`) | A VPS with UDP open | Built-in RADIUS server |
+
+## WordPress plugin: quick facts
+
+- **Marketing site** with pricing at `/` (optional homepage takeover)
+- **Owner sign-up wizard** at `/signup`: account → brand (name, colour, logo) → prices → Flutterwave → first router
+- **Owner dashboard** at `/dashboard`, separate from wp-admin (owners are blocked from wp-admin): revenue chart, sales and CSV, vouchers and printable cards, online users, routers and setup scripts, branding, payments, subscription
+- **Platform admin** at `/zx-admin` for WordPress administrators: all businesses, MRR, suspend or extend, subscription prices, platform Flutterwave keys
+- **Branded customer portal** per business at `/h/{business}`: plans, Flutterwave checkout (card, transfer, USSD), voucher login, plan status, voucher recovery
+- Light and dark toggle, sticky header, mobile footer menu, animated icons and illustrations
+
+**Deploy:** see **[docs/HOSTINGER-DEPLOY.md](docs/HOSTINGER-DEPLOY.md)**.
+
+---
+
+# Standalone Node.js edition
 
 ZaxConnect is a Wi-Fi hotspot billing system with a captive portal. When a customer joins your Wi-Fi, they're sent to a ZaxConnect page where they buy a plan with Paystack (card, bank transfer or USSD) and get connected automatically.
 

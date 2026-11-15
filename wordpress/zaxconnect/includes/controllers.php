@@ -1,0 +1,862 @@
+<?php
+/**
+ * Request handlers for every page. Each one either redirects or renders a view and exits.
+ */
+defined( 'ABSPATH' ) || exit;
+
+/* -------------------------------------------------------------------------
+ * Small helpers
+ * ---------------------------------------------------------------------- */
+
+function zxc_is_post() {
+	return 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' );
+}
+
+function zxc_check_nonce( $action ) {
+	$nonce = isset( $_POST['_zxc'] ) ? sanitize_text_field( wp_unslash( $_POST['_zxc'] ) ) : '';
+	if ( ! wp_verify_nonce( $nonce, $action ) ) {
+		wp_die( 'This form has expired. Please go back, refresh the page and try again.', 'Session expired', array( 'response' => 403, 'back_link' => true ) );
+	}
+}
+
+function zxc_flash( $text, $type = 'ok' ) {
+	set_transient( 'zxc_flash_' . get_current_user_id(), array( 'text' => $text, 'type' => $type ), 120 );
+}
+
+function zxc_take_flash() {
+	$key = 'zxc_flash_' . get_current_user_id();
+	$f   = get_transient( $key );
+	if ( $f ) {
+		delete_transient( $key );
+	}
+	return $f ? $f : null;
+}
+
+/** Save an uploaded logo to the media folder; returns URL, '' when none, or WP_Error. */
+function zxc_handle_logo_upload( $field ) {
+	if ( empty( $_FILES[ $field ] ) || empty( $_FILES[ $field ]['name'] ) ) {
+		return '';
+	}
+	if ( (int) $_FILES[ $field ]['size'] > 500 * 1024 ) {
+		return new WP_Error( 'zxc_logo', 'Logo must be smaller than 500 KB.' );
+	}
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	$res = wp_handle_upload(
+		$_FILES[ $field ], // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		array(
+			'test_form' => false,
+			'mimes'     => array( 'png' => 'image/png', 'jpg|jpeg' => 'image/jpeg', 'webp' => 'image/webp' ),
+		)
+	);
+	if ( isset( $res['error'] ) ) {
+		return new WP_Error( 'zxc_logo', 'Logo upload failed: ' . $res['error'] );
+	}
+	return esc_url_raw( $res['url'] );
+}
+
+/* -------------------------------------------------------------------------
+ * Sign-up & login
+ * ---------------------------------------------------------------------- */
+
+function zxc_ctl_signup() {
+	if ( is_user_logged_in() && zxc_tenant_for_user( get_current_user_id() ) ) {
+		zxc_redirect( home_url( '/dashboard' ) );
+	}
+	$tier = zxc_get( 'plan', 20 );
+	$tier = isset( zxc_tiers()[ $tier ] ) ? $tier : 'business';
+	if ( ! zxc_is_post() ) {
+		zxc_render( zxc_view_signup( array( 'tier' => $tier ) ) );
+	}
+	zxc_check_nonce( 'zxc_signup' );
+	$v = array(
+		'owner_name'    => zxc_post( 'owner_name', 60 ),
+		'email'         => sanitize_email( zxc_post( 'email', 190 ) ),
+		'business_name' => zxc_post( 'business_name', 50 ),
+		'brand_color'   => zxc_post( 'brand_color', 7 ),
+		'price_hour'    => absint( zxc_post( 'price_hour', 9 ) ),
+		'price_daily'   => absint( zxc_post( 'price_daily', 9 ) ),
+		'flw_public'    => zxc_post( 'flw_public', 200 ),
+		'flw_secret'    => zxc_post( 'flw_secret', 200 ),
+		'flw_hash'      => zxc_post( 'flw_hash', 200 ),
+		'location'      => zxc_post( 'location', 60 ),
+		'tier'          => isset( zxc_tiers()[ zxc_post( 'tier', 20 ) ] ) ? zxc_post( 'tier', 20 ) : 'business',
+	);
+	$password = isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+	$fail     = function ( $msg, $step ) use ( $v ) {
+		zxc_render( zxc_view_signup( array( 'error' => $msg, 'values' => $v, 'tier' => $v['tier'], 'start' => $step ) ), 400 );
+	};
+
+	if ( '' === $v['owner_name'] ) {
+		$fail( 'Please enter your name.', 0 );
+	}
+	if ( ! is_email( $v['email'] ) ) {
+		$fail( 'Please enter a valid email address.', 0 );
+	}
+	if ( email_exists( $v['email'] ) ) {
+		$fail( 'An account with this email already exists. <a href="' . esc_url( home_url( '/login' ) ) . '">Log in instead</a>.', 0 );
+	}
+	if ( strlen( $password ) < 8 ) {
+		$fail( 'Your password must be at least 8 characters.', 0 );
+	}
+	if ( '' === $v['business_name'] ) {
+		$fail( 'Please enter your business name.', 1 );
+	}
+	if ( ! zxc_is_hex( $v['brand_color'] ) ) {
+		$v['brand_color'] = '#4F3BF0';
+	}
+	if ( ( $v['flw_public'] && ! preg_match( '/^FLWPUBK(_TEST)?-/', $v['flw_public'] ) ) || ( $v['flw_secret'] && ! preg_match( '/^FLWSECK(_TEST)?-/', $v['flw_secret'] ) ) ) {
+		$fail( 'Flutterwave keys should start with FLWPUBK- and FLWSECK-. You can also leave them empty for now.', 3 );
+	}
+	if ( '' === $v['location'] ) {
+		$fail( 'Please name your first location.', 4 );
+	}
+	if ( empty( $_POST['terms'] ) ) {
+		$fail( 'Please accept the terms of service.', 4 );
+	}
+	$logo = zxc_handle_logo_upload( 'logo_file' );
+	if ( is_wp_error( $logo ) ) {
+		$fail( $logo->get_error_message(), 1 );
+	}
+
+	$login = sanitize_user( strtolower( strstr( $v['email'], '@', true ) ), true );
+	$login = $login ? $login : 'owner';
+	$base  = $login;
+	for ( $i = 2; username_exists( $login ); $i++ ) {
+		$login = $base . $i;
+	}
+	$user_id = wp_insert_user(
+		array(
+			'user_login'   => $login,
+			'user_email'   => $v['email'],
+			'user_pass'    => $password,
+			'display_name' => $v['owner_name'],
+			'first_name'   => $v['owner_name'],
+			'role'         => 'zx_owner',
+		)
+	);
+	if ( is_wp_error( $user_id ) ) {
+		$fail( $user_id->get_error_message(), 0 );
+	}
+	zxc_create_tenant(
+		array(
+			'owner_id'    => $user_id,
+			'name'        => $v['business_name'],
+			'brand_color' => $v['brand_color'],
+			'logo_url'    => $logo,
+			'location'    => $v['location'],
+			'flw_public'  => $v['flw_public'],
+			'flw_secret'  => $v['flw_secret'],
+			'flw_hash'    => $v['flw_hash'],
+			'tier'        => $v['tier'],
+			'price_hour'  => $v['price_hour'],
+			'price_daily' => $v['price_daily'],
+		)
+	);
+	wp_set_current_user( $user_id );
+	wp_set_auth_cookie( $user_id, true, is_ssl() );
+	zxc_flash( 'Welcome to ' . zxc_setting( 'platform_name' ) . '! Your hotspot brand is ready. Connect your router to go live.' );
+	zxc_redirect( home_url( '/dashboard/locations' ) );
+}
+
+function zxc_ctl_login() {
+	if ( is_user_logged_in() ) {
+		zxc_redirect( zxc_tenant_for_user( get_current_user_id() ) ? home_url( '/dashboard' ) : ( current_user_can( 'manage_options' ) ? home_url( '/zx-admin' ) : home_url( '/signup' ) ) );
+	}
+	if ( ! zxc_is_post() ) {
+		zxc_render( zxc_view_login( array() ) );
+	}
+	zxc_check_nonce( 'zxc_login' );
+	$email = zxc_post( 'email', 190 );
+	$user  = wp_signon(
+		array(
+			'user_login'    => $email,
+			'user_password' => isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+			'remember'      => true,
+		),
+		is_ssl()
+	);
+	if ( is_wp_error( $user ) ) {
+		zxc_render( zxc_view_login( array( 'error' => 'Incorrect email or password.', 'email' => $email ) ), 401 );
+	}
+	wp_set_current_user( $user->ID );
+	if ( zxc_tenant_for_user( $user->ID ) ) {
+		zxc_redirect( home_url( '/dashboard' ) );
+	}
+	zxc_redirect( user_can( $user, 'manage_options' ) ? home_url( '/zx-admin' ) : home_url( '/signup' ) );
+}
+
+/* -------------------------------------------------------------------------
+ * Customer portal
+ * ---------------------------------------------------------------------- */
+
+function zxc_ctl_portal( $t, $path ) {
+	$seg = $path ? explode( '/', $path ) : array( '' );
+	$ctx = zxc_capture_hotspot_ctx( $t );
+	$sub = zxc_subscription( $t );
+
+	switch ( $seg[0] ) {
+		case '':
+			zxc_render(
+				zxc_view_portal_home(
+					$t,
+					array(
+						'plans' => zxc_plans( $t->id, true ),
+						'ctx'   => $ctx,
+						'error' => zxc_portal_error( zxc_get( 'error', 200 ) ),
+					)
+				)
+			);
+			break;
+
+		case 'buy':
+			$plan = isset( $seg[1] ) ? zxc_plan( $t->id, (int) $seg[1] ) : null;
+			if ( ! $plan || ! $plan->active ) {
+				zxc_redirect( zxc_portal_url( $t ) );
+			}
+			$demo = ! zxc_gateway_ready( $t );
+			$args = array( 'plan' => $plan, 'ctx' => $ctx, 'demo' => $demo, 'closed' => ! $sub['active'] || ( $demo && ! $t->demo_payments ) );
+			if ( ! zxc_is_post() ) {
+				zxc_render( zxc_view_portal_checkout( $t, $args ) );
+			}
+			$phone = zxc_normalize_phone( zxc_post( 'phone', 20 ) );
+			$email = sanitize_email( zxc_post( 'email', 190 ) );
+			$args['values'] = array( 'phone' => zxc_post( 'phone', 20 ), 'email' => $email );
+			if ( $args['closed'] ) {
+				$args['error'] = 'Online payment is not available right now. Please buy a voucher from the attendant.';
+				zxc_render( zxc_view_portal_checkout( $t, $args ), 400 );
+			}
+			if ( ! zxc_valid_phone( $phone ) ) {
+				$args['error'] = 'Please enter a valid Nigerian phone number, e.g. 0803 123 4567.';
+				zxc_render( zxc_view_portal_checkout( $t, $args ), 400 );
+			}
+			if ( zxc_voucher_allowance( $t ) < 1 ) {
+				$args['error'] = 'This hotspot has reached its monthly sales limit. Please contact the owner.';
+				zxc_render( zxc_view_portal_checkout( $t, $args ), 400 );
+			}
+			if ( ! $email ) {
+				$email = $phone . '@customers.' . wp_parse_url( home_url(), PHP_URL_HOST ); // Flutterwave requires an email
+			}
+			$order = zxc_create_order( $t, $plan, array( 'phone' => $phone, 'email' => $email, 'mac' => $ctx['mac'] ?? '', 'login_url' => $ctx['login'] ?? '', 'dst' => $ctx['dst'] ?? '', 'gateway' => $demo ? 'demo' : 'flutterwave' ) );
+			if ( $demo ) {
+				zxc_redirect( zxc_portal_url( $t, 'pay/demo/' . $order->reference ) );
+			}
+			$link = zxc_flw_checkout(
+				$t->flw_secret,
+				array(
+					'reference' => $order->reference,
+					'amount'    => $order->amount,
+					'email'     => $email,
+					'phone'     => $phone,
+					'redirect'  => zxc_portal_url( $t, 'pay/return' ),
+					'title'     => $t->name . ' · ' . $plan->name,
+					'logo'      => $t->logo_url,
+					'meta'      => array( 'hotspot' => $t->slug, 'plan' => $plan->name ),
+				)
+			);
+			if ( is_wp_error( $link ) ) {
+				zxc_fail_order( $order->reference );
+				$args['error'] = 'We could not reach the payment provider. Please try again in a moment.';
+				zxc_render( zxc_view_portal_checkout( $t, $args ), 502 );
+			}
+			wp_redirect( $link, 303 ); // phpcs:ignore WordPress.Security.SafeRedirect -- Flutterwave checkout host
+			exit;
+
+		case 'pay':
+			if ( 'demo' === ( $seg[1] ?? '' ) ) {
+				$o = zxc_order( $seg[2] ?? '', $t->id );
+				if ( ! $o || 'demo' !== $o->gateway ) {
+					zxc_redirect( zxc_portal_url( $t ) );
+				}
+				if ( zxc_is_post() && 'pending' === $o->status && ! zxc_gateway_ready( $t ) ) {
+					if ( 'success' === zxc_post( 'result', 10 ) ) {
+						zxc_fulfill_order( $o->reference, 'demo' );
+					} else {
+						zxc_fail_order( $o->reference );
+					}
+					zxc_redirect( zxc_portal_url( $t, 'pay/check/' . $o->reference ) );
+				}
+				if ( 'pending' !== $o->status ) {
+					zxc_redirect( zxc_portal_url( $t, 'pay/check/' . $o->reference ) );
+				}
+				zxc_render( zxc_view_portal_demo_pay( $t, $o ) );
+			}
+			// Flutterwave redirect (?tx_ref=...) or our own re-check (/pay/check/REF).
+			$ref = 'check' === ( $seg[1] ?? '' ) ? ( $seg[2] ?? '' ) : zxc_get( 'tx_ref', 40 );
+			$o   = zxc_order( sanitize_text_field( $ref ), $t->id );
+			if ( ! $o ) {
+				zxc_redirect( zxc_portal_url( $t ) );
+			}
+			if ( 'pending' === $o->status && 'flutterwave' === $o->gateway ) {
+				$o = zxc_verify_order( $o->reference );
+				if ( 'pending' === $o->status && 'cancelled' === zxc_get( 'status', 20 ) ) {
+					zxc_fail_order( $o->reference );
+					$o = zxc_order( $o->reference );
+				}
+			}
+			if ( 'success' === $o->status ) {
+				zxc_redirect( zxc_portal_url( $t, 'success/' . $o->reference ) );
+			}
+			zxc_render( 'failed' === $o->status ? zxc_view_portal_failed( $t, $o ) : zxc_view_portal_pending( $t, $o ) );
+			break;
+
+		case 'success':
+			$o = zxc_order( $seg[1] ?? '', $t->id );
+			if ( ! $o || 'success' !== $o->status ) {
+				zxc_redirect( zxc_portal_url( $t ) );
+			}
+			$v     = zxc_voucher_by_id( $o->voucher_id );
+			$lctx  = ! empty( $ctx['login'] ) ? $ctx : array( 'login' => zxc_login_url_allowed( (string) $o->login_url, $t ) ? $o->login_url : '' );
+			$link  = zxc_login_link( $lctx, $v->code, zxc_portal_url( $t, 'connected' ) . '?code=' . $v->code );
+			$ready = zxc_voucher_on_router( $v ) || ! zxc_router_online( $t->id );
+			zxc_render( zxc_view_portal_success( $t, array( 'order' => $o, 'voucher' => $v, 'link' => $link, 'ready' => $ready ) ) );
+			break;
+
+		case 'voucher': // no-JS fallback for the voucher form
+			$code = zxc_normalize_code( zxc_post( 'code', 20 ) );
+			$v    = $code ? zxc_voucher_by_code( $code, $t->id ) : null;
+			if ( ! $v ) {
+				zxc_redirect( zxc_portal_url( $t, 'plan' ) . '?tab=voucher&error=' . rawurlencode( 'That voucher code is not valid.' ) );
+			}
+			$link = zxc_login_link( $ctx, $code, zxc_portal_url( $t, 'connected' ) . '?code=' . $code );
+			$st   = zxc_voucher_state( $v );
+			if ( $link && in_array( $st['state'], array( 'unused', 'active' ), true ) ) {
+				wp_redirect( $link ); // phpcs:ignore WordPress.Security.SafeRedirect -- validated router URL
+				exit;
+			}
+			zxc_redirect( zxc_portal_url( $t, 'plan' ) . '?code=' . $code );
+			break;
+
+		case 'plan':
+		case 'status':
+		case 'connected':
+			$code = zxc_normalize_code( zxc_get( 'code', 20 ) );
+			$v    = $code ? zxc_voucher_by_code( $code, $t->id ) : null;
+			zxc_render(
+				zxc_view_portal_plan(
+					$t,
+					array(
+						'code'   => $code,
+						'v'      => $v,
+						'ctx'    => $ctx,
+						'online' => 'connected' === $seg[0],
+						'tab'    => zxc_get( 'tab', 10 ) === 'voucher' || ! $code ? 'voucher' : 'status',
+						'error'  => $code && ! $v ? 'We could not find that voucher code.' : zxc_get( 'error', 200 ),
+					)
+				)
+			);
+			break;
+
+		case 'recover':
+			$args = array( 'ctx' => $ctx );
+			if ( zxc_is_post() ) {
+				global $wpdb;
+				$phone = zxc_normalize_phone( zxc_post( 'phone', 20 ) );
+				$ref   = strtoupper( zxc_post( 'reference', 40 ) );
+				$args['phone'] = $phone;
+				$args['ref']   = $ref;
+				if ( ! zxc_valid_phone( $phone ) ) {
+					$args['error'] = 'Please enter a valid phone number.';
+				} else {
+					$rows = $wpdb->get_results(
+						$wpdb->prepare(
+							'SELECT t.reference, t.mac, t.paid_at, v.code, p.name AS plan_name FROM ' . zxc_table( 'transactions' ) . ' t
+							JOIN ' . zxc_table( 'vouchers' ) . ' v ON v.id = t.voucher_id JOIN ' . zxc_table( 'plans' ) . " p ON p.id = t.plan_id
+							WHERE t.tenant_id = %d AND t.phone = %s AND t.status = 'success' ORDER BY t.paid_at DESC LIMIT 20",
+							$t->id, $phone
+						)
+					);
+					$args['results'] = array_values(
+						array_filter(
+							$rows,
+							function ( $r ) use ( $ref, $ctx ) {
+								return ( $ref && $r->reference === $ref ) || ( ! empty( $ctx['mac'] ) && $r->mac === $ctx['mac'] );
+							}
+						)
+					);
+					if ( ! $args['results'] ) {
+						$args['error'] = 'No vouchers found. Check the phone number, or enter the payment reference from your receipt.';
+					}
+				}
+			}
+			zxc_render( zxc_view_portal_recover( $t, $args ) );
+			break;
+
+		default:
+			zxc_redirect( zxc_portal_url( $t ) );
+	}
+}
+
+function zxc_portal_error( $msg ) {
+	if ( '' === $msg ) {
+		return '';
+	}
+	$map = array(
+		'/expired|uptime/i'          => 'Your plan has expired. Please buy a new plan.',
+		'/limit|traffic|exhaust/i'   => 'Your data bundle is exhausted. Please buy a new plan.',
+		'/no more sessions|in use/i' => 'This voucher is already in use on the maximum number of devices.',
+		'/invalid|password|user/i'   => 'That voucher code is not valid. Please check and try again.',
+	);
+	foreach ( $map as $re => $text ) {
+		if ( preg_match( $re, $msg ) ) {
+			return $text;
+		}
+	}
+	return substr( $msg, 0, 160 );
+}
+
+/* -------------------------------------------------------------------------
+ * Owner dashboard
+ * ---------------------------------------------------------------------- */
+
+function zxc_ctl_dashboard( $path ) {
+	if ( ! is_user_logged_in() ) {
+		zxc_redirect( home_url( '/login' ) );
+	}
+	$t = zxc_tenant_for_user( get_current_user_id() );
+	if ( ! $t ) {
+		zxc_redirect( current_user_can( 'manage_options' ) ? home_url( '/zx-admin' ) : home_url( '/signup' ) );
+	}
+	global $wpdb;
+	$seg  = $path ? explode( '/', $path ) : array( '' );
+	$page = $seg[0];
+	$base = home_url( '/dashboard' );
+
+	if ( zxc_is_post() ) {
+		zxc_check_nonce( 'zxc_dash' );
+		zxc_dashboard_post( $t, $seg );
+	}
+
+	switch ( $page ) {
+		case '':
+			zxc_render( zxc_view_dash_home( $t, zxc_dashboard_stats( $t, zxc_get( 'range', 3 ) ) ) );
+			break;
+		case 'plans':
+			if ( isset( $seg[1] ) ) {
+				$plan = 'new' === $seg[1] ? null : zxc_plan( $t->id, (int) $seg[1] );
+				if ( 'new' !== $seg[1] && ! $plan ) {
+					zxc_redirect( $base . '/plans' );
+				}
+				zxc_render( zxc_view_dash_plan_form( $t, $plan ) );
+			}
+			$plans = $wpdb->get_results( $wpdb->prepare( 'SELECT p.*, (SELECT COUNT(*) FROM ' . zxc_table( 'transactions' ) . " x WHERE x.plan_id = p.id AND x.status = 'success') AS sold FROM " . zxc_table( 'plans' ) . ' p WHERE p.tenant_id = %d ORDER BY p.sort_order, p.price', $t->id ) );
+			zxc_render( zxc_view_dash_plans( $t, $plans ) );
+			break;
+		case 'vouchers':
+			if ( 'print' === ( $seg[1] ?? '' ) ) {
+				$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT v.*, p.name AS plan_name, p.price, p.duration_min, p.data_mb FROM ' . zxc_table( 'vouchers' ) . ' v JOIN ' . zxc_table( 'plans' ) . ' p ON p.id = v.plan_id WHERE v.tenant_id = %d AND v.batch = %s ORDER BY v.id', $t->id, sanitize_text_field( $seg[2] ?? '' ) ) );
+				zxc_render( zxc_view_dash_print( $t, sanitize_text_field( $seg[2] ?? '' ), $rows ) );
+			}
+			$status = in_array( zxc_get( 'status', 10 ), array( 'unused', 'active', 'expired', 'disabled' ), true ) ? zxc_get( 'status', 10 ) : 'all';
+			$q      = zxc_get( 'q', 40 );
+			$where  = $wpdb->prepare( 'v.tenant_id = %d', $t->id );
+			if ( 'all' !== $status ) {
+				$where .= $wpdb->prepare( ' AND v.status = %s', $status );
+			}
+			if ( '' !== $q ) {
+				$like   = '%' . $wpdb->esc_like( $q ) . '%';
+				$where .= $wpdb->prepare( ' AND (v.code LIKE %s OR v.phone LIKE %s OR v.batch LIKE %s)', '%' . $wpdb->esc_like( zxc_normalize_code( $q ) ) . '%', $like, $like );
+			}
+			$rows    = $wpdb->get_results( 'SELECT v.*, p.name AS plan_name, p.devices FROM ' . zxc_table( 'vouchers' ) . ' v JOIN ' . zxc_table( 'plans' ) . " p ON p.id = v.plan_id WHERE $where ORDER BY v.id DESC LIMIT 200" ); // phpcs:ignore WordPress.DB.PreparedSQL
+			$batches = $wpdb->get_results( $wpdb->prepare( 'SELECT v.batch, p.name AS plan_name, COUNT(*) AS cnt, SUM(v.status = \'unused\') AS unused, MAX(v.created) AS created FROM ' . zxc_table( 'vouchers' ) . ' v JOIN ' . zxc_table( 'plans' ) . ' p ON p.id = v.plan_id WHERE v.tenant_id = %d AND v.batch IS NOT NULL GROUP BY v.batch, p.name ORDER BY created DESC LIMIT 8', $t->id ) );
+			zxc_render( zxc_view_dash_vouchers( $t, array( 'rows' => $rows, 'batches' => $batches, 'status' => $status, 'q' => $q, 'plans' => zxc_plans( $t->id ) ) ) );
+			break;
+		case 'sales':
+			$status = in_array( zxc_get( 'status', 10 ), array( 'success', 'pending', 'failed' ), true ) ? zxc_get( 'status', 10 ) : 'all';
+			$q      = zxc_get( 'q', 40 );
+			$where  = $wpdb->prepare( 't.tenant_id = %d', $t->id );
+			if ( 'all' !== $status ) {
+				$where .= $wpdb->prepare( ' AND t.status = %s', $status );
+			}
+			if ( '' !== $q ) {
+				$like   = '%' . $wpdb->esc_like( $q ) . '%';
+				$where .= $wpdb->prepare( ' AND (t.phone LIKE %s OR t.reference LIKE %s)', $like, strtoupper( $like ) );
+			}
+			$sql = 'SELECT t.*, p.name AS plan_name, v.code AS voucher_code FROM ' . zxc_table( 'transactions' ) . ' t JOIN ' . zxc_table( 'plans' ) . ' p ON p.id = t.plan_id LEFT JOIN ' . zxc_table( 'vouchers' ) . " v ON v.id = t.voucher_id WHERE $where ORDER BY t.created DESC";
+			if ( 'export' === ( $seg[1] ?? '' ) ) {
+				zxc_export_sales_csv( $wpdb->get_results( $sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL
+			}
+			$rows   = $wpdb->get_results( $sql . ' LIMIT 300' ); // phpcs:ignore WordPress.DB.PreparedSQL
+			$totals = $wpdb->get_row( $wpdb->prepare( 'SELECT COALESCE(SUM(amount),0) AS total, COUNT(*) AS cnt FROM ' . zxc_table( 'transactions' ) . " WHERE tenant_id = %d AND status = 'success'", $t->id ) );
+			zxc_render( zxc_view_dash_sales( $t, array( 'rows' => $rows, 'totals' => $totals, 'status' => $status, 'q' => $q ) ) );
+			break;
+		case 'online':
+			$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT o.*, r.name AS router_name, v.expires_at, p.name AS plan_name FROM ' . zxc_table( 'online' ) . ' o JOIN ' . zxc_table( 'routers' ) . ' r ON r.id = o.router_id LEFT JOIN ' . zxc_table( 'vouchers' ) . ' v ON v.code = o.code LEFT JOIN ' . zxc_table( 'plans' ) . ' p ON p.id = v.plan_id WHERE o.tenant_id = %d AND o.seen_at >= %d ORDER BY o.first_seen DESC', $t->id, time() - 90 ) );
+			zxc_render( zxc_view_dash_online( $t, $rows ) );
+			break;
+		case 'locations':
+			if ( isset( $seg[1], $seg[2] ) && in_array( $seg[2], array( 'login.html', 'alogin.html' ), true ) ) {
+				nocache_headers();
+				header( 'Content-Type: text/html; charset=utf-8' );
+				header( 'Content-Disposition: attachment; filename="' . $seg[2] . '"' );
+				echo 'login.html' === $seg[2] ? zxc_login_html( $t ) : zxc_alogin_html( $t ); // phpcs:ignore WordPress.Security.EscapeOutput
+				exit;
+			}
+			zxc_render( zxc_view_dash_locations( $t, zxc_routers( $t->id ) ) );
+			break;
+		case 'branding':
+			zxc_render( zxc_view_dash_branding( $t ) );
+			break;
+		case 'payments':
+			zxc_render( zxc_view_dash_payments( $t ) );
+			break;
+		case 'billing':
+			if ( 'demo' === ( $seg[1] ?? '' ) ) {
+				$s = zxc_subscription_row( $seg[2] ?? '' );
+				if ( $s && (int) $s->tenant_id === (int) $t->id && 'pending' === $s->status ) {
+					zxc_render( zxc_view_dash_billing_demo( $t, $s ) );
+				}
+				zxc_redirect( $base . '/billing' );
+			}
+			if ( 'return' === ( $seg[1] ?? '' ) ) {
+				$s = zxc_subscription_row( zxc_get( 'tx_ref', 40 ) );
+				if ( $s && (int) $s->tenant_id === (int) $t->id ) {
+					$s = zxc_verify_subscription( $s->reference );
+					zxc_flash( 'success' === $s->status ? 'Payment received. Your subscription is active.' : 'We have not received your payment yet. If you were charged, it will activate shortly.', 'success' === $s->status ? 'ok' : 'warn' );
+				}
+				zxc_redirect( $base . '/billing' );
+			}
+			$history = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zxc_table( 'subscriptions' ) . ' WHERE tenant_id = %d ORDER BY id DESC LIMIT 12', $t->id ) );
+			zxc_render( zxc_view_dash_billing( $t, $history ) );
+			break;
+		case 'account':
+			zxc_render( zxc_view_dash_account( $t, wp_get_current_user() ) );
+			break;
+		default:
+			zxc_redirect( $base );
+	}
+}
+
+/** Handle every dashboard form; always redirects. */
+function zxc_dashboard_post( $t, $seg ) {
+	global $wpdb;
+	$base   = home_url( '/dashboard' );
+	$action = zxc_post( 'action', 40 );
+	switch ( $action ) {
+		case 'plan_save':
+			$mult = array( 'minutes' => 1, 'hours' => 60, 'days' => 1440 );
+			$unit = zxc_post( 'duration_unit', 10 );
+			$data = array(
+				'name'          => zxc_post( 'name', 80 ),
+				'description'   => zxc_post( 'description', 160 ),
+				'price'         => absint( zxc_post( 'price', 9 ) ),
+				'duration_min'  => max( 1, absint( zxc_post( 'duration_value', 6 ) ) * ( $mult[ $unit ] ?? 1 ) ),
+				'data_mb'       => absint( zxc_post( 'data_mb', 9 ) ),
+				'download_mbps' => max( 0, (float) zxc_post( 'download_mbps', 8 ) ),
+				'upload_mbps'   => max( 0, (float) zxc_post( 'upload_mbps', 8 ) ),
+				'devices'       => min( 10, max( 1, absint( zxc_post( 'devices', 2 ) ) ) ),
+				'popular'       => empty( $_POST['popular'] ) ? 0 : 1, // phpcs:ignore WordPress.Security.NonceVerification
+				'active'        => empty( $_POST['active'] ) ? 0 : 1, // phpcs:ignore WordPress.Security.NonceVerification
+				'sort_order'    => (int) zxc_post( 'sort_order', 5 ),
+			);
+			if ( '' === $data['name'] ) {
+				zxc_flash( 'Plan name is required.', 'bad' );
+				zxc_redirect( wp_get_referer() ? wp_get_referer() : $base . '/plans' );
+			}
+			$id = absint( zxc_post( 'plan_id', 12 ) );
+			if ( $id && zxc_plan( $t->id, $id ) ) {
+				$wpdb->update( zxc_table( 'plans' ), $data, array( 'id' => $id, 'tenant_id' => $t->id ) );
+				zxc_flash( 'Plan “' . $data['name'] . '” saved.' );
+			} else {
+				$wpdb->insert( zxc_table( 'plans' ), $data + array( 'tenant_id' => $t->id, 'created' => time() ) );
+				zxc_flash( 'Plan “' . $data['name'] . '” created.' );
+			}
+			zxc_redirect( $base . '/plans' );
+			break;
+		case 'plan_toggle':
+			$wpdb->query( $wpdb->prepare( 'UPDATE ' . zxc_table( 'plans' ) . ' SET active = 1 - active WHERE id = %d AND tenant_id = %d', absint( zxc_post( 'plan_id', 12 ) ), $t->id ) );
+			zxc_redirect( $base . '/plans' );
+			break;
+		case 'vouchers_generate':
+			$plan = zxc_plan( $t->id, absint( zxc_post( 'plan_id', 12 ) ) );
+			$qty  = min( 500, max( 1, absint( zxc_post( 'quantity', 4 ) ) ) );
+			$qty  = min( $qty, zxc_voucher_allowance( $t ) );
+			if ( ! $plan || $qty < 1 ) {
+				zxc_flash( $plan ? 'You have reached this month’s voucher limit on your plan. Upgrade for unlimited vouchers.' : 'Choose a plan.', 'bad' );
+				zxc_redirect( $base . '/vouchers' );
+			}
+			$batch = wp_date( 'dm', null, new DateTimeZone( 'Africa/Lagos' ) ) . '-' . strtoupper( bin2hex( random_bytes( 2 ) ) );
+			for ( $i = 0; $i < $qty; $i++ ) {
+				zxc_create_voucher( $t->id, $plan->id, 'batch', $batch );
+			}
+			zxc_flash( $qty . ' “' . $plan->name . '” vouchers generated in batch ' . $batch . '. They reach your router within a minute.' );
+			zxc_redirect( $base . '/vouchers?q=' . rawurlencode( $batch ) );
+			break;
+		case 'voucher_toggle':
+			$v = zxc_voucher_by_id( absint( zxc_post( 'voucher_id', 12 ) ) );
+			if ( $v && (int) $v->tenant_id === (int) $t->id ) {
+				if ( 'disabled' === $v->status ) {
+					$wpdb->update( zxc_table( 'vouchers' ), array( 'status' => $v->activated_at ? 'active' : 'unused', 'ended_at' => -time() ), array( 'id' => $v->id ) );
+					zxc_flash( 'Voucher ' . zxc_format_code( $v->code ) . ' enabled.' );
+				} else {
+					$wpdb->update( zxc_table( 'vouchers' ), array( 'status' => 'disabled', 'ended_at' => time() ), array( 'id' => $v->id ) );
+					zxc_flash( 'Voucher ' . zxc_format_code( $v->code ) . ' disabled. It is removed from your router within seconds.' );
+				}
+			}
+			zxc_redirect( wp_get_referer() ? wp_get_referer() : $base . '/vouchers' );
+			break;
+		case 'location_add':
+			if ( ! zxc_can_add_router( $t ) ) {
+				zxc_flash( 'Your plan’s location limit is reached. Upgrade to add more routers.', 'bad' );
+			} else {
+				zxc_create_router( $t->id, zxc_post( 'name', 80 ) ? zxc_post( 'name', 80 ) : 'New location' );
+				zxc_flash( 'Location added. Paste its setup script into that router.' );
+			}
+			zxc_redirect( $base . '/locations' );
+			break;
+		case 'location_delete':
+			$rid = absint( zxc_post( 'router_id', 12 ) );
+			if ( count( zxc_routers( $t->id ) ) > 1 ) {
+				$wpdb->delete( zxc_table( 'routers' ), array( 'id' => $rid, 'tenant_id' => $t->id ) );
+				zxc_flash( 'Location removed.' );
+			} else {
+				zxc_flash( 'You need at least one location.', 'bad' );
+			}
+			zxc_redirect( $base . '/locations' );
+			break;
+		case 'branding':
+			$values = array(
+				'name'             => zxc_post( 'name', 80 ) ? zxc_post( 'name', 80 ) : $t->name,
+				'tagline'          => zxc_post( 'tagline', 160 ),
+				'brand_color'      => zxc_is_hex( zxc_post( 'brand_color', 7 ) ) ? zxc_post( 'brand_color', 7 ) : $t->brand_color,
+				'support_phone'    => zxc_post( 'support_phone', 30 ),
+				'support_whatsapp' => zxc_post( 'support_whatsapp', 30 ),
+				'location'         => zxc_post( 'location', 120 ),
+				'hotspot_dns'      => preg_replace( '/[^a-z0-9.-]/', '', strtolower( zxc_post( 'hotspot_dns', 120 ) ) ) ? preg_replace( '/[^a-z0-9.-]/', '', strtolower( zxc_post( 'hotspot_dns', 120 ) ) ) : 'login.wifi',
+			);
+			$logo = zxc_handle_logo_upload( 'logo_file' );
+			if ( is_wp_error( $logo ) ) {
+				zxc_flash( $logo->get_error_message(), 'bad' );
+				zxc_redirect( $base . '/branding' );
+			}
+			if ( $logo ) {
+				$values['logo_url'] = $logo;
+			}
+			if ( ! empty( $_POST['remove_logo'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+				$values['logo_url'] = '';
+			}
+			zxc_update_tenant( $t->id, $values );
+			zxc_flash( 'Branding saved. Your portal is updated.' );
+			zxc_redirect( $base . '/branding' );
+			break;
+		case 'payments':
+			$values = array(
+				'flw_public'    => zxc_post( 'flw_public', 200 ),
+				'flw_hash'      => zxc_post( 'flw_hash', 200 ),
+				'demo_payments' => empty( $_POST['demo_payments'] ) ? 0 : 1, // phpcs:ignore WordPress.Security.NonceVerification
+			);
+			$secret = zxc_post( 'flw_secret', 200 );
+			if ( '' !== $secret ) {
+				$values['flw_secret'] = $secret;
+			}
+			if ( ( $values['flw_public'] && ! preg_match( '/^FLWPUBK(_TEST)?-/', $values['flw_public'] ) ) || ( $secret && ! preg_match( '/^FLWSECK(_TEST)?-/', $secret ) ) ) {
+				zxc_flash( 'Flutterwave keys should start with FLWPUBK- (public) and FLWSECK- (secret).', 'bad' );
+				zxc_redirect( $base . '/payments' );
+			}
+			zxc_update_tenant( $t->id, $values );
+			zxc_flash( 'Payment settings saved.' );
+			zxc_redirect( $base . '/payments' );
+			break;
+		case 'subscribe':
+			$tier = zxc_post( 'tier', 20 );
+			$tiers = zxc_tiers();
+			if ( ! isset( $tiers[ $tier ] ) ) {
+				zxc_redirect( $base . '/billing' );
+			}
+			$months = in_array( (int) zxc_post( 'months', 2 ), array( 1, 3, 6, 12 ), true ) ? (int) zxc_post( 'months', 2 ) : 1;
+			$s      = zxc_create_subscription( $t, $tier, $months );
+			if ( 'demo' === $s->gateway ) {
+				zxc_redirect( $base . '/billing/demo/' . $s->reference );
+			}
+			$user = wp_get_current_user();
+			$link = zxc_flw_checkout(
+				zxc_setting( 'flw_secret' ),
+				array(
+					'reference' => $s->reference,
+					'amount'    => $s->amount,
+					'email'     => $user->user_email,
+					'name'      => $user->display_name,
+					'redirect'  => $base . '/billing/return',
+					'title'     => zxc_setting( 'platform_name' ) . ' ' . $tiers[ $tier ]['name'] . ' plan',
+					'meta'      => array( 'hotspot' => $t->slug, 'tier' => $tier ),
+				)
+			);
+			if ( is_wp_error( $link ) ) {
+				zxc_flash( 'We could not reach Flutterwave. Please try again shortly.', 'bad' );
+				zxc_redirect( $base . '/billing' );
+			}
+			wp_redirect( $link, 303 ); // phpcs:ignore WordPress.Security.SafeRedirect
+			exit;
+		case 'subscribe_demo':
+			$s = zxc_subscription_row( zxc_post( 'reference', 40 ) );
+			if ( $s && (int) $s->tenant_id === (int) $t->id && 'demo' === $s->gateway && ! zxc_billing_ready() && '1' === zxc_setting( 'demo_billing' ) ) {
+				zxc_activate_subscription( $s->reference );
+				zxc_flash( 'Demo payment complete. Your subscription is active.' );
+			}
+			zxc_redirect( $base . '/billing' );
+			break;
+		case 'account':
+			$user = wp_get_current_user();
+			$name = zxc_post( 'display_name', 60 );
+			if ( $name ) {
+				wp_update_user( array( 'ID' => $user->ID, 'display_name' => $name, 'first_name' => $name ) );
+			}
+			$current = isset( $_POST['current'] ) ? (string) wp_unslash( $_POST['current'] ) : ''; // phpcs:ignore
+			$new     = isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore
+			if ( '' !== $new ) {
+				if ( ! wp_check_password( $current, $user->user_pass, $user->ID ) ) {
+					zxc_flash( 'Your current password is incorrect.', 'bad' );
+					zxc_redirect( $base . '/account' );
+				}
+				if ( strlen( $new ) < 8 || zxc_post( 'confirm', 200 ) !== $new ) {
+					zxc_flash( 'New passwords must match and be at least 8 characters.', 'bad' );
+					zxc_redirect( $base . '/account' );
+				}
+				wp_set_password( $new, $user->ID );
+				wp_set_auth_cookie( $user->ID, true, is_ssl() );
+			}
+			zxc_flash( 'Account updated.' );
+			zxc_redirect( $base . '/account' );
+			break;
+	}
+	zxc_redirect( $base );
+}
+
+/** Numbers for the dashboard overview. */
+function zxc_dashboard_stats( $t, $range ) {
+	global $wpdb;
+	$tx    = zxc_table( 'transactions' );
+	$days  = in_array( (int) $range, array( 7, 14, 30 ), true ) ? (int) $range : 14;
+	$today = zxc_lagos_day_start();
+	$sum   = function ( $since, $until = null ) use ( $wpdb, $tx, $t ) {
+		$until = $until ? $until : PHP_INT_MAX;
+		return $wpdb->get_row( $wpdb->prepare( "SELECT COALESCE(SUM(amount),0) AS total, COUNT(*) AS cnt FROM $tx WHERE tenant_id = %d AND status = 'success' AND paid_at >= %d AND paid_at < %d", $t->id, $since, $until ) ); // phpcs:ignore
+	};
+	$rows   = $wpdb->get_results( $wpdb->prepare( "SELECT paid_at, amount FROM $tx WHERE tenant_id = %d AND status = 'success' AND paid_at >= %d", $t->id, $today - ( $days - 1 ) * DAY_IN_SECONDS ) ); // phpcs:ignore
+	$series = array();
+	for ( $i = $days - 1; $i >= 0; $i-- ) {
+		$start = $today - $i * DAY_IN_SECONDS;
+		$total = 0;
+		$count = 0;
+		foreach ( $rows as $r ) {
+			if ( $r->paid_at >= $start && $r->paid_at < $start + DAY_IN_SECONDS ) {
+				$total += (int) $r->amount;
+				$count++;
+			}
+		}
+		$series[] = array( 'label' => wp_date( 'D j M', $start + 3600, new DateTimeZone( 'UTC' ) ), 'total' => $total, 'count' => $count );
+	}
+	return array(
+		'today'     => $sum( $today ),
+		'yesterday' => $sum( $today - DAY_IN_SECONDS, $today ),
+		'month'     => $sum( zxc_lagos_month_start() ),
+		'series'    => $series,
+		'range'     => $days,
+		'online'    => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . zxc_table( 'online' ) . ' WHERE tenant_id = %d AND seen_at >= %d', $t->id, time() - 90 ) ),
+		'active'    => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . zxc_table( 'vouchers' ) . " WHERE tenant_id = %d AND status = 'active'", $t->id ) ),
+		'unused'    => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . zxc_table( 'vouchers' ) . " WHERE tenant_id = %d AND status = 'unused'", $t->id ) ),
+		'top'       => $wpdb->get_results( $wpdb->prepare( "SELECT p.name, SUM(x.amount) AS total, COUNT(*) AS cnt FROM $tx x JOIN " . zxc_table( 'plans' ) . " p ON p.id = x.plan_id WHERE x.tenant_id = %d AND x.status = 'success' AND x.paid_at >= %d GROUP BY p.id, p.name ORDER BY total DESC LIMIT 5", $t->id, time() - 30 * DAY_IN_SECONDS ) ), // phpcs:ignore
+		'recent'    => $wpdb->get_results( $wpdb->prepare( "SELECT x.*, p.name AS plan_name, v.code AS voucher_code FROM $tx x JOIN " . zxc_table( 'plans' ) . ' p ON p.id = x.plan_id LEFT JOIN ' . zxc_table( 'vouchers' ) . ' v ON v.id = x.voucher_id WHERE x.tenant_id = %d ORDER BY x.created DESC LIMIT 6', $t->id ) ), // phpcs:ignore
+		'routers'   => zxc_routers( $t->id ),
+	);
+}
+
+function zxc_export_sales_csv( $rows ) {
+	nocache_headers();
+	header( 'Content-Type: text/csv; charset=utf-8' );
+	header( 'Content-Disposition: attachment; filename="zaxconnect-sales.csv"' );
+	$out = fopen( 'php://output', 'w' );
+	fputcsv( $out, array( 'reference', 'plan', 'amount', 'phone', 'email', 'status', 'channel', 'gateway', 'voucher', 'created', 'paid' ) );
+	$cell = function ( $v ) {
+		$v = (string) $v;
+		return preg_match( '/^[=+\-@]/', $v ) ? "'" . $v : $v;
+	};
+	foreach ( $rows as $r ) {
+		fputcsv( $out, array_map( $cell, array( $r->reference, $r->plan_name, $r->amount, $r->phone, $r->email, $r->status, $r->channel, $r->gateway, $r->voucher_code ? zxc_format_code( $r->voucher_code ) : '', gmdate( 'c', (int) $r->created ), $r->paid_at ? gmdate( 'c', (int) $r->paid_at ) : '' ) ) );
+	}
+	fclose( $out ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+	exit;
+}
+
+/* -------------------------------------------------------------------------
+ * Platform operator panel (WordPress administrators)
+ * ---------------------------------------------------------------------- */
+
+function zxc_ctl_platform( $path ) {
+	if ( ! is_user_logged_in() ) {
+		wp_safe_redirect( wp_login_url( home_url( '/zx-admin' ) ) );
+		exit;
+	}
+	if ( ! current_user_can( 'manage_options' ) ) {
+		zxc_redirect( home_url( '/dashboard' ) );
+	}
+	global $wpdb;
+	$base = home_url( '/zx-admin' );
+	$seg  = $path ? explode( '/', $path ) : array( '' );
+
+	if ( zxc_is_post() ) {
+		zxc_check_nonce( 'zxc_platform' );
+		$action = zxc_post( 'action', 40 );
+		if ( 'settings' === $action ) {
+			$vals = array(
+				'platform_name'    => zxc_post( 'platform_name', 60 ) ? zxc_post( 'platform_name', 60 ) : 'ZaxConnect',
+				'support_email'    => sanitize_email( zxc_post( 'support_email', 190 ) ),
+				'flw_public'       => zxc_post( 'flw_public', 200 ),
+				'flw_hash'         => zxc_post( 'flw_hash', 200 ),
+				'demo_billing'     => empty( $_POST['demo_billing'] ) ? '0' : '1', // phpcs:ignore
+				'takeover_home'    => empty( $_POST['takeover_home'] ) ? '0' : '1', // phpcs:ignore
+				'price_starter'    => (string) absint( zxc_post( 'price_starter', 9 ) ),
+				'price_business'   => (string) absint( zxc_post( 'price_business', 9 ) ),
+				'price_enterprise' => (string) absint( zxc_post( 'price_enterprise', 9 ) ),
+				'trial_days'       => (string) max( 1, absint( zxc_post( 'trial_days', 3 ) ) ),
+			);
+			if ( zxc_post( 'flw_secret', 200 ) ) {
+				$vals['flw_secret'] = zxc_post( 'flw_secret', 200 );
+			}
+			zxc_update_settings( $vals );
+			zxc_flash( 'Platform settings saved.' );
+			zxc_redirect( $base . '/settings' );
+		}
+		$t = zxc_tenant( absint( zxc_post( 'tenant_id', 12 ) ) );
+		if ( $t ) {
+			if ( 'suspend' === $action ) {
+				zxc_update_tenant( $t->id, array( 'status' => 'suspended' ) );
+				zxc_flash( $t->name . ' suspended. Its portal is offline.' );
+			} elseif ( 'activate' === $action ) {
+				zxc_update_tenant( $t->id, array( 'status' => 'active' ) );
+				zxc_flash( $t->name . ' re-activated.' );
+			} elseif ( 'extend' === $action ) {
+				zxc_update_tenant( $t->id, array( 'sub_ends' => max( time(), (int) $t->sub_ends ) + 30 * DAY_IN_SECONDS ) );
+				zxc_flash( $t->name . ' extended by 30 days.' );
+			}
+		}
+		zxc_redirect( $base );
+	}
+
+	if ( 'settings' === $seg[0] ) {
+		zxc_render( zxc_view_platform_settings() );
+	}
+	$tenants = $wpdb->get_results(
+		'SELECT t.*, u.user_email, u.display_name,
+		(SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'transactions' ) . " x WHERE x.tenant_id = t.id AND x.status = 'success') AS revenue,
+		(SELECT MAX(last_seen) FROM " . zxc_table( 'routers' ) . " r WHERE r.tenant_id = t.id) AS router_seen
+		FROM " . zxc_table( 'tenants' ) . " t LEFT JOIN {$wpdb->users} u ON u.ID = t.owner_id ORDER BY t.id DESC LIMIT 500"
+	);
+	$stats = array(
+		'mrr'      => 0,
+		'paying'   => 0,
+		'trials'   => 0,
+		'gmv'      => (int) $wpdb->get_var( 'SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'transactions' ) . " WHERE status = 'success'" ),
+		'subs_rev' => (int) $wpdb->get_var( 'SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'subscriptions' ) . " WHERE status = 'success'" ),
+	);
+	$tiers = zxc_tiers();
+	foreach ( $tenants as $t ) {
+		$s = zxc_subscription( $t );
+		if ( 'active' === $s['state'] ) {
+			$stats['paying']++;
+			$stats['mrr'] += $tiers[ $t->tier ]['price'] ?? 0;
+		} elseif ( 'trial' === $s['state'] ) {
+			$stats['trials']++;
+		}
+	}
+	zxc_render( zxc_view_platform_home( $tenants, $stats ) );
+}
