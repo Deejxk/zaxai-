@@ -154,8 +154,8 @@ function zxc_ctl_signup() {
 	);
 	wp_set_current_user( $user_id );
 	wp_set_auth_cookie( $user_id, true, is_ssl() );
-	zxc_flash( 'Welcome to ' . zxc_setting( 'platform_name' ) . '! Your hotspot brand is ready. Connect your router to go live.' );
-	zxc_redirect( home_url( '/dashboard/locations' ) );
+	zxc_flash( 'Welcome to ' . zxc_setting( 'platform_name' ) . '! Your hotspot brand is ready. Follow this guide to go live.' );
+	zxc_redirect( home_url( '/dashboard/docs?welcome=1' ) );
 }
 
 function zxc_ctl_login() {
@@ -171,7 +171,7 @@ function zxc_ctl_login() {
 		array(
 			'user_login'    => $email,
 			'user_password' => isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
-			'remember'      => true,
+			'remember'      => ! empty( $_POST['remember'] ), // phpcs:ignore
 		),
 		is_ssl()
 	);
@@ -210,14 +210,16 @@ function zxc_ctl_portal( $t, $path ) {
 			if ( ! $plan || ! $plan->active ) {
 				zxc_redirect( zxc_portal_url( $t ) );
 			}
-			$demo = ! zxc_gateway_ready( $t );
-			$args = array( 'plan' => $plan, 'ctx' => $ctx, 'demo' => $demo, 'closed' => ! $sub['active'] || ( $demo && ! $t->demo_payments ) );
+			$demo   = ! zxc_gateway_ready( $t );
+			$manual = zxc_manual_ready( $t );
+			$online = ! $demo || $t->demo_payments;
+			$args   = array( 'plan' => $plan, 'ctx' => $ctx, 'demo' => $demo, 'manual' => $manual, 'online' => $online, 'closed' => ! $sub['active'] || ( ! $online && ! $manual ) );
 			if ( ! zxc_is_post() ) {
 				zxc_render( zxc_view_portal_checkout( $t, $args ) );
 			}
 			$phone = zxc_normalize_phone( zxc_post( 'phone', 20 ) );
 			$email = sanitize_email( zxc_post( 'email', 190 ) );
-			$args['values'] = array( 'phone' => zxc_post( 'phone', 20 ), 'email' => $email );
+			$args['values'] = array( 'phone' => zxc_post( 'phone', 20 ), 'email' => $email, 'method' => zxc_post( 'method', 10 ) );
 			if ( $args['closed'] ) {
 				$args['error'] = 'Online payment is not available right now. Please buy a voucher from the attendant.';
 				zxc_render( zxc_view_portal_checkout( $t, $args ), 400 );
@@ -233,7 +235,11 @@ function zxc_ctl_portal( $t, $path ) {
 			if ( ! $email ) {
 				$email = $phone . '@customers.' . wp_parse_url( home_url(), PHP_URL_HOST ); // Flutterwave requires an email
 			}
-			$order = zxc_create_order( $t, $plan, array( 'phone' => $phone, 'email' => $email, 'mac' => $ctx['mac'] ?? '', 'login_url' => $ctx['login'] ?? '', 'dst' => $ctx['dst'] ?? '', 'gateway' => $demo ? 'demo' : 'flutterwave' ) );
+			$use_manual = $manual && ( 'manual' === zxc_post( 'method', 10 ) || ! $online );
+			$order      = zxc_create_order( $t, $plan, array( 'phone' => $phone, 'email' => $email, 'mac' => $ctx['mac'] ?? '', 'login_url' => $ctx['login'] ?? '', 'dst' => $ctx['dst'] ?? '', 'gateway' => $use_manual ? 'manual' : ( $demo ? 'demo' : 'flutterwave' ) ) );
+			if ( $use_manual ) {
+				zxc_redirect( zxc_portal_url( $t, 'pay/manual/' . $order->reference ) );
+			}
 			if ( $demo ) {
 				zxc_redirect( zxc_portal_url( $t, 'pay/demo/' . $order->reference ) );
 			}
@@ -259,6 +265,26 @@ function zxc_ctl_portal( $t, $path ) {
 			exit;
 
 		case 'pay':
+			if ( 'manual' === ( $seg[1] ?? '' ) ) {
+				$o = zxc_order( $seg[2] ?? '', $t->id );
+				if ( ! $o || 'manual' !== $o->gateway ) {
+					zxc_redirect( zxc_portal_url( $t ) );
+				}
+				if ( 'success' === $o->status ) {
+					zxc_redirect( zxc_portal_url( $t, 'success/' . $o->reference ) );
+				}
+				if ( zxc_is_post() && 'pending' === $o->status ) {
+					zxc_check_nonce( 'zxc_manual' );
+					$payer = zxc_post( 'payer_name', 120 );
+					if ( '' === $payer ) {
+						zxc_render( zxc_view_portal_manual( $t, $o, 'Please enter the name on the account you paid from.' ), 400 );
+					}
+					global $wpdb;
+					$wpdb->update( zxc_table( 'transactions' ), array( 'payer_name' => $payer, 'channel' => 'submitted' ), array( 'id' => $o->id, 'status' => 'pending' ) );
+					zxc_redirect( zxc_portal_url( $t, 'pay/manual/' . $o->reference ) . '?sent=1' );
+				}
+				zxc_render( zxc_view_portal_manual( $t, $o ) );
+			}
 			if ( 'demo' === ( $seg[1] ?? '' ) ) {
 				$o = zxc_order( $seg[2] ?? '', $t->id );
 				if ( ! $o || 'demo' !== $o->gateway ) {
@@ -293,7 +319,10 @@ function zxc_ctl_portal( $t, $path ) {
 			if ( 'success' === $o->status ) {
 				zxc_redirect( zxc_portal_url( $t, 'success/' . $o->reference ) );
 			}
-			zxc_render( 'failed' === $o->status ? zxc_view_portal_failed( $t, $o ) : zxc_view_portal_pending( $t, $o ) );
+			if ( 'manual' === $o->gateway && 'pending' === $o->status ) {
+				zxc_redirect( zxc_portal_url( $t, 'pay/manual/' . $o->reference ) );
+			}
+			zxc_render( in_array( $o->status, array( 'failed', 'declined' ), true ) ? zxc_view_portal_failed( $t, $o ) : zxc_view_portal_pending( $t, $o ) );
 			break;
 
 		case 'success':
@@ -440,9 +469,13 @@ function zxc_ctl_dashboard( $path ) {
 	if ( ! is_user_logged_in() ) {
 		zxc_redirect( home_url( '/login' ) );
 	}
-	$t = zxc_tenant_for_user( get_current_user_id() );
+	$t = zxc_dashboard_tenant();
 	if ( ! $t ) {
-		zxc_redirect( current_user_can( 'manage_options' ) ? home_url( '/zx-admin' ) : home_url( '/signup' ) );
+		if ( zxc_is_platform_admin() ) {
+			zxc_flash( 'Choose a business below to open its owner dashboard.' );
+			zxc_redirect( home_url( '/zx-admin/businesses' ) );
+		}
+		zxc_redirect( home_url( '/signup' ) );
 	}
 	global $wpdb;
 	$seg  = $path ? explode( '/', $path ) : array( '' );
@@ -566,6 +599,13 @@ function zxc_ctl_dashboard( $path ) {
 				$wmap[ $w->phone ] = (int) $w->balance;
 			}
 			zxc_render( zxc_view_dash_customers( $t, $rows, $q, $wmap ) );
+			break;
+		case 'transfers':
+			$view = in_array( zxc_get( 'view', 10 ), array( 'pending', 'unsent', 'history' ), true ) ? zxc_get( 'view', 10 ) : 'pending';
+			zxc_render( zxc_view_dash_transfers( $t, zxc_manual_orders( $t->id, $view ), $view ) );
+			break;
+		case 'docs':
+			zxc_render( zxc_view_dash_docs( $t, '1' === zxc_get( 'welcome', 2 ) ) );
 			break;
 		case 'cwallets':
 			$q = zxc_get( 'q', 40 );
@@ -715,6 +755,26 @@ function zxc_dashboard_post( $t, $seg ) {
 			zxc_flash( 'Branding saved. Your portal is updated.' );
 			zxc_redirect( $base . '/branding' );
 			break;
+		case 'transfer_review':
+			$ref = zxc_post( 'ref', 40 );
+			$o   = zxc_order( $ref, $t->id );
+			if ( ! $o || 'manual' !== $o->gateway || 'pending' !== $o->status ) {
+				zxc_flash( 'That payment was already handled.', 'warn' );
+				zxc_redirect( $base . '/transfers' );
+			}
+			if ( 'approve' === zxc_post( 'decision', 10 ) ) {
+				if ( zxc_voucher_allowance( $t ) < 1 ) {
+					zxc_flash( 'You have reached your monthly voucher limit. Upgrade your plan to approve more payments.', 'bad' );
+					zxc_redirect( $base . '/transfers' );
+				}
+				$o = zxc_fulfill_order( $o->reference, 'bank transfer' );
+				zxc_flash( 'Approved. ' . $o->phone . ' is now connected with voucher ' . $o->voucher_code . '.' );
+			} else {
+				zxc_decline_order( $o->reference );
+				zxc_flash( 'Payment ' . $o->reference . ' declined.', 'warn' );
+			}
+			zxc_redirect( $base . '/transfers' );
+			break;
 		case 'payments':
 			$values = array(
 				'flw_public'    => zxc_post( 'flw_public', 200 ),
@@ -727,6 +787,22 @@ function zxc_dashboard_post( $t, $seg ) {
 			}
 			if ( ( $values['flw_public'] && ! preg_match( '/^FLWPUBK(_TEST)?-/', $values['flw_public'] ) ) || ( $secret && ! preg_match( '/^FLWSECK(_TEST)?-/', $secret ) ) ) {
 				zxc_flash( 'Flutterwave keys should start with FLWPUBK- (public) and FLWSECK- (secret).', 'bad' );
+				zxc_redirect( $base . '/payments' );
+			}
+			$values['manual_payments'] = empty( $_POST['manual_payments'] ) ? 0 : 1; // phpcs:ignore WordPress.Security.NonceVerification
+			$values['bank_name']       = zxc_post( 'bank_name', 80 );
+			$values['bank_account']    = preg_replace( '/\D/', '', zxc_post( 'bank_account', 20 ) );
+			$values['bank_holder']     = zxc_post( 'bank_holder', 120 );
+			$wa                        = zxc_post( 'support_whatsapp', 30 );
+			if ( '' !== $wa ) {
+				$values['support_whatsapp'] = $wa;
+			}
+			if ( $values['manual_payments'] && ( '' === $values['bank_name'] || ! preg_match( '/^\d{10}$/', $values['bank_account'] ) || '' === $values['bank_holder'] ) ) {
+				zxc_flash( 'To accept bank transfers, enter your bank name, 10-digit account number and account name.', 'bad' );
+				zxc_redirect( $base . '/payments' );
+			}
+			if ( $values['manual_payments'] && '' === preg_replace( '/\D/', '', $wa ? $wa : $t->support_whatsapp . $t->support_phone ) ) {
+				zxc_flash( 'Add your WhatsApp number so customers can send you their proof of payment.', 'bad' );
 				zxc_redirect( $base . '/payments' );
 			}
 			zxc_update_tenant( $t->id, $values );
@@ -1121,6 +1197,25 @@ function zxc_ctl_platform( $path ) {
 	}
 	if ( ! zxc_is_platform_admin() ) {
 		zxc_redirect( $base . '/login' );
+	}
+	// Open a business's owner dashboard (support mode), or return to your own.
+	if ( 'view' === $seg[0] ) {
+		check_admin_referer( 'zxc_view_tenant' );
+		$vt = isset( $seg[1] ) ? zxc_tenant( (int) $seg[1] ) : null;
+		$own = zxc_tenant_for_user( get_current_user_id() );
+		if ( $vt && ( ! $own || (int) $own->id !== (int) $vt->id ) ) {
+			update_user_meta( get_current_user_id(), 'zxc_view_tenant', (int) $vt->id );
+			zxc_flash( 'You are viewing ' . $vt->name . '’s dashboard as an admin.' );
+		} else {
+			delete_user_meta( get_current_user_id(), 'zxc_view_tenant' );
+		}
+		zxc_redirect( home_url( '/dashboard' ) );
+	}
+	if ( 'exit-view' === $seg[0] ) {
+		check_admin_referer( 'zxc_view_tenant' );
+		$vt = zxc_admin_view_tenant();
+		delete_user_meta( get_current_user_id(), 'zxc_view_tenant' );
+		zxc_redirect( $vt ? $base . '/businesses/' . $vt->id : $base );
 	}
 
 	if ( zxc_is_post() ) {

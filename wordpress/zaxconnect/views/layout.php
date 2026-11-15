@@ -13,6 +13,7 @@ function zxc_icons() {
 	$i = array(
 		'home'      => '<path d="M3 10.2 12 3l9 7.2V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/>',
 		'dashboard' => '<rect x="3" y="3" width="7.5" height="9" rx="2"/><rect x="13.5" y="3" width="7.5" height="5" rx="2"/><rect x="13.5" y="11" width="7.5" height="10" rx="2"/><rect x="3" y="15" width="7.5" height="6" rx="2"/>',
+		'grid'      => '<rect x="3.5" y="3.5" width="7" height="7" rx="2.2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2.2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2.2"/><circle cx="17" cy="17" r="3.6"/>',
 		'wifi'      => '<path d="M2 8.8a15 15 0 0 1 20 0"/><path d="M5 12.3a10 10 0 0 1 14 0"/><path d="M8.5 15.8a5 5 0 0 1 7 0"/><circle cx="12" cy="19.3" r="1" fill="currentColor"/>',
 		'wifiAnim'  => '<path class="w3" d="M2 8.8a15 15 0 0 1 20 0"/><path class="w2" d="M5 12.3a10 10 0 0 1 14 0"/><path class="w1" d="M8.5 15.8a5 5 0 0 1 7 0"/><circle cx="12" cy="19.3" r="1.1" fill="currentColor"/>',
 		'ticket'    => '<path d="M3 9a3 3 0 0 0 0 6v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a3 3 0 0 0 0-6V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 11v2M13 17v2"/>',
@@ -96,7 +97,7 @@ function zxc_icon( $name, $cls = '' ) {
 function zxc_logo_mark() {
 	static $n = 0;
 	$id = 'zxg' . ( ++$n );
-	return '<svg class="logo-mark" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="' . $id . '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF4FD8"/><stop offset=".5" stop-color="#A855F7"/><stop offset="1" stop-color="#22D3EE"/></linearGradient></defs><rect width="48" height="48" rx="14" fill="url(#' . $id . ')"/><rect x="3" y="3" width="42" height="42" rx="11.5" fill="#1A1C4A"/><path d="M15 15.5h17.5L15.5 32.5H33" fill="none" stroke="url(#' . $id . ')" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="35.5" cy="13.5" r="2.8" fill="#22D3EE"/></svg>';
+	return '<svg class="logo-mark" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="' . $id . '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366F1"/><stop offset=".55" stop-color="#8B5CF6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs><rect width="48" height="48" rx="14" fill="url(#' . $id . ')"/><path d="M14 15.5h17.5L15.5 33H34" fill="none" stroke="#fff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="35" cy="14.5" r="3.2" fill="#fff"/></svg>';
 }
 
 function zxc_logo( $href = '' ) {
@@ -118,6 +119,11 @@ function zxc_brand_style( $t ) {
 	return '--accent:' . $c . ';--accent-2:color-mix(in oklab,' . $c . ' 72%,#1e1b4b);--accent-ink:' . zxc_accent_ink( $c ) . ';--accent-soft:color-mix(in srgb,' . $c . ' 15%,transparent);--accent-text:color-mix(in oklab,' . $c . ' 78%,var(--ink));--au1:color-mix(in srgb,' . $c . ' 34%,transparent);--d-accent:' . $c . ';';
 }
 
+/** Mobile-only button that reloads the current page. */
+function zxc_refresh_btn() {
+	return '<button type="button" class="icon-btn mob refresh-btn" data-refresh aria-label="Refresh this page">' . zxc_icon( 'refresh' ) . '</button>';
+}
+
 function zxc_theme_toggle() {
 	return '<button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Switch light or dark mode" data-tip="Light / dark">' . zxc_icon( 'moon', 'moon' ) . zxc_icon( 'sun', 'sun' ) . '</button>';
 }
@@ -128,6 +134,36 @@ function zxc_theme_toggle() {
  * @param string $context 'site' | 'portal' | 'dashboard' | 'admin'
  * @param object $tenant  current business (portal/dashboard)
  */
+/** URL that opens a business's owner dashboard for a platform admin. */
+function zxc_admin_view_url( $tenant_id ) {
+	return wp_nonce_url( home_url( '/zx-admin/view/' . (int) $tenant_id ), 'zxc_view_tenant' );
+}
+
+/**
+ * Two-way switch between the admin console and the owner (user) panel.
+ * Shown only to platform admins.
+ */
+function zxc_panel_switch( $current, $tenant = null ) {
+	if ( ! is_user_logged_in() || ! zxc_is_platform_admin() ) {
+		return '';
+	}
+	$uid  = get_current_user_id();
+	$own  = zxc_tenant_for_user( $uid );
+	$view = zxc_admin_view_tenant( $uid );
+	if ( 'admin' === $current ) {
+		$user_href = $view || $own ? home_url( '/dashboard' ) : home_url( '/zx-admin/businesses' );
+		$user_tip  = $view ? 'Open ' . $view->name . ' dashboard' : ( $own ? 'Switch to my hotspot dashboard' : 'Choose a business to open' );
+	} else {
+		$user_href = home_url( '/dashboard' );
+		$user_tip  = 'User panel';
+	}
+	$admin_href = 'dashboard' === $current && $tenant && ( ! $own || (int) $own->id !== (int) $tenant->id ) ? home_url( '/zx-admin/businesses/' . $tenant->id ) : home_url( '/zx-admin' );
+	return '<div class="panel-switch" role="group" aria-label="Switch panel">'
+		. '<a href="' . esc_url( $user_href ) . '" class="' . ( 'dashboard' === $current ? 'on' : '' ) . '" data-tip="' . esc_attr( $user_tip ) . '" aria-label="' . esc_attr( $user_tip ) . '"' . ( 'dashboard' === $current ? ' aria-current="page"' : '' ) . '>' . zxc_icon( 'wifi' ) . '<span>User</span></a>'
+		. '<a href="' . esc_url( $admin_href ) . '" class="' . ( 'admin' === $current ? 'on' : '' ) . '" data-tip="Admin panel" aria-label="Admin panel"' . ( 'admin' === $current ? ' aria-current="page"' : '' ) . '>' . zxc_icon( 'shield' ) . '<span>Admin</span></a>'
+		. '</div>';
+}
+
 function zxc_switch_buttons( $context, $tenant = null ) {
 	if ( ! is_user_logged_in() ) {
 		return '';
@@ -156,14 +192,8 @@ function zxc_switch_buttons( $context, $tenant = null ) {
 		if ( $tenant ) {
 			$out .= $btn( zxc_portal_url( $tenant ), 'globe', 'View my portal' );
 		}
-		if ( $admin ) {
-			$out .= $btn( home_url( '/zx-admin' ), 'shield', 'Admin panel' );
-		}
 	} elseif ( 'admin' === $context ) {
 		$out .= $btn( home_url( '/' ), 'globe', 'View website' );
-		if ( $own ) {
-			$out .= $btn( home_url( '/dashboard' ), 'wifi', 'My hotspot dashboard' );
-		}
 	}
 	return $out;
 }
@@ -183,6 +213,36 @@ function zxc_dock( array $items, $label = 'Main' ) {
 		}
 	}
 	return $h . '</nav>';
+}
+
+/**
+ * Premium bottom sheet opened by the dock's "More" button.
+ * $groups = [ 'Label' => [ [url, icon, label, active], ... ] ], $foot = [ [url, icon, label, attrs] ].
+ */
+function zxc_more_sheet( $head, array $groups, array $foot = array(), $strip = '' ) {
+	$tints = array( 'violet', 'teal', 'amber', 'pink', 'blue', 'green' );
+	$n     = 0;
+	$h     = '<div class="ms" data-more-sheet role="dialog" aria-modal="true" aria-label="More" hidden><div class="ms-backdrop" data-more-close></div><div class="ms-panel" data-more-panel><span class="ms-grab" aria-hidden="true"></span>';
+	$h    .= '<div class="ms-head">' . $head . '<button type="button" class="ms-x" data-more-close aria-label="Close">' . zxc_icon( 'x' ) . '</button></div>' . $strip;
+	$h    .= '<div class="ms-scroll">';
+	foreach ( $groups as $label => $items ) {
+		if ( ! $items ) {
+			continue;
+		}
+		$h .= '<div class="ms-label">' . esc_html( $label ) . '</div><div class="ms-grid">';
+		foreach ( $items as $it ) {
+			$h .= '<a class="ms-tile' . ( ! empty( $it[3] ) ? ' on' : '' ) . '" href="' . esc_url( $it[0] ) . '"><span class="ms-ic t-' . $tints[ $n++ % count( $tints ) ] . '">' . zxc_icon( $it[1] ) . '</span><span class="ms-t">' . esc_html( $it[2] ) . '</span></a>';
+		}
+		$h .= '</div>';
+	}
+	if ( $foot ) {
+		$h .= '<div class="ms-foot">';
+		foreach ( $foot as $it ) {
+			$h .= '<a class="ms-pill' . ( ! empty( $it[4] ) ? ' ' . esc_attr( $it[4] ) : '' ) . '" href="' . esc_url( $it[0] ) . '"' . ( ! empty( $it[3] ) ? ' ' . $it[3] : '' ) . '>' . zxc_icon( $it[1] ) . '<span>' . esc_html( $it[2] ) . '</span></a>';
+		}
+		$h .= '</div>';
+	}
+	return $h . '</div></div></div>';
 }
 
 function zxc_alert( $type, $text, $allow_html = false ) {
@@ -226,10 +286,10 @@ function zxc_page( $title, $body, array $opts = array() ) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#171A45">
+<meta name="theme-color" content="#F2F4FD">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="<?php echo esc_attr( $app['name'] ); ?>">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="<?php echo esc_url( home_url( '/manifest.webmanifest' ) . ( $app['slug'] ? '?t=' . rawurlencode( $app['slug'] ) : '' ) ); ?>">
@@ -313,11 +373,11 @@ function zxc_splash( $name, $sub ) {
   <div class="sp-glow g1"></div><div class="sp-glow g2"></div><div class="sp-grid"></div>
   <div class="sp-center">
     <div class="sp-orbit"><span class="sp-ring"></span><span class="sp-ring r2"></span><i class="sp-dot d1"></i><i class="sp-dot d2"></i><i class="sp-dot d3"></i>
-      <svg class="sp-mark" viewBox="0 0 48 48"><defs><linearGradient id="zxsp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF4FD8"/><stop offset=".5" stop-color="#A855F7"/><stop offset="1" stop-color="#22D3EE"/></linearGradient></defs>
-        <rect class="sp-box" x="2" y="2" width="44" height="44" rx="13" fill="#1A1C4A" stroke="url(#zxsp)" stroke-width="2.6"/>
-        <path class="sp-z" d="M15 15.5h17.5L15.5 32.5H33" fill="none" stroke="url(#zxsp)" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle class="sp-c" cx="35.5" cy="13.5" r="2.8" fill="#22D3EE"/>
-        <g class="sp-wave" fill="none" stroke="#8EF3FF" stroke-width="1.6" stroke-linecap="round"><path d="M38 6.5a7 7 0 0 1 4 4"/><path d="M39 2.5a11 11 0 0 1 7 7"/></g>
+      <svg class="sp-mark" viewBox="0 0 48 48"><defs><linearGradient id="zxsp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366F1"/><stop offset=".55" stop-color="#8B5CF6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs>
+        <rect class="sp-box" x="2" y="2" width="44" height="44" rx="13" fill="url(#zxsp)" stroke="url(#zxsp)" stroke-width="2.6"/>
+        <path class="sp-z" d="M14 15.5h17.5L15.5 33H34" fill="none" stroke="#fff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle class="sp-c" cx="35" cy="14.5" r="3.2" fill="#fff"/>
+        <g class="sp-wave" fill="none" stroke="#06B6D4" stroke-width="1.6" stroke-linecap="round"><path d="M38 6.5a7 7 0 0 1 4 4"/><path d="M39 2.5a11 11 0 0 1 7 7"/></g>
       </svg>
     </div>
     <div class="sp-word">' . $word . '</div>
@@ -331,35 +391,35 @@ function zxc_splash( $name, $sub ) {
 function zxc_splash_css() {
 	return '#zx-splash{display:none}
 html.zx-splashing{overflow:hidden}
-html.zx-splashing #zx-splash{display:flex;position:fixed;inset:0;z-index:2147483000;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:#fff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;background:radial-gradient(900px 600px at 15% 0%,#3A2484 0%,transparent 60%),radial-gradient(800px 600px at 100% 100%,#0F4A63 0%,transparent 60%),linear-gradient(165deg,#15183F,#1B1F52 50%,#152A4C);transition:opacity .55s ease,transform .55s ease,filter .55s ease}
+html.zx-splashing #zx-splash{display:flex;position:fixed;inset:0;z-index:2147483000;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:#0A0C1B;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;background:radial-gradient(900px 600px at 10% 0%,rgba(99,102,241,.22) 0%,transparent 60%),radial-gradient(800px 600px at 100% 100%,rgba(6,182,212,.18) 0%,transparent 60%),#F2F4FD;transition:opacity .55s ease,transform .55s ease,filter .55s ease}
 html.zx-splash-out #zx-splash{opacity:0;transform:scale(1.06);filter:blur(6px)}
-.sp-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(168,176,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(168,176,255,.07) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 65%);-webkit-mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 65%);animation:spFade 1.2s ease both}
+.sp-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(20,26,70,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(20,26,70,.05) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 65%);-webkit-mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 65%);animation:spFade 1.2s ease both}
 .sp-glow{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(60px);opacity:.55}
-.sp-glow.g1{background:radial-gradient(circle,rgba(255,79,216,.45),transparent 60%);left:-25vmax;top:-25vmax;animation:spDrift 5s ease-in-out both}
-.sp-glow.g2{background:radial-gradient(circle,rgba(34,211,238,.35),transparent 60%);right:-25vmax;bottom:-25vmax;animation:spDrift 5s ease-in-out reverse both}
+.sp-glow.g1{background:radial-gradient(circle,rgba(139,92,246,.30),transparent 60%);left:-25vmax;top:-25vmax;animation:spDrift 5s ease-in-out both}
+.sp-glow.g2{background:radial-gradient(circle,rgba(6,182,212,.25),transparent 60%);right:-25vmax;bottom:-25vmax;animation:spDrift 5s ease-in-out reverse both}
 .sp-center{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 24px}
 .sp-orbit{position:relative;width:180px;height:180px;display:grid;place-items:center}
-.sp-ring{position:absolute;inset:18px;border-radius:50%;border:1.5px dashed rgba(142,243,255,.4);animation:spSpin 9s linear infinite,spPop .9s cubic-bezier(.2,1.3,.4,1) .2s both}
-.sp-ring.r2{inset:0;border:1px solid rgba(255,255,255,.08);border-top-color:rgba(255,79,216,.8);border-right-color:rgba(34,211,238,.6);animation:spSpin 2.4s linear infinite,spPop .9s cubic-bezier(.2,1.3,.4,1) .35s both}
-.sp-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#22D3EE;box-shadow:0 0 12px #22D3EE;top:50%;left:50%;margin:-4px;animation:spOrb 3.2s linear infinite,spFade .6s ease 1s both}
-.sp-dot.d2{background:#FF4FD8;box-shadow:0 0 12px #FF4FD8;animation-delay:-1.07s,1.1s}.sp-dot.d3{background:#A855F7;box-shadow:0 0 12px #A855F7;width:6px;height:6px;animation-delay:-2.13s,1.2s}
-.sp-mark{position:relative;width:96px;height:96px;filter:drop-shadow(0 0 18px rgba(217,70,239,.55)) drop-shadow(0 0 28px rgba(34,211,238,.35));animation:spPop .9s cubic-bezier(.2,1.4,.4,1) .1s both,spPulse 2.2s ease-in-out 1.6s infinite}
+.sp-ring{position:absolute;inset:18px;border-radius:50%;border:1.5px dashed rgba(99,102,241,.35);animation:spSpin 9s linear infinite,spPop .9s cubic-bezier(.2,1.3,.4,1) .2s both}
+.sp-ring.r2{inset:0;border:1px solid rgba(20,26,70,.08);border-top-color:#8B5CF6;border-right-color:#06B6D4;animation:spSpin 2.4s linear infinite,spPop .9s cubic-bezier(.2,1.3,.4,1) .35s both}
+.sp-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#06B6D4;box-shadow:0 0 10px #06B6D4;top:50%;left:50%;margin:-4px;animation:spOrb 3.2s linear infinite,spFade .6s ease 1s both}
+.sp-dot.d2{background:#6366F1;box-shadow:0 0 10px #6366F1;animation-delay:-1.07s,1.1s}.sp-dot.d3{background:#8B5CF6;box-shadow:0 0 10px #8B5CF6;width:6px;height:6px;animation-delay:-2.13s,1.2s}
+.sp-mark{position:relative;width:96px;height:96px;filter:drop-shadow(0 18px 30px rgba(91,91,246,.35));animation:spPop .9s cubic-bezier(.2,1.4,.4,1) .1s both,spPulse 2.2s ease-in-out 1.6s infinite}
 .sp-box{stroke-dasharray:180;stroke-dashoffset:180;animation:spDraw 1.1s cubic-bezier(.6,0,.2,1) .25s forwards}
 .sp-z{stroke-dasharray:60;stroke-dashoffset:60;animation:spDraw .9s cubic-bezier(.6,0,.2,1) 1s forwards}
 .sp-c{transform-origin:35.5px 13.5px;transform:scale(0);animation:spDotIn .5s cubic-bezier(.2,1.6,.4,1) 1.75s forwards}
 .sp-wave path{opacity:0;animation:spWave 1.6s ease-in-out 2s infinite}.sp-wave path+path{animation-delay:2.25s}
 .sp-word{margin-top:26px;font-family:Sora,Inter,sans-serif;font-weight:800;font-size:clamp(30px,8vw,44px);letter-spacing:-.045em;line-height:1;animation:spRise .8s cubic-bezier(.2,.8,.2,1) 1.9s both}
-.sp-word b{background:linear-gradient(100deg,#FF4FD8,#A855F7 45%,#22D3EE);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sp-sub{margin-top:12px;font-size:14px;font-weight:500;letter-spacing:.02em;color:rgba(218,221,247,.75);animation:spRise .8s cubic-bezier(.2,.8,.2,1) 2.3s both}
+.sp-word b{background:linear-gradient(100deg,#5B5BF6,#8B5CF6 50%,#06B6D4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp-sub{margin-top:12px;font-size:14px;font-weight:500;letter-spacing:.02em;color:#586085;animation:spRise .8s cubic-bezier(.2,.8,.2,1) 2.3s both}
 .sp-foot{position:absolute;left:0;right:0;bottom:calc(48px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:12px;animation:spFade .6s ease 2.6s both}
-.sp-bar{width:min(220px,60vw);height:4px;border-radius:99px;background:rgba(168,176,255,.15);overflow:hidden}
-.sp-bar span{display:block;height:100%;width:100%;border-radius:inherit;background:linear-gradient(90deg,#FF4FD8,#A855F7,#22D3EE);box-shadow:0 0 12px rgba(217,70,239,.8);transform-origin:left;transform:scaleX(0);animation:spLoad 4.3s cubic-bezier(.4,.1,.2,1) .3s forwards}
-.sp-load{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(169,174,218,.8)}
+.sp-bar{width:min(220px,60vw);height:4px;border-radius:99px;background:rgba(20,26,70,.08);overflow:hidden}
+.sp-bar span{display:block;height:100%;width:100%;border-radius:inherit;background:linear-gradient(90deg,#5B5BF6,#8B5CF6,#06B6D4);transform-origin:left;transform:scaleX(0);animation:spLoad 4.3s cubic-bezier(.4,.1,.2,1) .3s forwards}
+.sp-load{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8990AE}
 .sp-dots i{font-style:normal;animation:spBlink 1.2s infinite}.sp-dots i:nth-child(2){animation-delay:.2s}.sp-dots i:nth-child(3){animation-delay:.4s}
 @keyframes spDraw{to{stroke-dashoffset:0}}
 @keyframes spDotIn{to{transform:scale(1)}}
 @keyframes spPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1);opacity:1}}
-@keyframes spPulse{0%,100%{filter:drop-shadow(0 0 18px rgba(217,70,239,.55)) drop-shadow(0 0 28px rgba(34,211,238,.35))}50%{filter:drop-shadow(0 0 28px rgba(217,70,239,.85)) drop-shadow(0 0 44px rgba(34,211,238,.6))}}
+@keyframes spPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 @keyframes spSpin{to{rotate:360deg}}
 @keyframes spOrb{from{transform:rotate(0) translateX(90px)}to{transform:rotate(360deg) translateX(90px)}}
 @keyframes spRise{from{opacity:0;transform:translateY(16px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}

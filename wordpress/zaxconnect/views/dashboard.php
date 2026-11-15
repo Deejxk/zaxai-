@@ -14,8 +14,8 @@ function zxc_dash_nav_groups() {
 		'Sell'     => array( 'plans' => array( 'wifi', 'Plans' ), 'vouchers' => array( 'ticket', 'Vouchers' ), 'sales' => array( 'receipt', 'Sales' ), 'customers' => array( 'users', 'Customers' ) ),
 		'Network'  => array( 'online' => array( 'zap', 'Online now' ), 'locations' => array( 'router', 'Locations & routers' ) ),
 		'Money'    => array(
-			'cwallets' => array( 'users', 'Customer wallets' ), 'wallet' => array( 'wallet', 'My wallet' ), 'payments' => array( 'card', 'Payment settings' ), 'billing' => array( 'star', 'Subscription' ) ),
-		'Settings' => array( 'branding' => array( 'palette', 'Portal & branding' ), 'support' => array( 'message', 'Support' ), 'account' => array( 'user', 'Account' ) ),
+			'transfers' => array( 'bank', 'Transfer approvals' ), 'cwallets' => array( 'users', 'Customer wallets' ), 'wallet' => array( 'wallet', 'My wallet' ), 'payments' => array( 'card', 'Payment settings' ), 'billing' => array( 'star', 'Subscription' ) ),
+		'Settings' => array( 'branding' => array( 'palette', 'Portal & branding' ), 'docs' => array( 'book', 'Documentation' ), 'support' => array( 'message', 'Support' ), 'account' => array( 'user', 'Account' ) ),
 	);
 }
 
@@ -24,17 +24,14 @@ function zxc_dash_page( $t, $active, $title, $content, array $o = array() ) {
 	$sub    = zxc_subscription( $t );
 	$online = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . zxc_table( 'online' ) . ' WHERE tenant_id = %d AND seen_at >= %d', $t->id, time() - 90 ) );
 	$unread = zxc_unread_count( $t->id );
+	$mpend  = zxc_manual_pending_count( $t->id );
 	$tiers  = zxc_tiers();
-	$wbal   = zxc_wallet_balance( $t->id );
-	$today  = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'transactions' ) . " WHERE tenant_id = %d AND status = 'success' AND paid_at >= %d", $t->id, zxc_lagos_day_start() ) );
-	$plan_l = 'trial' === $sub['state'] ? 'Free trial · ' . $sub['days'] . ' day' . ( 1 === $sub['days'] ? '' : 's' ) . ' left' : ( 'active' === $sub['state'] ? ( $tiers[ $t->tier ]['name'] ?? 'Business' ) . ' · renews in ' . $sub['days'] . 'd' : $sub['label'] );
-	$help   = zxc_setting( 'support_whatsapp' ) ? 'https://wa.me/' . preg_replace( '/^0/', '234', preg_replace( '/\D/', '', zxc_setting( 'support_whatsapp' ) ) ) : zxc_dash_url( 'support' );
 	ob_start();
 	?>
-<div class="app">
+<div class="app" style="<?php echo esc_attr( zxc_brand_style( $t ) ); ?>">
   <aside class="side" data-side>
     <?php echo zxc_logo( zxc_dash_url() ); // phpcs:ignore ?>
-    <a class="tenant" href="<?php echo esc_url( zxc_portal_url( $t ) ); ?>" style="<?php echo esc_attr( zxc_brand_style( $t ) ); ?>">
+    <a class="tenant" href="<?php echo esc_url( zxc_portal_url( $t ) ); ?>">
       <?php echo zxc_brand_mark( $t ); // phpcs:ignore ?>
       <span class="grow"><b><?php echo esc_html( $t->name ); ?></b><small>/h/<?php echo esc_html( $t->slug ); ?></small></span>
       <?php echo zxc_icon( 'switch' ); // phpcs:ignore ?>
@@ -46,22 +43,23 @@ function zxc_dash_page( $t, $active, $title, $content, array $o = array() ) {
             <a href="<?php echo esc_url( zxc_dash_url( $key ) ); ?>" class="<?php echo $active === $key ? 'on' : ''; ?>"<?php echo $active === $key ? ' aria-current="page"' : ''; ?>><?php echo zxc_icon( $n[0] ); // phpcs:ignore ?><span><?php echo esc_html( $n[1] ); ?></span>
               <?php if ( 'online' === $key && $online ) : ?><span class="count"><?php echo (int) $online; ?></span><?php endif; ?>
               <?php if ( 'support' === $key && $unread ) : ?><span class="count accent"><?php echo (int) $unread; ?></span><?php endif; ?>
+              <?php if ( 'transfers' === $key && $mpend ) : ?><span class="count accent"><?php echo (int) $mpend; ?></span><?php endif; ?>
             </a>
           <?php endforeach; ?>
         </nav>
       </div>
     <?php endforeach; ?>
+    <div class="plan-box">
+      <div class="k"><?php echo esc_html( $tiers[ $t->tier ]['name'] ?? 'Business' ); ?> plan</div>
+      <p><?php echo esc_html( 'trial' === $sub['state'] ? 'Free trial · ' . $sub['days'] . ' day' . ( 1 === $sub['days'] ? '' : 's' ) . ' left' : ( 'active' === $sub['state'] ? 'Renews in ' . $sub['days'] . ' days' : $sub['label'] ) ); ?></p>
+      <div class="track"><span class="a-growx" style="width:<?php echo (int) round( $sub['progress'] * 100 ); ?>%"></span></div>
+      <a href="<?php echo esc_url( zxc_dash_url( 'billing' ) ); ?>" class="btn btn-white btn-sm"><?php echo 'active' === $sub['state'] ? 'Manage plan' : 'Upgrade now'; ?></a>
+    </div>
     <div class="side-foot side-nav">
       <a href="<?php echo esc_url( zxc_portal_url( $t ) ); ?>"><?php echo zxc_icon( 'globe' ); // phpcs:ignore ?><span>View my portal</span></a>
       <?php if ( zxc_is_platform_admin() ) : ?><a href="<?php echo esc_url( home_url( '/zx-admin' ) ); ?>"><?php echo zxc_icon( 'shield' ); // phpcs:ignore ?><span>Admin panel</span></a><?php endif; ?>
       <a href="#install" data-install><?php echo zxc_icon( 'download' ); // phpcs:ignore ?><span>Install app</span></a>
       <a href="<?php echo esc_url( home_url( '/logout' ) ); ?>"><?php echo zxc_icon( 'logout' ); // phpcs:ignore ?><span>Sign out</span></a>
-    </div>
-    <div class="bal-box">
-      <div class="row between"><span class="side-label" style="padding:0">Your balance</span><span class="row" style="gap:6px"><button type="button" class="mini-btn" data-hide-toggle aria-label="Show or hide balances"><?php echo zxc_icon( 'eye' ); // phpcs:ignore ?></button><a class="mini-btn accent" href="<?php echo esc_url( zxc_dash_url( 'wallet' ) ); ?>" aria-label="Top up wallet"><?php echo zxc_icon( 'plus' ); // phpcs:ignore ?></a></span></div>
-      <a class="bal-row" href="<?php echo esc_url( zxc_dash_url( 'wallet' ) ); ?>"><span class="bi"><?php echo zxc_icon( 'wallet' ); // phpcs:ignore ?></span><span><small>Wallet balance</small><b class="sens"><?php echo esc_html( zxc_money( $wbal ) ); ?></b></span></a>
-      <a class="bal-row" href="<?php echo esc_url( zxc_dash_url( 'sales' ) ); ?>"><span class="bi teal"><?php echo zxc_icon( 'trend' ); // phpcs:ignore ?></span><span><small>Sales today</small><b class="sens"><?php echo esc_html( zxc_money( $today ) ); ?></b></span></a>
-      <a class="bal-plan" href="<?php echo esc_url( zxc_dash_url( 'billing' ) ); ?>"><span class="dotp <?php echo $sub['active'] ? '' : 'off'; ?>"></span><?php echo esc_html( $plan_l ); ?><?php echo zxc_icon( 'chevron' ); // phpcs:ignore ?></a>
     </div>
   </aside>
   <div class="backdrop" data-backdrop></div>
@@ -69,23 +67,22 @@ function zxc_dash_page( $t, $active, $title, $content, array $o = array() ) {
     <header class="topbar">
       <button type="button" class="icon-btn menu-btn" data-menu aria-label="Open menu"><?php echo zxc_icon( 'menu' ); // phpcs:ignore ?></button>
       <div class="title"><h1><?php echo esc_html( $title ); ?></h1><?php if ( ! empty( $o['sub'] ) ) : ?><div class="sub"><?php echo esc_html( $o['sub'] ); ?></div><?php endif; ?></div>
-      <?php if ( $unread ) : ?>
-        <a class="top-pill desk" href="<?php echo esc_url( zxc_dash_url( 'support' ) ); ?>"><span class="tp-ic"><?php echo zxc_icon( 'message' ); // phpcs:ignore ?></span><?php echo (int) $unread; ?> new message<?php echo 1 === $unread ? '' : 's'; ?><b>View</b></a>
-      <?php elseif ( 'active' !== $sub['state'] ) : ?>
-        <a class="top-pill desk" href="<?php echo esc_url( zxc_dash_url( 'billing' ) ); ?>"><span class="tp-ic"><?php echo zxc_icon( 'star' ); // phpcs:ignore ?></span><?php echo esc_html( $plan_l ); ?><b>Upgrade</b></a>
-      <?php endif; ?>
+      <?php echo zxc_panel_switch( 'dashboard', $t ); // phpcs:ignore ?>
       <?php echo zxc_switch_buttons( 'dashboard', $t ); // phpcs:ignore ?>
       <a class="icon-btn" href="<?php echo esc_url( zxc_dash_url( 'support' ) ); ?>" aria-label="Messages" data-tip="Messages"><?php echo zxc_icon( 'bell', $unread ? 'a-bell' : '' ); // phpcs:ignore ?><?php if ( $unread ) : ?><span class="dot"></span><?php endif; ?></a>
+      <?php echo zxc_refresh_btn(); // phpcs:ignore ?>
       <?php echo zxc_theme_toggle(); // phpcs:ignore ?>
       <?php echo $o['actions'] ?? ''; // phpcs:ignore ?>
     </header>
+    <?php $zx_view = zxc_is_platform_admin() ? zxc_admin_view_tenant() : null; if ( $zx_view && (int) $zx_view->id === (int) $t->id ) : ?>
+    <div class="view-banner"><?php echo zxc_icon( 'shield' ); // phpcs:ignore ?><span class="grow">Admin view of <b><?php echo esc_html( $t->name ); ?></b>. Changes you make here affect this business.</span><a class="btn btn-sm btn-white" href="<?php echo esc_url( wp_nonce_url( home_url( '/zx-admin/exit-view' ), 'zxc_view_tenant' ) ); ?>">Exit</a></div>
+    <?php endif; ?>
     <div class="content">
       <?php if ( ! $sub['active'] ) : ?><?php echo zxc_alert( 'warn', 'Your ' . strtolower( $sub['label'] ) . '. Vouchers already sold keep working, but online sales are paused. <a href="' . esc_url( zxc_dash_url( 'billing' ) ) . '">Choose a plan</a> to continue.', true ); // phpcs:ignore ?><?php endif; ?>
       <?php echo $content; // phpcs:ignore ?>
     </div>
   </div>
 </div>
-<a class="assist-fab" href="<?php echo esc_url( $help ); ?>" aria-label="Help and support" data-tip="Need help?"><?php echo zxc_logo_mark(); // phpcs:ignore ?></a>
 	<?php
 	echo zxc_toast( zxc_take_flash() ); // phpcs:ignore
 	echo zxc_dock( // phpcs:ignore
@@ -94,10 +91,28 @@ function zxc_dash_page( $t, $active, $title, $content, array $o = array() ) {
 			array( zxc_dash_url( 'sales' ), 'receipt', 'Sales', 'sales' === $active ),
 			array( zxc_dash_url( 'vouchers' ), 'plus', 'Voucher', 'vouchers' === $active, true ),
 			array( zxc_dash_url( 'online' ), 'zap', 'Online', 'online' === $active ),
-			array( 'button:data-menu', 'menu', 'More', ! in_array( $active, array( '', 'sales', 'vouchers', 'online' ), true ) ),
+			array( 'button:data-more', 'grid', 'More', ! in_array( $active, array( '', 'sales', 'vouchers', 'online' ), true ) ),
 		),
 		'Dashboard'
 	);
+	$ms_groups = array();
+	foreach ( zxc_dash_nav_groups() as $g => $items ) {
+		foreach ( $items as $k => $n ) {
+			if ( in_array( $k, array( '', 'sales', 'vouchers', 'online' ), true ) ) {
+				continue;
+			}
+			$short = array( 'transfers' => $mpend ? 'Approvals (' . $mpend . ')' : 'Approvals', 'locations' => 'Routers', 'cwallets' => 'Customer wallets', 'payments' => 'Payments', 'billing' => 'Subscription', 'branding' => 'Branding', 'docs' => 'Docs' );
+			$ms_groups['Menu'][] = array( zxc_dash_url( $k ), $n[0], $short[ $k ] ?? $n[1], $active === $k );
+		}
+	}
+	$ms_head  = '<a class="ms-who" href="' . esc_url( zxc_portal_url( $t ) ) . '" style="' . esc_attr( zxc_brand_style( $t ) ) . '">' . zxc_brand_mark( $t ) . '<span><b>' . esc_html( $t->name ) . '</b><small>' . esc_html( wp_parse_url( zxc_portal_url( $t ), PHP_URL_HOST ) . '/h/' . $t->slug ) . '</small></span></a>';
+	$ms_strip = '<div class="ms-strip"><a href="' . esc_url( zxc_dash_url( 'wallet' ) ) . '"><small>Wallet balance</small><b>' . esc_html( zxc_money( zxc_wallet_balance( $t->id ) ) ) . '</b></a><a href="' . esc_url( zxc_dash_url( 'billing' ) ) . '"><small>' . esc_html( $tiers[ $t->tier ]['name'] ?? 'Business' ) . ' plan</small><b>' . esc_html( 'trial' === $sub['state'] ? $sub['days'] . ' trial days left' : ( 'active' === $sub['state'] ? 'Renews in ' . $sub['days'] . 'd' : $sub['label'] ) ) . '</b></a></div>';
+	$ms_foot  = array( array( zxc_portal_url( $t ), 'globe', 'View portal' ), array( '#install', 'download', 'Install app', 'data-install' ) );
+	if ( zxc_is_platform_admin() ) {
+		$ms_foot[] = array( home_url( '/zx-admin' ), 'shield', 'Admin' );
+	}
+	$ms_foot[] = array( home_url( '/logout' ), 'logout', 'Sign out', '', 'danger' );
+	echo zxc_more_sheet( $ms_head, $ms_groups, $ms_foot, $ms_strip ); // phpcs:ignore
 	return zxc_page( $title . ' · ' . $t->name, ob_get_clean(), array( 'body_class' => 'has-dock', 'robots' => 'noindex' ) );
 }
 
@@ -138,65 +153,11 @@ function zxc_view_dash_home( $t, array $s, array $an = array() ) {
 		array( '' !== $t->support_whatsapp || '' !== $t->support_phone || '' !== $t->logo_url, 'palette', 'Personalise your portal', 'Add your logo and support contacts.', zxc_dash_url( 'branding' ) ),
 	);
 	$done = count( array_filter( array_column( $checks, 0 ) ) );
-	global $wpdb;
-	$lm_start  = strtotime( '-1 month', zxc_lagos_month_start() );
-	$last_m    = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'transactions' ) . " WHERE tenant_id = %d AND status = 'success' AND paid_at >= %d AND paid_at < %d", $t->id, $lm_start, zxc_lagos_month_start() ) );
-	$month     = (int) $s['month']->total;
-	$m_chg     = $last_m > 0 ? round( ( $month - $last_m ) / $last_m * 100 ) : null;
-	$m_prog    = $last_m > 0 ? min( 100, round( $month / $last_m * 100 ) ) : ( $month > 0 ? 100 : 0 );
-	$wbal      = zxc_wallet_balance( $t->id );
-	$last_sale = $s['recent'] ? $s['recent'][0] : null;
-	$slides    = array(
-		array( 'printer', 'Voucher cards', 'Sell offline with printed vouchers', 'Generate a batch and print branded cards for your shop counter.', zxc_dash_url( 'vouchers' ), 'Generate vouchers', 'c1' ),
-		array( 'wallet', 'Customer wallets', 'Let customers keep a Wi-Fi balance', 'Customers load once and buy plans in one tap. You can load cash top-ups too.', zxc_dash_url( 'cwallets' ), 'Open wallets', 'c2' ),
-		array( 'card', 'Flutterwave payouts', 'Get paid straight to your bank', 'Connect Flutterwave to accept card, transfer and USSD on your portal.', zxc_dash_url( 'payments' ), 'Connect now', 'c3' ),
-		array( 'palette', 'Your brand', 'Make the portal unmistakably yours', 'Upload your logo, choose colours and add WhatsApp support for customers.', zxc_dash_url( 'branding' ), 'Customise portal', 'c4' ),
-	);
 	ob_start();
 	?>
-<section class="welcome a-rise">
-  <div class="wl-text">
-    <span class="date-pill"><?php echo esc_html( wp_date( 'l, j F', null, new DateTimeZone( 'Africa/Lagos' ) ) ); ?></span>
-    <h2><?php echo esc_html( $greet . ', ' . ( $first ? $first : 'there' ) ); ?></h2>
-    <p><?php echo esc_html( $t->name ); ?><?php echo $t->location ? ' · ' . esc_html( $t->location ) : ''; ?></p>
-    <div class="wl-stats">
-      <span><i class="live <?php echo $router_ok ? '' : 'off'; ?>"></i><?php echo $router_ok ? 'Router online' : 'Router offline'; ?></span>
-      <span><?php echo zxc_icon( 'zap' ); // phpcs:ignore ?><?php echo (int) $s['online']; ?> online now</span>
-      <span><?php echo zxc_icon( 'receipt' ); // phpcs:ignore ?><?php echo (int) $s['today']->cnt; ?> sales today</span>
-    </div>
-  </div>
-  <div class="orbit" aria-hidden="true">
-    <span class="ring"></span><span class="ring r2"></span>
-    <span class="core"><?php echo zxc_logo_mark(); // phpcs:ignore ?></span>
-    <span class="sat s1"><?php echo zxc_icon( 'wifi' ); // phpcs:ignore ?></span>
-    <span class="sat s2"><?php echo zxc_icon( 'card' ); // phpcs:ignore ?></span>
-    <span class="sat s3"><?php echo zxc_icon( 'users' ); // phpcs:ignore ?></span>
-    <span class="sat s4"><?php echo zxc_icon( 'chart' ); // phpcs:ignore ?></span>
-    <span class="orbit-pill"><?php echo zxc_icon( 'sparkles' ); // phpcs:ignore ?><?php echo $last_sale ? 'New sale ' . esc_html( zxc_money( $last_sale->amount ) ) : 'Ready to sell'; ?></span>
-  </div>
-</section>
-<section class="card earn a-rise2">
-  <div class="row between" style="align-items:flex-start">
-    <div class="row"><span class="ico grad"><?php echo zxc_icon( 'sparkles' ); // phpcs:ignore ?></span><div><div class="card-title">Earnings this month</div><div class="card-sub">Revenue from all hotspot sales</div></div></div>
-    <div class="row" style="gap:8px"><button type="button" class="icon-btn" data-hide-toggle aria-label="Show or hide balances"><?php echo zxc_icon( 'eye' ); // phpcs:ignore ?></button><a class="icon-btn" href="<?php echo esc_url( zxc_dash_url( 'vouchers' ) ); ?>" aria-label="New vouchers"><?php echo zxc_icon( 'plus' ); // phpcs:ignore ?></a></div>
-  </div>
-  <div class="earn-fig"><b class="sens"><?php echo esc_html( zxc_money( $month ) ); ?></b><span>earned<small>Wallet balance · <span class="sens"><?php echo esc_html( zxc_money( $wbal ) ); ?></span></small></span></div>
-  <div class="earn-track"><span class="a-growx" style="width:<?php echo (int) $m_prog; ?>%"></span></div>
-  <div class="row between wrap-row" style="gap:8px"><span class="fine"><span class="hid-note">Balance details are hidden.</span><span class="shw-note"><?php echo null === $m_chg ? 'First month of sales tracking' : ( $m_chg >= 0 ? '+' : '' ) . (int) $m_chg . '% vs last month (' . esc_html( zxc_money_short( $last_m ) ) . ')'; ?></span></span><a class="link-u" href="<?php echo esc_url( zxc_dash_url( 'wallet' ) ); ?>">Top up wallet</a></div>
-</section>
-<section class="card featured a-rise3" data-carousel>
-  <div class="row between"><span class="side-label" style="padding:0">Featured services</span>
-    <div class="fc-ctrl"><button type="button" data-prev aria-label="Previous"><?php echo zxc_icon( 'back' ); // phpcs:ignore ?></button><span class="fc-dots"><?php foreach ( $slides as $i => $sl ) : ?><i class="<?php echo 0 === $i ? 'on' : ''; ?>"></i><?php endforeach; ?></span><button type="button" data-next aria-label="Next"><?php echo zxc_icon( 'arrow' ); // phpcs:ignore ?></button></div></div>
-  <div class="fc-view"><div class="fc-track">
-    <?php foreach ( $slides as $sl ) : ?>
-      <div class="fc-slide">
-        <span class="fc-art <?php echo esc_attr( $sl[6] ); ?>"><?php echo zxc_icon( $sl[0] ); // phpcs:ignore ?><i></i><i></i></span>
-        <div class="grow"><div class="eyebrow"><?php echo esc_html( $sl[1] ); ?></div><h3><?php echo esc_html( $sl[2] ); ?></h3><p><?php echo esc_html( $sl[3] ); ?></p></div>
-        <a class="link-u fc-go" href="<?php echo esc_url( $sl[4] ); ?>"><?php echo esc_html( $sl[5] ); ?> <?php echo zxc_icon( 'arrow' ); // phpcs:ignore ?></a>
-      </div>
-    <?php endforeach; ?>
-  </div></div>
-</section>
+<?php $mp = zxc_manual_pending_count( $t->id ); if ( $mp ) : ?>
+<a class="card transfer-alert a-rise" href="<?php echo esc_url( zxc_dash_url( 'transfers' ) ); ?>"><span class="ico teal"><?php echo zxc_icon( 'bank', 'a-float' ); // phpcs:ignore ?></span><span class="grow"><b><?php echo (int) $mp; ?> bank transfer<?php echo 1 === $mp ? '' : 's'; ?> waiting for approval</b><small>Check your bank app, then approve or decline so customers can connect.</small></span><span class="btn btn-primary btn-sm">Review</span></a>
+<?php endif; ?>
 <?php if ( $done < count( $checks ) ) : ?>
 <section class="card a-rise">
   <div class="card-head"><div><div class="card-title">Finish setting up</div><div class="card-sub"><?php echo (int) $done; ?> of <?php echo count( $checks ); ?> done — you’re almost live.</div></div><div class="bar" style="width:140px;margin-top:8px"><span style="width:<?php echo (int) round( $done / count( $checks ) * 100 ); ?>%"></span></div></div>
@@ -253,7 +214,7 @@ function zxc_view_dash_home( $t, array $s, array $an = array() ) {
     </div></section></div>
 </div>
 	<?php
-	return zxc_dash_page( $t, '', 'Dashboard', ob_get_clean(), array( 'sub' => 'Here’s how ' . $t->name . ' is doing.', 'actions' => '<a class="btn btn-primary desk" href="' . esc_url( zxc_dash_url( 'vouchers' ) ) . '">' . zxc_icon( 'plus' ) . 'New vouchers</a>' ) );
+	return zxc_dash_page( $t, '', 'Dashboard', ob_get_clean(), array( 'sub' => $greet . ', ' . $first . '. Here’s how ' . $t->name . ' is doing.', 'actions' => '<a class="btn btn-primary desk" href="' . esc_url( zxc_dash_url( 'vouchers' ) ) . '">' . zxc_icon( 'plus' ) . 'New vouchers</a>' ) );
 }
 
 function zxc_chg( $v, $suffix = '%', $label = 'vs previous period' ) {
@@ -593,7 +554,17 @@ function zxc_view_dash_payments( $t ) {
     <label class="field">Secret key <?php echo $t->flw_secret ? '<em>saved: ' . esc_html( $mask( $t->flw_secret ) ) . '</em>' : ''; ?><input class="input mono" type="password" name="flw_secret" placeholder="<?php echo $t->flw_secret ? 'Leave blank to keep the saved key' : 'FLWSECK-…'; ?>" autocomplete="off"></label>
     <label class="field">Webhook secret hash <em>recommended</em><input class="input mono" name="flw_hash" value="<?php echo esc_attr( $t->flw_hash ); ?>" autocomplete="off"></label>
     <label class="check"><input type="checkbox" name="demo_payments" value="1" <?php checked( (int) $t->demo_payments, 1 ); ?>> Allow simulated test payments while Flutterwave is not connected</label>
-    <div class="actions"><button class="btn btn-primary" type="submit">Save payment settings</button></div>
+    <div class="pay-split"></div>
+    <div class="row"><span class="ico teal"><?php echo zxc_icon( 'bank', 'a-float' ); // phpcs:ignore ?></span><div class="grow"><div class="card-title">Bank transfer to your account</div><div class="card-sub">Customers pay into your personal or business bank account, send proof on WhatsApp, and you approve it.</div></div><span class="badge <?php echo zxc_manual_ready( $t ) ? 'badge-ok' : 'badge-soft'; ?>"><?php echo zxc_manual_ready( $t ) ? 'On' : 'Off'; ?></span></div>
+    <label class="switch-row"><input type="checkbox" name="manual_payments" value="1" <?php checked( (int) $t->manual_payments, 1 ); ?>><span class="sw" aria-hidden="true"></span><span><b>Accept bank transfers</b><small>Shows “Transfer to <?php echo esc_html( $t->bank_name ? $t->bank_name : 'your bank' ); ?>” at checkout</small></span></label>
+    <div class="form-grid">
+      <label class="field">Bank name<input class="input" name="bank_name" list="ng-banks" value="<?php echo esc_attr( $t->bank_name ); ?>" placeholder="e.g. GTBank, Opay, Moniepoint" maxlength="80"></label>
+      <label class="field">Account number<input class="input mono" name="bank_account" inputmode="numeric" pattern="\d{10}" maxlength="10" value="<?php echo esc_attr( $t->bank_account ); ?>" placeholder="10 digits"></label>
+      <label class="field">Account name<input class="input" name="bank_holder" value="<?php echo esc_attr( $t->bank_holder ); ?>" placeholder="As it appears on the account" maxlength="120"></label>
+      <label class="field">WhatsApp for proof of payment<input class="input" type="tel" name="support_whatsapp" value="<?php echo esc_attr( $t->support_whatsapp ); ?>" placeholder="0803 123 4567"></label>
+    </div>
+    <datalist id="ng-banks"><?php foreach ( array( 'Access Bank', 'GTBank', 'Zenith Bank', 'First Bank', 'UBA', 'Fidelity Bank', 'FCMB', 'Union Bank', 'Sterling Bank', 'Stanbic IBTC', 'Wema Bank', 'Ecobank', 'Polaris Bank', 'Keystone Bank', 'Opay', 'Moniepoint', 'Palmpay', 'Kuda', 'Providus Bank', 'Jaiz Bank' ) as $bk ) : ?><option value="<?php echo esc_attr( $bk ); ?>"><?php endforeach; ?></datalist>
+    <div class="actions"><?php if ( zxc_manual_ready( $t ) ) : ?><a class="btn btn-ghost" href="<?php echo esc_url( zxc_dash_url( 'transfers' ) ); ?>"><?php echo zxc_icon( 'bank' ); // phpcs:ignore ?> Transfer approvals</a><?php endif; ?><button class="btn btn-primary" type="submit">Save payment settings</button></div>
   </section>
   <div class="side-col"><section class="card"><div class="card-title" style="margin-bottom:10px">Setup steps</div>
     <ol class="steps-list" style="font-size:14px"><li>Sign in at <b>dashboard.flutterwave.com</b>.</li><li>Open <b>Settings → API Keys</b> and copy both keys here.</li><li>Open <b>Settings → Webhooks</b>, paste the URL below, type a secret hash, and paste the same hash here.</li></ol>
@@ -839,4 +810,45 @@ function zxc_view_dash_cwallets( $t, $rows, array $tot, $q ) {
 </div>
 	<?php
 	return zxc_dash_page( $t, 'cwallets', 'Customer wallets', ob_get_clean(), array( 'sub' => 'Prepaid Wi-Fi balances your customers keep with you.' ) );
+}
+
+function zxc_view_dash_transfers( $t, $rows, $view ) {
+	$pending = zxc_manual_pending_count( $t->id );
+	ob_start();
+	?>
+<?php if ( ! zxc_manual_ready( $t ) ) : ?>
+<section class="card row wrap-row" style="gap:16px"><span class="ico lg teal"><?php echo zxc_icon( 'bank', 'a-float' ); // phpcs:ignore ?></span><div class="grow"><div class="card-title">Bank transfers are off</div><div class="card-sub">Add your bank account in Payment settings so customers can pay you directly and send proof on WhatsApp.</div></div><a class="btn btn-primary" href="<?php echo esc_url( zxc_dash_url( 'payments' ) ); ?>">Add bank account</a></section>
+<?php endif; ?>
+<div class="seg-sm" role="tablist" style="align-self:flex-start">
+  <a href="<?php echo esc_url( zxc_dash_url( 'transfers' ) ); ?>" class="<?php echo 'pending' === $view ? 'on' : ''; ?>">To review<?php echo $pending ? ' (' . (int) $pending . ')' : ''; ?></a>
+  <a href="<?php echo esc_url( zxc_dash_url( 'transfers' ) . '?view=unsent' ); ?>" class="<?php echo 'unsent' === $view ? 'on' : ''; ?>">Started</a>
+  <a href="<?php echo esc_url( zxc_dash_url( 'transfers' ) . '?view=history' ); ?>" class="<?php echo 'history' === $view ? 'on' : ''; ?>">History</a>
+</div>
+<?php if ( $rows ) : ?>
+<div class="tr-list">
+  <?php foreach ( $rows as $r ) : ?>
+  <article class="card tr-item a-rise">
+    <div class="tr-main">
+      <span class="tr-amt"><?php echo esc_html( zxc_money( $r->amount ) ); ?></span>
+      <div class="grow"><b><?php echo esc_html( $r->payer_name ? $r->payer_name : 'Name not given yet' ); ?></b><small><?php echo esc_html( $r->plan_name . ' · ' . $r->phone . ' · ' . zxc_ago( $r->created ) ); ?></small></div>
+      <?php if ( 'success' === $r->status ) : ?><span class="badge badge-ok">Approved</span><?php elseif ( 'declined' === $r->status ) : ?><span class="badge badge-bad">Declined</span><?php elseif ( 'submitted' === $r->channel ) : ?><span class="badge badge-warn">Awaiting you</span><?php else : ?><span class="badge badge-soft">Not sent yet</span><?php endif; ?>
+    </div>
+    <div class="tr-meta"><span>Ref <b class="mono"><?php echo esc_html( $r->reference ); ?></b></span><?php if ( $r->voucher_code ) : ?><span>Voucher <b class="mono"><?php echo esc_html( $r->voucher_code ); ?></b></span><?php endif; ?></div>
+    <?php if ( 'pending' === $r->status ) : ?>
+    <div class="tr-actions">
+      <?php $wa = preg_replace( '/^0/', '234', preg_replace( '/\D/', '', (string) $r->phone ) ); ?>
+      <?php if ( $wa ) : ?><a class="btn btn-glass btn-sm" href="<?php echo esc_url( 'https://wa.me/' . $wa ); ?>" target="_blank" rel="noopener"><?php echo zxc_icon( 'whatsapp' ); // phpcs:ignore ?> Chat</a><?php endif; ?>
+      <form method="post" data-confirm="Decline this payment? The customer will be told it was not confirmed."><?php echo zxc_nonce_field( 'zxc_dash' ); // phpcs:ignore ?><input type="hidden" name="action" value="transfer_review"><input type="hidden" name="ref" value="<?php echo esc_attr( $r->reference ); ?>"><button class="btn btn-ghost btn-sm tr-decline" name="decision" value="decline" type="submit"><?php echo zxc_icon( 'x' ); // phpcs:ignore ?> Decline</button></form>
+      <form method="post"><?php echo zxc_nonce_field( 'zxc_dash' ); // phpcs:ignore ?><input type="hidden" name="action" value="transfer_review"><input type="hidden" name="ref" value="<?php echo esc_attr( $r->reference ); ?>"><button class="btn btn-primary btn-sm" name="decision" value="approve" type="submit"><?php echo zxc_icon( 'check' ); // phpcs:ignore ?> Approve <?php echo esc_html( zxc_money( $r->amount ) ); ?></button></form>
+    </div>
+    <?php endif; ?>
+  </article>
+  <?php endforeach; ?>
+</div>
+<?php else : ?>
+<section class="card"><div class="empty"><span class="ico lg"><?php echo zxc_icon( 'bank', 'a-float' ); // phpcs:ignore ?></span><b><?php echo 'pending' === $view ? 'Nothing to review' : ( 'unsent' === $view ? 'No started transfers' : 'No history yet' ); ?></b><span><?php echo 'pending' === $view ? 'When a customer says they’ve paid by bank transfer, it shows up here for you to approve.' : 'Bank transfer orders appear here.'; ?></span></div></section>
+<?php endif; ?>
+<section class="card"><div class="card-title" style="margin-bottom:10px">How approvals work</div><ol class="steps-list"><li>A customer picks “Transfer to <?php echo esc_html( $t->bank_name ? $t->bank_name : 'your bank' ); ?>” and pays into your account using the reference as narration.</li><li>They tap “I’ve sent the money” and send you proof on WhatsApp.</li><li>Check your bank app. If the money arrived, tap <b>Approve</b>. They get a voucher and connect automatically.</li></ol></section>
+	<?php
+	return zxc_dash_page( $t, 'transfers', 'Transfer approvals', ob_get_clean(), array( 'sub' => 'Approve or decline bank transfers paid into your account.' ) );
 }

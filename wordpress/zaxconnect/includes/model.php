@@ -80,6 +80,26 @@ function zxc_tenant_for_user( $user_id ) {
 	return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . zxc_table( 'tenants' ) . ' WHERE owner_id = %d ORDER BY id LIMIT 1', $user_id ) );
 }
 
+/** Business a platform admin is viewing in the owner dashboard (support mode). */
+function zxc_admin_view_tenant( $user_id = 0 ) {
+	$user_id = $user_id ? $user_id : get_current_user_id();
+	$id      = (int) get_user_meta( $user_id, 'zxc_view_tenant', true );
+	return $id ? zxc_tenant( $id ) : null;
+}
+
+/** Tenant shown in /dashboard: the user's own business, or the one an admin opened. */
+function zxc_dashboard_tenant( $user_id = 0 ) {
+	$user_id = $user_id ? $user_id : get_current_user_id();
+	$user    = get_userdata( $user_id );
+	if ( $user && zxc_is_platform_admin( $user ) ) {
+		$view = zxc_admin_view_tenant( $user_id );
+		if ( $view ) {
+			return $view;
+		}
+	}
+	return zxc_tenant_for_user( $user_id );
+}
+
 function zxc_default_plans() {
 	// name, description, price, minutes, data MB, down, up, devices, popular
 	return array(
@@ -149,7 +169,7 @@ function zxc_create_tenant( array $a ) {
 
 function zxc_update_tenant( $id, array $values ) {
 	global $wpdb;
-	$allowed = array( 'name', 'tagline', 'brand_color', 'logo_url', 'support_phone', 'support_whatsapp', 'location', 'hotspot_dns', 'flw_public', 'flw_secret', 'flw_hash', 'demo_payments', 'tier', 'status', 'trial_ends', 'sub_ends' );
+	$allowed = array( 'name', 'tagline', 'brand_color', 'logo_url', 'support_phone', 'support_whatsapp', 'location', 'hotspot_dns', 'flw_public', 'flw_secret', 'flw_hash', 'demo_payments', 'manual_payments', 'bank_name', 'bank_account', 'bank_holder', 'tier', 'status', 'trial_ends', 'sub_ends' );
 	$values  = array_intersect_key( $values, array_flip( $allowed ) );
 	if ( $values ) {
 		$wpdb->update( zxc_table( 'tenants' ), $values, array( 'id' => (int) $id ) );

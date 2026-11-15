@@ -9,7 +9,7 @@ function zxc_swatches() {
 }
 
 function zxc_site_nav( $active = '' ) {
-	$links = array( 'features' => 'Features', 'pricing' => 'Pricing', 'guide' => 'Setup guide', 'about' => 'About', 'contact' => 'Contact' );
+	$links = array( 'features' => 'Features', 'pricing' => 'Pricing', 'docs' => 'Docs', 'about' => 'About', 'contact' => 'Contact' );
 	ob_start();
 	?>
 <header class="nav" data-nav>
@@ -22,10 +22,28 @@ function zxc_site_nav( $active = '' ) {
     </nav>
     <div class="nav-actions">
       <?php echo zxc_switch_buttons( 'site' ); // phpcs:ignore ?>
+      <?php echo zxc_refresh_btn(); // phpcs:ignore ?>
       <?php echo zxc_theme_toggle(); // phpcs:ignore ?>
       <?php if ( ! is_user_logged_in() ) : ?>
         <a href="<?php echo esc_url( home_url( '/login' ) ); ?>" class="btn btn-ghost desk">Sign in</a>
         <a href="<?php echo esc_url( home_url( '/signup' ) ); ?>" class="btn btn-primary desk">Start free trial</a>
+      <?php endif; ?>
+      <button type="button" class="icon-btn mob" data-navmenu aria-expanded="false" aria-label="Open menu"><?php echo zxc_icon( 'menu' ); // phpcs:ignore ?></button>
+    </div>
+  </div>
+  <div class="nav-sheet" data-navsheet>
+    <nav aria-label="Mobile">
+      <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="<?php echo 'home' === $active ? 'on' : ''; ?>"><?php echo zxc_icon( 'home' ); // phpcs:ignore ?>Home</a>
+      <?php foreach ( $links as $k => $label ) : ?>
+        <a href="<?php echo esc_url( home_url( '/' . $k ) ); ?>" class="<?php echo $active === $k ? 'on' : ''; ?>"><?php echo zxc_icon( array( 'features' => 'sparkles', 'pricing' => 'tag', 'docs' => 'book', 'about' => 'users', 'contact' => 'message' )[ $k ] ?? 'arrow' ); // phpcs:ignore ?><?php echo esc_html( $label ); ?></a>
+      <?php endforeach; ?>
+    </nav>
+    <div class="nav-sheet-cta">
+      <?php if ( is_user_logged_in() ) : ?>
+        <a class="btn btn-primary btn-block" href="<?php echo esc_url( zxc_home_panel( wp_get_current_user() ) ); ?>"><?php echo zxc_icon( 'dashboard' ); // phpcs:ignore ?> Open dashboard</a>
+      <?php else : ?>
+        <a class="btn btn-glass btn-block" href="<?php echo esc_url( home_url( '/login' ) ); ?>">Sign in</a>
+        <a class="btn btn-primary btn-block" href="<?php echo esc_url( home_url( '/signup' ) ); ?>">Start free trial</a>
       <?php endif; ?>
     </div>
   </div>
@@ -78,8 +96,8 @@ function zxc_site_dock( $active ) {
 function zxc_site_page( $title, $active, $content, $desc = '' ) {
 	return zxc_page(
 		$title,
-		zxc_site_nav( $active ) . '<main>' . $content . '</main>' . zxc_site_footer() . zxc_site_dock( $active ),
-		array( 'body_class' => 'has-dock', 'description' => $desc )
+		zxc_site_nav( $active ) . '<main>' . $content . '</main>' . zxc_site_footer(),
+		array( 'description' => $desc )
 	);
 }
 
@@ -333,6 +351,7 @@ function zxc_view_page_guide() {
     <li><b>Paste your setup script</b><p>Copy the script from Dashboard → Locations, open New Terminal in WinBox and paste it.</p></li>
     <li><b>Upload two small files</b><p>Download login.html and alogin.html from your dashboard and drag them into the router’s hotspot folder. You’re live!</p></li>
   </ol>
+  <div class="center" style="margin-top:22px"><a class="btn btn-primary" href="<?php echo esc_url( home_url( '/docs' ) ); ?>"><?php echo zxc_icon( 'book' ); // phpcs:ignore ?> Read the full documentation</a></div>
 </div></section>
 	<?php
 	return zxc_site_page( 'Hardware & setup guide · ' . zxc_setting( 'platform_name' ), 'guide', ob_get_clean() . zxc_cta_band() );
@@ -466,62 +485,105 @@ function zxc_view_page_refunds() {
  * Auth pages
  * ---------------------------------------------------------------------- */
 
+function zxc_auth_brand( $inner, $kicker, $title, $text ) {
+	$name = zxc_setting( 'platform_name' );
+	$word = preg_match( '/^(.*?)(Connect)$/', $name, $m ) ? esc_html( $m[1] ) . '<b>' . esc_html( $m[2] ) . '</b>' : esc_html( $name );
+	return '<aside class="ax-brand"><div class="ax-mesh" aria-hidden="true"><i></i><i></i><i></i></div>
+  <a class="ax-logo" href="' . esc_url( home_url( '/' ) ) . '">' . zxc_logo_mark() . '<span>' . $word . '</span></a>
+  <div class="ax-copy"><span class="ax-kicker"><span class="live"></span>' . esc_html( $kicker ) . '</span><h2>' . wp_kses( $title, array( 'span' => array( 'class' => array() ), 'br' => array() ) ) . '</h2><p>' . esc_html( $text ) . '</p></div>
+  ' . $inner . '
+  <div class="ax-foot"><span>' . zxc_icon( 'shield' ) . ' Bank-grade security</span><span>' . zxc_icon( 'card' ) . ' Payments by Flutterwave</span></div>
+</aside>';
+}
+
+function zxc_auth_mock() {
+	ob_start();
+	?>
+<div class="ax-mock" aria-hidden="true">
+  <div class="ax-mock-card">
+    <div class="row between"><span class="ax-mk-l"><span class="live"></span>Today’s revenue</span><span class="ax-up"><?php echo zxc_icon( 'trend' ); // phpcs:ignore ?>+18%</span></div>
+    <b class="ax-big">₦48,250</b>
+    <svg class="ax-spark" viewBox="0 0 300 70" preserveAspectRatio="none"><defs><linearGradient id="axsp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="M0 58 C30 52 45 40 70 44 S115 22 140 30 S190 12 215 20 S260 6 300 4 V70 H0Z" fill="url(#axsp)"/><path class="ax-line" d="M0 58 C30 52 45 40 70 44 S115 22 140 30 S190 12 215 20 S260 6 300 4" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <div class="ax-stats"><div><b>23</b><small>Online now</small></div><div><b>61</b><small>Sales</small></div><div><b>2/2</b><small>Routers up</small></div></div>
+  </div>
+  <div class="ax-toasts">
+    <div class="ax-toast"><span class="ax-t-ic"><?php echo zxc_icon( 'check' ); // phpcs:ignore ?></span><span><b>Daily Pass · ₦350</b><small>Paid by transfer · just now</small></span></div>
+    <div class="ax-toast"><span class="ax-t-ic"><?php echo zxc_icon( 'wifi' ); // phpcs:ignore ?></span><span><b>New device online</b><small>Lekki Phase 1 · router A</small></span></div>
+    <div class="ax-toast"><span class="ax-t-ic"><?php echo zxc_icon( 'wallet' ); // phpcs:ignore ?></span><span><b>Wallet top-up · ₦2,000</b><small>Card · 2 min ago</small></span></div>
+  </div>
+</div>
+	<?php
+	return ob_get_clean();
+}
+
+function zxc_auth_top( $extra = '' ) {
+	return '<div class="ax-top"><a class="ax-back" href="' . esc_url( home_url( '/' ) ) . '">' . zxc_icon( 'back' ) . '<span>Back to website</span></a><div class="row" style="gap:8px">' . $extra . zxc_theme_toggle() . '</div></div>';
+}
+
+function zxc_auth_legal() {
+	return '<div class="ax-legal">© ' . esc_html( gmdate( 'Y' ) . ' ' . zxc_setting( 'platform_name' ) ) . '<span>·</span><a href="' . esc_url( home_url( '/terms' ) ) . '">Terms</a><a href="' . esc_url( home_url( '/privacy' ) ) . '">Privacy</a><a href="' . esc_url( home_url( '/docs' ) ) . '">Help</a></div>';
+}
+
 function zxc_auth_shell( $title, $heading, $form, $art_title, $art_quote ) {
 	ob_start();
-	echo zxc_site_nav(); // phpcs:ignore
 	?>
-<main class="auth">
-  <section class="auth-art">
-    <span class="pill" style="align-self:flex-start;color:#fff;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22)"><b style="background:#fff;color:#312E81">LIVE</b>Trusted by hotspot owners</span>
-    <div><h2><?php echo esc_html( $art_title ); ?></h2>
-      <div class="row" style="margin-top:28px;gap:14px;flex-wrap:wrap">
-        <?php foreach ( array( array( 'zap', 'Online in seconds' ), array( 'card', 'Paid to your bank' ), array( 'chart', 'Live insights' ) ) as $x ) : ?><span class="row" style="gap:8px;font-size:14px;color:rgba(255,255,255,.85)"><span class="ico sm" style="color:#fff;background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.2)"><?php echo zxc_icon( $x[0] ); // phpcs:ignore ?></span><?php echo esc_html( $x[1] ); ?></span><?php endforeach; ?>
-      </div>
-    </div>
-    <div class="quote"><p style="font-size:15px;line-height:1.6"><?php echo esc_html( $art_quote ); ?></p></div>
+<main class="ax">
+  <?php echo zxc_auth_brand( zxc_auth_mock(), 'Hotspot billing platform', $art_title, $art_quote ); // phpcs:ignore ?>
+  <section class="ax-main">
+    <?php echo zxc_auth_top(); // phpcs:ignore ?>
+    <div class="ax-body"><div class="ax-card a-rise"><?php echo $heading . $form; // phpcs:ignore ?></div></div>
+    <?php echo zxc_auth_legal(); // phpcs:ignore ?>
   </section>
-  <section class="auth-form"><div class="auth-card a-rise"><?php echo $heading . $form; // phpcs:ignore ?></div></section>
 </main>
 	<?php
-	return zxc_page( $title, ob_get_clean() . zxc_site_dock( 'login' ), array( 'body_class' => 'has-dock', 'robots' => 'noindex' ) );
+	return zxc_page( $title, ob_get_clean(), array( 'robots' => 'noindex', 'aurora' => false, 'splash' => true ) );
+}
+
+function zxc_auth_input( $icon, $html ) {
+	return '<span class="ax-inp">' . zxc_icon( $icon ) . $html . '</span>';
 }
 
 function zxc_view_login( array $a ) {
 	ob_start();
 	?>
-<span class="ico lg"><?php echo zxc_icon( 'wifiAnim' ); // phpcs:ignore ?></span>
-<h1 style="margin-top:20px">Welcome back</h1>
-<p class="muted" style="margin-top:8px">Sign in to manage your hotspot business.</p>
-<form method="post" action="<?php echo esc_url( home_url( '/login' ) ); ?>" class="stack" style="margin-top:26px">
+<div class="ax-head">
+  <span class="ax-badge"><?php echo zxc_logo_mark(); // phpcs:ignore ?></span>
+  <h1>Welcome back</h1>
+  <p>Sign in to manage your hotspot business.</p>
+</div>
+<form method="post" action="<?php echo esc_url( home_url( '/login' ) ); ?>" class="ax-form">
   <?php echo zxc_nonce_field( 'zxc_login' ) . zxc_alert( 'bad', $a['error'] ?? '' ); // phpcs:ignore ?>
-  <label class="field">Email address<input class="input" type="email" name="email" value="<?php echo esc_attr( $a['email'] ?? '' ); ?>" autocomplete="email" required autofocus></label>
-  <label class="field"><span class="row between">Password <a class="fine" style="color:var(--accent-text);font-weight:600" href="<?php echo esc_url( home_url( '/forgot' ) ); ?>">Forgot?</a></span><input class="input" type="password" name="password" autocomplete="current-password" required></label>
-  <button class="btn btn-primary btn-lg btn-block" type="submit">Sign in <?php echo zxc_icon( 'arrow' ); // phpcs:ignore ?></button>
-  <p class="center muted" style="font-size:14px">New here? <a style="color:var(--accent-text);font-weight:600" href="<?php echo esc_url( home_url( '/signup' ) ); ?>">Create your hotspot</a></p>
+  <label class="field">Email address<?php echo zxc_auth_input( 'mail', '<input class="input" type="email" name="email" value="' . esc_attr( $a['email'] ?? '' ) . '" placeholder="you@business.com" autocomplete="email" required autofocus>' ); // phpcs:ignore ?></label>
+  <label class="field"><span class="row between">Password <a class="ax-a" href="<?php echo esc_url( home_url( '/forgot' ) ); ?>">Forgot password?</a></span><?php echo zxc_auth_input( 'lock', '<input class="input" type="password" name="password" placeholder="Your password" autocomplete="current-password" required><button type="button" class="ax-eye" data-pw-toggle aria-label="Show password">' . zxc_icon( 'eye' ) . '</button>' ); // phpcs:ignore ?></label>
+  <label class="check ax-remember"><input type="checkbox" name="remember" value="1" checked> Keep me signed in</label>
+  <button class="btn btn-primary btn-lg btn-block ax-submit" type="submit">Sign in <?php echo zxc_icon( 'arrow' ); // phpcs:ignore ?></button>
+  <div class="ax-or"><span>New to <?php echo esc_html( zxc_setting( 'platform_name' ) ); ?>?</span></div>
+  <a class="btn btn-glass btn-lg btn-block" href="<?php echo esc_url( home_url( '/signup' ) ); ?>"><?php echo zxc_icon( 'sparkles' ); // phpcs:ignore ?> Create your hotspot, free for <?php echo (int) zxc_setting( 'trial_days' ); ?> days</a>
 </form>
 	<?php
-	return zxc_auth_shell( 'Sign in · ' . zxc_setting( 'platform_name' ), '', ob_get_clean(), 'Your hotspot business, beautifully managed.', 'Customers pay, connect and keep coming back — while you watch it all happen live from your phone.' );
+	return zxc_auth_shell( 'Sign in · ' . zxc_setting( 'platform_name' ), '', ob_get_clean(), 'Your hotspot business, <span>beautifully managed.</span>', 'Customers pay, connect and keep coming back, while you watch every sale happen live from your phone.' );
 }
 
 function zxc_view_forgot( array $a ) {
 	ob_start();
 	?>
-<span class="ico lg"><?php echo zxc_icon( 'lock' ); // phpcs:ignore ?></span>
-<h1 style="margin-top:20px">Reset password</h1>
+<div class="ax-head">
+  <span class="ax-badge soft"><?php echo zxc_icon( 'lock' ); // phpcs:ignore ?></span>
+  <h1>Reset your password</h1>
+  <?php if ( ! empty( $a['sent'] ) ) : ?><p>If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.</p><?php else : ?><p>Enter your account email and we’ll send you a secure reset link.</p><?php endif; ?>
+</div>
 <?php if ( ! empty( $a['sent'] ) ) : ?>
-  <p class="muted" style="margin-top:8px">If an account exists for that email, a reset link is on its way. Check your inbox and spam folder.</p>
-  <a class="btn btn-glass btn-block" style="margin-top:24px" href="<?php echo esc_url( home_url( '/login' ) ); ?>">Back to sign in</a>
+  <a class="btn btn-primary btn-lg btn-block" href="<?php echo esc_url( home_url( '/login' ) ); ?>"><?php echo zxc_icon( 'back' ); // phpcs:ignore ?> Back to sign in</a>
 <?php else : ?>
-  <p class="muted" style="margin-top:8px">Enter your account email and we’ll send you a reset link.</p>
-  <form method="post" class="stack" style="margin-top:26px">
+  <form method="post" class="ax-form">
     <?php echo zxc_nonce_field( 'zxc_forgot' ); // phpcs:ignore ?>
-    <label class="field">Email address<input class="input" type="email" name="email" required autofocus></label>
-    <button class="btn btn-primary btn-lg btn-block" type="submit">Send reset link</button>
-    <a class="center muted" style="font-size:14px" href="<?php echo esc_url( home_url( '/login' ) ); ?>">Back to sign in</a>
+    <label class="field">Email address<?php echo zxc_auth_input( 'mail', '<input class="input" type="email" name="email" placeholder="you@business.com" required autofocus>' ); // phpcs:ignore ?></label>
+    <button class="btn btn-primary btn-lg btn-block ax-submit" type="submit">Send reset link <?php echo zxc_icon( 'arrow' ); // phpcs:ignore ?></button>
+    <a class="ax-a center" href="<?php echo esc_url( home_url( '/login' ) ); ?>">Back to sign in</a>
   </form>
 <?php endif; ?>
 	<?php
-	return zxc_auth_shell( 'Reset password · ' . zxc_setting( 'platform_name' ), '', ob_get_clean(), 'Locked out? We’ve got you.', 'Reset your password in a minute and get back to running your hotspot.' );
+	return zxc_auth_shell( 'Reset password · ' . zxc_setting( 'platform_name' ), '', ob_get_clean(), 'Locked out? <span>We’ve got you.</span>', 'Reset your password in a minute and get straight back to running your hotspot.' );
 }
 
 function zxc_view_admin_login( array $a ) {
@@ -557,23 +619,25 @@ function zxc_view_signup( array $a ) {
 	$pname = zxc_setting( 'platform_name' );
 	ob_start();
 	?>
-<header class="nav" data-nav>
-  <div class="wrap nav-in"><?php echo zxc_logo(); // phpcs:ignore ?><div class="nav-actions"><span class="fine desk">Step <span data-step-no>1</span> of 5</span><?php echo zxc_theme_toggle(); // phpcs:ignore ?></div></div>
-  <div class="progress"><span data-progress style="width:20%"></span></div>
-</header>
-<main class="wrap">
-  <form class="wizard" method="post" action="<?php echo esc_url( home_url( '/signup' ) ); ?>" enctype="multipart/form-data" data-wizard data-start="<?php echo (int) ( $a['start'] ?? 0 ); ?>" novalidate>
-    <?php echo zxc_nonce_field( 'zxc_signup' ); // phpcs:ignore ?>
-    <input type="hidden" name="tier" value="<?php echo esc_attr( $a['tier'] ?? 'business' ); ?>">
-    <nav class="wiz-steps" aria-label="Sign-up steps"><?php foreach ( $steps as $i => $s ) : ?><button type="button" class="wiz-step" data-step-btn><span class="dot"><?php echo (int) $i + 1; ?></span><span><b><?php echo esc_html( $s[0] ); ?></b><small><?php echo esc_html( $s[1] ); ?></small></span></button><?php endforeach; ?></nav>
-    <section class="card wiz-body">
+<form class="ax ax-signup" method="post" action="<?php echo esc_url( home_url( '/signup' ) ); ?>" enctype="multipart/form-data" data-wizard data-start="<?php echo (int) ( $a['start'] ?? 0 ); ?>" novalidate>
+  <?php echo zxc_nonce_field( 'zxc_signup' ); // phpcs:ignore ?>
+  <input type="hidden" name="tier" value="<?php echo esc_attr( $a['tier'] ?? 'business' ); ?>">
+  <?php ob_start(); ?>
+    <nav class="wiz-steps ax-steps" aria-label="Sign-up steps"><?php foreach ( $steps as $i => $s ) : ?><button type="button" class="wiz-step" data-step-btn><span class="dot"><?php echo (int) $i + 1; ?></span><span><b><?php echo esc_html( $s[0] ); ?></b><small><?php echo esc_html( $s[1] ); ?></small></span></button><?php endforeach; ?></nav>
+    <div class="ax-trial"><?php echo zxc_icon( 'sparkles' ); // phpcs:ignore ?><span><b><?php echo (int) zxc_setting( 'trial_days' ); ?>-day free trial</b><small>No card needed · cancel any time</small></span></div>
+  <?php echo zxc_auth_brand( ob_get_clean(), 'Create your hotspot', 'Launch your Wi-Fi business <span>in five minutes.</span>', 'Set up your brand, prices and payments. We’ll guide you through connecting your router next.' ); // phpcs:ignore ?>
+  <section class="ax-main">
+    <?php echo zxc_auth_top( '<span class="ax-stepno">Step <span data-step-no>1</span> of 5</span>' ); // phpcs:ignore ?>
+    <div class="ax-progress"><span data-progress style="width:20%"></span></div>
+    <div class="ax-body ax-wide">
+    <section class="ax-card wiz-body">
       <?php echo zxc_alert( 'bad', $a['error'] ?? '', true ); // phpcs:ignore ?>
       <div class="wiz-pane">
         <span class="ico lg"><?php echo zxc_icon( 'user', 'a-float' ); // phpcs:ignore ?></span>
         <div><h1>Create your account</h1><p class="muted" style="margin-top:8px">You’ll use this to sign in and manage your hotspot business.</p></div>
-        <label class="field">Full name<input class="input" name="owner_name" value="<?php echo esc_attr( $val( 'owner_name' ) ); ?>" autocomplete="name" required maxlength="60"></label>
-        <label class="field">Email address<input class="input" type="email" name="email" value="<?php echo esc_attr( $val( 'email' ) ); ?>" autocomplete="email" required></label>
-        <label class="field">Password <em>at least 8 characters</em><input class="input" type="password" name="password" minlength="8" autocomplete="new-password" required></label>
+        <label class="field">Full name<?php echo zxc_auth_input( 'user', '<input class="input" name="owner_name" value="' . esc_attr( $val( 'owner_name' ) ) . '" placeholder="e.g. Ada Obi" autocomplete="name" required maxlength="60">' ); // phpcs:ignore ?></label>
+        <label class="field">Email address<?php echo zxc_auth_input( 'mail', '<input class="input" type="email" name="email" value="' . esc_attr( $val( 'email' ) ) . '" placeholder="you@business.com" autocomplete="email" required>' ); // phpcs:ignore ?></label>
+        <label class="field">Password <em>at least 8 characters</em><?php echo zxc_auth_input( 'lock', '<input class="input" type="password" name="password" minlength="8" placeholder="Create a password" autocomplete="new-password" required><button type="button" class="ax-eye" data-pw-toggle aria-label="Show password">' . zxc_icon( 'eye' ) . '</button>' ); // phpcs:ignore ?></label>
         <p class="fine">Already have an account? <a style="color:var(--accent-text);font-weight:600" href="<?php echo esc_url( home_url( '/login' ) ); ?>">Sign in</a></p>
       </div>
       <div class="wiz-pane">
@@ -632,8 +696,10 @@ function zxc_view_signup( array $a ) {
         </div>
       </div>
     </aside>
-  </form>
-</main>
+    </div>
+    <?php echo zxc_auth_legal(); // phpcs:ignore ?>
+  </section>
+</form>
 	<?php
-	return zxc_page( 'Create your hotspot · ' . $pname, ob_get_clean(), array( 'scripts' => array( 'signup.js' ), 'robots' => 'noindex' ) );
+	return zxc_page( 'Create your hotspot · ' . $pname, ob_get_clean(), array( 'scripts' => array( 'signup.js' ), 'robots' => 'noindex', 'aurora' => false, 'splash' => true ) );
 }

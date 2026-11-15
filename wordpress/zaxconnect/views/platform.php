@@ -37,8 +37,10 @@ function zxc_admin_page( $active, $title, $content, array $o = array() ) {
     <header class="topbar">
       <button type="button" class="icon-btn menu-btn" data-menu aria-label="Open menu"><?php echo zxc_icon( 'menu' ); // phpcs:ignore ?></button>
       <div class="title"><h1><?php echo esc_html( $title ); ?></h1><?php if ( ! empty( $o['sub'] ) ) : ?><div class="sub"><?php echo esc_html( $o['sub'] ); ?></div><?php endif; ?></div>
+      <?php echo zxc_panel_switch( 'admin' ); // phpcs:ignore ?>
       <?php echo zxc_switch_buttons( 'admin' ); // phpcs:ignore ?>
       <a class="icon-btn" href="<?php echo esc_url( zxc_admin_url( 'inbox' ) ); ?>" aria-label="Inbox" data-tip="Inbox"><?php echo zxc_icon( 'bell', $unread ? 'a-bell' : '' ); // phpcs:ignore ?><?php if ( $unread ) : ?><span class="dot"></span><?php endif; ?></a>
+      <?php echo zxc_refresh_btn(); // phpcs:ignore ?>
       <?php echo zxc_theme_toggle(); // phpcs:ignore ?>
       <?php echo $o['actions'] ?? ''; // phpcs:ignore ?>
     </header>
@@ -53,10 +55,23 @@ function zxc_admin_page( $active, $title, $content, array $o = array() ) {
 			array( zxc_admin_url( 'businesses' ), 'building', 'Businesses', 'businesses' === $active ),
 			array( zxc_admin_url( 'inbox' ), 'inbox', 'Inbox', 'inbox' === $active, true ),
 			array( zxc_admin_url( 'settings' ), 'gear', 'Settings', 'settings' === $active ),
-			array( 'button:data-menu', 'menu', 'More', in_array( $active, array( 'subscriptions', 'team', 'account' ), true ) ),
+			array( 'button:data-more', 'grid', 'More', in_array( $active, array( 'subscriptions', 'team', 'account' ), true ) ),
 		),
 		'Admin'
 	);
+	$ms_groups = array();
+	foreach ( $groups as $g => $items ) {
+		foreach ( $items as $k => $n ) {
+			$ms_groups['Menu'][] = array( zxc_admin_url( $k ), $n[0], $n[1], $active === $k );
+		}
+	}
+	$ms_foot = array( array( home_url( '/' ), 'globe', 'Website' ) );
+	if ( zxc_tenant_for_user( $user->ID ) ) {
+		$ms_foot[] = array( home_url( '/dashboard' ), 'wifi', 'My hotspot' );
+	}
+	$ms_foot[] = array( '#install', 'download', 'Install app', 'data-install' );
+	$ms_foot[] = array( zxc_admin_url( 'logout' ), 'logout', 'Sign out', '', 'danger' );
+	echo zxc_more_sheet( '<div class="ms-who"><span class="brand-mark">' . zxc_icon( 'shield' ) . '</span><span><b>Admin console</b><small>' . esc_html( $user->display_name ) . '</small></span></div>', $ms_groups, $ms_foot ); // phpcs:ignore
 	return zxc_page( $title . ' · Admin · ' . zxc_setting( 'platform_name' ), ob_get_clean(), array( 'body_class' => 'has-dock', 'robots' => 'noindex' ) );
 }
 
@@ -82,7 +97,7 @@ function zxc_tenants_table( $tenants ) {
     <td><?php echo zxc_sub_badge( $t ); // phpcs:ignore ?></td>
     <td><span class="row" style="gap:8px"><span class="live <?php echo $t->router_seen >= time() - 120 ? '' : 'off'; ?>"></span><span class="fine"><?php echo esc_html( $t->router_seen ? zxc_ago( $t->router_seen ) : 'never' ); ?></span></span></td>
     <td class="r"><b><?php echo esc_html( zxc_money( $t->revenue ) ); ?></b><small><?php echo (int) $t->sales; ?> sales</small></td>
-    <td class="r"><a class="btn btn-ghost btn-sm" href="<?php echo esc_url( zxc_admin_url( 'businesses/' . $t->id ) ); ?>">Manage</a></td>
+    <td class="r"><span class="row" style="gap:6px;justify-content:flex-end"><a class="icon-btn" style="width:36px;height:36px" href="<?php echo esc_url( zxc_admin_view_url( $t->id ) ); ?>" aria-label="Open <?php echo esc_attr( $t->name ); ?> dashboard" data-tip="Open dashboard"><?php echo zxc_icon( 'wifi' ); // phpcs:ignore ?></a><a class="btn btn-ghost btn-sm" href="<?php echo esc_url( zxc_admin_url( 'businesses/' . $t->id ) ); ?>">Manage</a></span></td>
   </tr><?php endforeach; ?></tbody>
 </table></div>
 	<?php
@@ -142,6 +157,7 @@ function zxc_view_admin_business( $t, $owner, array $stats, $subs ) {
   <div class="grow"><div class="card-title" style="font-size:20px"><?php echo esc_html( $t->name ); ?></div><div class="card-sub"><?php echo esc_html( ( $owner ? $owner->display_name . ' · ' . $owner->user_email : 'No owner' ) . ' · joined ' . zxc_date( $t->created ) ); ?></div></div>
   <?php echo zxc_sub_badge( $t ); // phpcs:ignore ?>
   <a class="btn btn-glass btn-sm" href="<?php echo esc_url( zxc_portal_url( $t ) ); ?>"><?php echo zxc_icon( 'globe' ); // phpcs:ignore ?> View portal</a>
+  <a class="btn btn-primary btn-sm" href="<?php echo esc_url( zxc_admin_view_url( $t->id ) ); ?>"><?php echo zxc_icon( 'wifi' ); // phpcs:ignore ?> Open dashboard</a>
 </section>
 <section class="kpis">
   <?php

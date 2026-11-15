@@ -8,7 +8,7 @@
   function currentTheme() {
     var t = root.getAttribute('data-theme');
     if (t) return t;
-    return 'dark';
+    return 'light';
   }
   $$('[data-theme-toggle]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -258,4 +258,69 @@
   $$('[data-install]').forEach(function (b) {
     b.addEventListener('click', function (e) { e.preventDefault(); if (deferred) { deferred.prompt(); } else { showInstall(isIOS, true); } });
   });
+
+  // Refresh the current page (mobile header)
+  $$('[data-refresh]').forEach(function (b) {
+    b.addEventListener('click', function () { b.classList.add('spinning'); b.disabled = true; setTimeout(function () { location.reload(); }, 150); });
+  });
+
+  // Website mobile menu
+  $$('[data-navmenu]').forEach(function (btn) {
+    var nav = btn.closest('[data-nav]');
+    if (!nav) return;
+    var set = function (on) { nav.classList.toggle('menu-open', on); btn.setAttribute('aria-expanded', on ? 'true' : 'false'); };
+    btn.addEventListener('click', function (e) { e.stopPropagation(); set(!nav.classList.contains('menu-open')); });
+    document.addEventListener('click', function (e) { if (!nav.contains(e.target)) set(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') set(false); });
+  });
+
+  // Show / hide password
+  $$('[data-pw-toggle]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var input = b.parentNode.querySelector('input');
+      if (!input) return;
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      input.setAttribute('data-pw', '1');
+      b.classList.toggle('on', show);
+      b.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      input.focus();
+    });
+  });
+
+  // Premium "More" sheet
+  var sheet = $('[data-more-sheet]');
+  if (sheet) {
+    var panel = $('[data-more-panel]', sheet);
+    var openSheet = function () {
+      sheet.hidden = false; root.classList.add('ms-lock');
+      requestAnimationFrame(function () { requestAnimationFrame(function () { sheet.classList.add('open'); }); });
+    };
+    var closeSheet = function () {
+      sheet.classList.remove('open'); sheet.style.removeProperty('--ms-drag'); root.classList.remove('ms-lock');
+      setTimeout(function () { if (!sheet.classList.contains('open')) sheet.hidden = true; }, 420);
+    };
+    $$('[data-more]').forEach(function (b) { b.addEventListener('click', openSheet); });
+    $$('[data-more-close]', sheet).forEach(function (b) { b.addEventListener('click', closeSheet); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && sheet.classList.contains('open')) closeSheet(); });
+    $$('[data-install]', sheet).forEach(function (b) { b.addEventListener('click', closeSheet); });
+    // Drag down to close
+    var y0 = null, dy = 0;
+    panel.addEventListener('touchstart', function (e) {
+      var sc = $('.ms-scroll', panel);
+      if (sc && sc.contains(e.target) && sc.scrollTop > 0) return;
+      y0 = e.touches[0].clientY; dy = 0;
+    }, { passive: true });
+    panel.addEventListener('touchmove', function (e) {
+      if (y0 === null) return;
+      dy = Math.max(0, e.touches[0].clientY - y0);
+      if (dy > 4) { sheet.classList.add('dragging'); sheet.style.setProperty('--ms-drag', dy + 'px'); }
+    }, { passive: true });
+    panel.addEventListener('touchend', function () {
+      if (y0 === null) return;
+      sheet.classList.remove('dragging');
+      if (dy > 90) closeSheet(); else sheet.style.removeProperty('--ms-drag');
+      y0 = null;
+    });
+  }
 })();

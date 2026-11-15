@@ -17,6 +17,9 @@ This repository contains two editions:
 - **Owner dashboard** at `/dashboard`, separate from wp-admin (owners are blocked from wp-admin): detailed analytics (revenue trend, conversion funnel, busiest hours and days, plan performance, payment methods, top customers), sales and CSV, customers, vouchers and printable cards, online users, routers and setup scripts, branding, payments, support inbox
 - **Wallet**: owners top up with Flutterwave and pay their subscription from the balance; platform staff can credit or debit it
 - **Admin console** at `/zx-admin/login`, with its own sign-in, separate from wp-admin: businesses, MRR, subscriptions, inbox, team accounts (staff are blocked from wp-admin), settings and platform Flutterwave keys
+- **Bank transfers to your own account**: customers pay into the owner's bank account, send proof on WhatsApp in one tap, and the owner approves or declines it under Transfer approvals
+- **Documentation** at /docs and inside the dashboard; new sign-ups land on a setup guide
+- **Admin ⇄ user switch**: platform admins can jump between the admin console and any business's dashboard
 - **Customer wallets**: Wi-Fi customers open a wallet on the hotspot portal with their phone number and a 4-digit PIN, top up through the owner's Flutterwave account and buy plans from the balance; owners can load cash top-ups from the dashboard
 - **Installable app** on iPhone and Android (web app manifest, offline page, install prompt), no pinch or double-tap zoom, and a 5-second animated splash screen once per session
 - **Same-tab switch icons** in the header to jump between the website, your hotspot dashboard and the admin console

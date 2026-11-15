@@ -21,6 +21,7 @@ function zxc_portal_nav( $t, $active = '', $back = '' ) {
     </nav>
     <div class="nav-actions">
       <?php echo zxc_switch_buttons( 'portal', $t ); // phpcs:ignore ?>
+      <?php echo zxc_refresh_btn(); // phpcs:ignore ?>
       <?php echo zxc_theme_toggle(); // phpcs:ignore ?>
     </div>
   </div>
@@ -193,19 +194,70 @@ function zxc_view_portal_checkout( $t, array $a ) {
       <?php if ( ! empty( $a['closed'] ) ) : ?><?php echo zxc_alert( 'warn', 'Online payment is not available at this hotspot right now. Ask the attendant for a voucher card.' ); // phpcs:ignore ?><?php endif; ?>
       <label class="field">Phone number<span class="input-group"><span class="addon">+234</span><input class="input" type="tel" name="phone" inputmode="tel" placeholder="803 123 4567" value="<?php echo esc_attr( $a['values']['phone'] ?? '' ); ?>" required autocomplete="tel"></span></label>
       <label class="field">Email <em>optional, for your receipt</em><input class="input" type="email" name="email" placeholder="you@example.com" value="<?php echo esc_attr( $a['values']['email'] ?? '' ); ?>" autocomplete="email"></label>
-      <div class="stack" style="gap:10px"><span class="field">Pay with</span>
-        <?php foreach ( array( array( 'card', 'Card', 'Visa, Mastercard, Verve' ), array( 'bank', 'Bank transfer', 'From any Nigerian bank app' ), array( 'ussd', 'USSD', 'Dial a short code, no internet needed' ) ) as $i => $m ) : ?>
-          <label class="method"><input type="radio" name="method" value="<?php echo esc_attr( $m[0] ); ?>" <?php checked( 1 === $i ); ?>><span class="ico sm"><?php echo zxc_icon( $m[0] ); // phpcs:ignore ?></span><span class="grow"><b style="display:block;font-size:14.5px;font-weight:600"><?php echo esc_html( $m[1] ); ?></b><small class="fine"><?php echo esc_html( $m[2] ); ?></small></span><span class="radio"></span></label>
+      <?php
+      $methods = array();
+      if ( ! isset( $a['online'] ) || $a['online'] ) {
+        $methods = array( array( 'card', 'card', 'Card', 'Visa, Mastercard, Verve' ), array( 'bank', 'bank', 'Instant bank transfer', 'Confirmed automatically' ), array( 'ussd', 'ussd', 'USSD', 'Dial a short code, no internet needed' ) );
+      }
+      if ( ! empty( $a['manual'] ) ) {
+        $methods[] = array( 'manual', 'bank', 'Transfer to ' . $t->bank_name, 'Pay to our account and send proof on WhatsApp' );
+      }
+      $picked = $a['values']['method'] ?? ( count( $methods ) > 1 ? $methods[1][0] : ( $methods[0][0] ?? '' ) );
+      ?>
+      <?php if ( $methods ) : ?><div class="stack" style="gap:10px"><span class="field">Pay with</span>
+        <?php foreach ( $methods as $m ) : ?>
+          <label class="method<?php echo 'manual' === $m[0] ? ' manual' : ''; ?>"><input type="radio" name="method" value="<?php echo esc_attr( $m[0] ); ?>" <?php checked( $picked, $m[0] ); ?>><span class="ico sm<?php echo 'manual' === $m[0] ? ' teal' : ''; ?>"><?php echo zxc_icon( $m[1] ); // phpcs:ignore ?></span><span class="grow"><b style="display:block;font-size:14.5px;font-weight:600"><?php echo esc_html( $m[2] ); ?></b><small class="fine"><?php echo esc_html( $m[3] ); ?></small></span><span class="radio"></span></label>
         <?php endforeach; ?>
-      </div>
-      <button class="btn btn-primary btn-lg btn-block" type="submit" <?php disabled( ! empty( $a['closed'] ) ); ?>><?php echo zxc_icon( 'lock' ); // phpcs:ignore ?> Pay <?php echo esc_html( zxc_money( $p->price ) ); ?> securely</button>
+      </div><?php endif; ?>
+      <button class="btn btn-primary btn-lg btn-block" type="submit" <?php disabled( ! empty( $a['closed'] ) ); ?>><?php echo zxc_icon( 'lock' ); // phpcs:ignore ?> Continue to pay <?php echo esc_html( zxc_money( $p->price ) ); ?></button>
       <a class="wallet-pay" href="<?php echo esc_url( zxc_portal_url( $t, 'wallet' ) . '?buy=' . $p->id ); ?>"><span class="ico sm pink"><?php echo zxc_icon( 'wallet' ); // phpcs:ignore ?></span><span class="grow"><b>Pay from my Wi-Fi wallet</b><small><?php echo null !== $wbal ? 'Balance ' . esc_html( zxc_money( $wbal ) ) : 'Use your balance, or open a wallet'; ?></small></span><?php echo zxc_icon( 'chevron' ); // phpcs:ignore ?></a>
-      <?php if ( ! empty( $a['demo'] ) && empty( $a['closed'] ) ) : ?><?php echo zxc_alert( 'warn', 'Test mode: this hotspot has not connected Flutterwave yet, so payment is simulated.' ); // phpcs:ignore ?><?php else : ?><div class="trust"><?php echo zxc_icon( 'shield' ); // phpcs:ignore ?><span>Secured by Flutterwave. Card details never touch this site.</span></div><?php endif; ?>
+      <?php if ( ! empty( $a['demo'] ) && empty( $a['closed'] ) && ( ! isset( $a['online'] ) || $a['online'] ) ) : ?><?php echo zxc_alert( 'warn', 'Test mode: this hotspot has not connected Flutterwave yet, so payment is simulated.' ); // phpcs:ignore ?><?php else : ?><div class="trust"><?php echo zxc_icon( 'shield' ); // phpcs:ignore ?><span>Secured by Flutterwave. Card details never touch this site.</span></div><?php endif; ?>
     </form>
   </div>
 </div>
 	<?php
 	return zxc_portal_page( $t, 'Checkout', ob_get_clean(), 'plans', zxc_portal_url( $t, 'plans' ) );
+}
+
+function zxc_view_portal_manual( $t, $o, $error = '' ) {
+	$sent = 'submitted' === $o->channel;
+	$wa   = zxc_manual_wa_link( $t, $o );
+	ob_start();
+	?>
+<div class="pt narrow"<?php if ( $sent ) : ?> data-poll="<?php echo esc_url( rest_url( 'zaxconnect/v1/order/' . $o->reference ) ); ?>" data-go="<?php echo esc_url( zxc_portal_url( $t, 'pay/check/' . $o->reference ) ); ?>"<?php endif; ?>>
+  <div class="stepper"><span class="s done"><?php echo zxc_icon( 'check' ); // phpcs:ignore ?></span>Transfer<span class="ln <?php echo $sent ? 'on' : ''; ?>"></span><span class="s <?php echo $sent ? 'done' : 'on'; ?>"><?php echo $sent ? zxc_icon( 'check' ) : '2'; // phpcs:ignore ?></span><span style="color:var(--ink)">Send proof</span><span class="ln"></span><span class="s <?php echo $sent ? 'on' : ''; ?>">3</span>Connect</div>
+  <?php if ( ! $sent ) : ?>
+  <section class="bank-pay a-rise">
+    <div class="bp-top"><span class="bp-k">Transfer exactly</span><b class="bp-amt"><?php echo esc_html( zxc_money( $o->amount ) ); ?></b><span class="bp-plan"><?php echo esc_html( $o->plan_name ); ?></span></div>
+    <div class="bp-rows">
+      <div class="bp-row"><span><small>Bank</small><b><?php echo esc_html( $t->bank_name ); ?></b></span></div>
+      <div class="bp-row"><span><small>Account number</small><b class="mono" id="bp-acct"><?php echo esc_html( $t->bank_account ); ?></b></span><button type="button" class="bp-copy" data-copy="#bp-acct"><?php echo zxc_icon( 'copy' ); // phpcs:ignore ?>Copy</button></div>
+      <div class="bp-row"><span><small>Account name</small><b><?php echo esc_html( $t->bank_holder ); ?></b></span></div>
+      <div class="bp-row"><span><small>Amount</small><b id="bp-amt"><?php echo esc_html( (string) (int) $o->amount ); ?></b></span><button type="button" class="bp-copy" data-copy="#bp-amt"><?php echo zxc_icon( 'copy' ); // phpcs:ignore ?>Copy</button></div>
+      <div class="bp-row"><span><small>Narration / description</small><b class="mono" id="bp-ref"><?php echo esc_html( $o->reference ); ?></b></span><button type="button" class="bp-copy" data-copy="#bp-ref"><?php echo zxc_icon( 'copy' ); // phpcs:ignore ?>Copy</button></div>
+    </div>
+  </section>
+  <form method="post" class="card stack">
+    <?php echo zxc_nonce_field( 'zxc_manual' ) . zxc_alert( 'bad', $error ); // phpcs:ignore ?>
+    <div class="row"><span class="ico teal"><?php echo zxc_icon( 'user' ); // phpcs:ignore ?></span><div><div class="card-title">After you transfer</div><div class="card-sub">Tell us who paid so we can find your payment.</div></div></div>
+    <label class="field">Name on the account you paid from<input class="input" name="payer_name" maxlength="120" placeholder="e.g. Tunde Bakare" required autocomplete="name"></label>
+    <button class="btn btn-primary btn-lg btn-block" type="submit"><?php echo zxc_icon( 'check' ); // phpcs:ignore ?> I’ve sent the money</button>
+    <p class="fine center">Use your bank app, USSD or POS. Your Wi-Fi starts as soon as <?php echo esc_html( $t->name ); ?> confirms the transfer.</p>
+  </form>
+  <?php else : ?>
+  <section class="card stack center a-rise" style="justify-items:center;padding:28px 22px">
+    <span class="bp-wait"><svg width="64" height="64" viewBox="0 0 50 50" aria-hidden="true"><circle cx="25" cy="25" r="20" fill="none" stroke="var(--accent-soft)" stroke-width="4"/><circle class="a-spin" cx="25" cy="25" r="20" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="30 100"/></svg><?php echo zxc_icon( 'clock' ); // phpcs:ignore ?></span>
+    <h1 style="font-size:24px">Waiting for confirmation</h1>
+    <p class="muted">Send your proof of payment to <?php echo esc_html( $t->name ); ?> on WhatsApp. You’ll be connected automatically as soon as they approve it. Keep this page open.</p>
+    <?php if ( $wa ) : ?><a class="btn btn-wa btn-lg btn-block" href="<?php echo esc_url( $wa ); ?>" target="_blank" rel="noopener"><?php echo zxc_icon( 'whatsapp' ); // phpcs:ignore ?> Send proof on WhatsApp</a><?php endif; ?>
+    <div class="glass receipt" style="width:100%"><div><span>Reference</span><b class="mono"><?php echo esc_html( $o->reference ); ?></b></div><div><span>Plan</span><b><?php echo esc_html( $o->plan_name ); ?></b></div><div><span>Amount</span><b><?php echo esc_html( zxc_money( $o->amount ) ); ?></b></div><div><span>Paid by</span><b><?php echo esc_html( $o->payer_name ); ?></b></div></div>
+    <a class="btn btn-glass btn-block" href="<?php echo esc_url( zxc_portal_url( $t, 'pay/manual/' . $o->reference ) ); ?>"><?php echo zxc_icon( 'refresh' ); // phpcs:ignore ?> Check status</a>
+    <p class="fine">Save your reference <b class="mono"><?php echo esc_html( $o->reference ); ?></b>. You can come back to this page any time.</p>
+  </section>
+  <?php endif; ?>
+</div>
+	<?php
+	return zxc_portal_page( $t, $sent ? 'Waiting for confirmation' : 'Bank transfer', ob_get_clean(), 'plans' );
 }
 
 function zxc_view_portal_demo_pay( $t, $o ) {
@@ -243,7 +295,12 @@ function zxc_view_portal_failed( $t, $o ) {
 	?>
 <div class="pt narrow center">
   <span class="ico lg bad a-pop" style="margin:0 auto;width:80px;height:80px;border-radius:26px"><?php echo zxc_icon( 'x' ); // phpcs:ignore ?></span>
+  <?php if ( 'declined' === $o->status ) : ?>
+  <div><h1 style="font-size:26px">Payment not confirmed</h1><p class="muted" style="margin-top:8px"><?php echo esc_html( $t->name ); ?> could not confirm your transfer for <b><?php echo esc_html( $o->plan_name ); ?></b> (ref <?php echo esc_html( $o->reference ); ?>). If you did pay, please contact them.</p></div>
+  <?php $wa = zxc_wa_number( $t ); if ( $wa ) : ?><a class="btn btn-wa btn-lg btn-block" href="<?php echo esc_url( 'https://wa.me/' . $wa . '?text=' . rawurlencode( 'Hello, my transfer ' . $o->reference . ' was declined. Can you help?' ) ); ?>" target="_blank" rel="noopener"><?php echo zxc_icon( 'whatsapp' ); // phpcs:ignore ?> Chat on WhatsApp</a><?php endif; ?>
+  <?php else : ?>
   <div><h1 style="font-size:26px">Payment not completed</h1><p class="muted" style="margin-top:8px">Your payment for <b><?php echo esc_html( $o->plan_name ); ?></b> did not go through. You have not been charged.</p></div>
+  <?php endif; ?>
   <a href="<?php echo esc_url( zxc_portal_url( $t, 'buy/' . $o->plan_id ) ); ?>" class="btn btn-primary btn-lg btn-block">Try again</a>
   <a href="<?php echo esc_url( zxc_portal_url( $t, 'plans' ) ); ?>" class="btn btn-glass btn-block">Choose another plan</a>
 </div>

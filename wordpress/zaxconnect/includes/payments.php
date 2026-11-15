@@ -166,6 +166,52 @@ function zxc_fulfill_order( $ref, $channel = '', $amount_paid = null ) {
 	return zxc_order( $ref );
 }
 
+/* ---------- Manual bank transfers (owner's own bank account) ---------- */
+
+function zxc_manual_ready( $t ) {
+	return (int) $t->manual_payments && '' !== $t->bank_name && preg_match( '/^\d{10}$/', (string) $t->bank_account ) && '' !== $t->bank_holder;
+}
+
+/** wa.me number for proof of payment (owner's WhatsApp, else support phone). */
+function zxc_wa_number( $t ) {
+	$n = preg_replace( '/\D/', '', (string) ( $t->support_whatsapp ? $t->support_whatsapp : $t->support_phone ) );
+	if ( '' === $n ) {
+		return '';
+	}
+	return 0 === strpos( $n, '0' ) ? '234' . substr( $n, 1 ) : $n;
+}
+
+function zxc_manual_wa_link( $t, $o ) {
+	$n = zxc_wa_number( $t );
+	if ( ! $n ) {
+		return '';
+	}
+	$msg = "Hello {$t->name}, I have paid " . html_entity_decode( zxc_money( $o->amount ) ) . " by bank transfer for {$o->plan_name}.\n\nReference: {$o->reference}\nName on transfer: " . ( $o->payer_name ? $o->payer_name : '-' ) . "\nPhone: {$o->phone}\n\nHere is my proof of payment:";
+	return 'https://wa.me/' . $n . '?text=' . rawurlencode( $msg );
+}
+
+function zxc_manual_pending_count( $tenant_id ) {
+	global $wpdb;
+	return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . zxc_table( 'transactions' ) . " WHERE tenant_id = %d AND gateway = 'manual' AND status = 'pending' AND channel = 'submitted'", $tenant_id ) );
+}
+
+function zxc_manual_orders( $tenant_id, $view = 'pending' ) {
+	global $wpdb;
+	$where = 'pending' === $view ? "t.status = 'pending' AND t.channel = 'submitted'" : ( 'unsent' === $view ? "t.status = 'pending' AND ( t.channel IS NULL OR t.channel <> 'submitted' )" : "t.status IN ('success','declined')" );
+	return $wpdb->get_results(
+		$wpdb->prepare(
+			'SELECT t.*, p.name AS plan_name, v.code AS voucher_code FROM ' . zxc_table( 'transactions' ) . ' t JOIN ' . zxc_table( 'plans' ) . ' p ON p.id = t.plan_id LEFT JOIN ' . zxc_table( 'vouchers' ) . " v ON v.id = t.voucher_id
+			WHERE t.tenant_id = %d AND t.gateway = 'manual' AND $where ORDER BY t.id DESC LIMIT 100", // phpcs:ignore
+			$tenant_id
+		)
+	);
+}
+
+function zxc_decline_order( $ref ) {
+	global $wpdb;
+	$wpdb->update( zxc_table( 'transactions' ), array( 'status' => 'declined', 'paid_at' => time() ), array( 'reference' => $ref, 'status' => 'pending' ) );
+}
+
 function zxc_fail_order( $ref ) {
 	global $wpdb;
 	$wpdb->update( zxc_table( 'transactions' ), array( 'status' => 'failed' ), array( 'reference' => $ref, 'status' => 'pending' ) );

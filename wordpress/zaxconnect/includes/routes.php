@@ -82,7 +82,7 @@ add_filter( 'login_redirect', function ( $redirect, $requested, $user ) {
  * ---------------------------------------------------------------------- */
 
 function zxc_register_rewrites() {
-	add_rewrite_rule( '^(features|pricing|about|contact|faq|guide|terms|privacy|refunds|forgot)/?$', 'index.php?zxc=page&zxc_path=$matches[1]', 'top' );
+	add_rewrite_rule( '^(features|pricing|about|contact|faq|guide|docs|terms|privacy|refunds|forgot)/?$', 'index.php?zxc=page&zxc_path=$matches[1]', 'top' );
 	add_rewrite_rule( '^signup/?$', 'index.php?zxc=signup', 'top' );
 	add_rewrite_rule( '^login/?$', 'index.php?zxc=login', 'top' );
 	add_rewrite_rule( '^logout/?$', 'index.php?zxc=logout', 'top' );
@@ -388,8 +388,8 @@ function zxc_pwa_manifest() {
 		'display'          => 'standalone',
 		'display_override' => array( 'standalone', 'minimal-ui' ),
 		'orientation'      => 'portrait',
-		'background_color' => '#15183F',
-		'theme_color'      => '#171A45',
+		'background_color' => '#F2F4FD',
+		'theme_color'      => '#F2F4FD',
 		'categories'       => array( 'business', 'utilities' ),
 		'icons'            => array(
 			array( 'src' => $img . 'icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any' ),
