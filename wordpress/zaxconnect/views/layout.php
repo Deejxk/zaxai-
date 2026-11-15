@@ -96,7 +96,7 @@ function zxc_icon( $name, $cls = '' ) {
 function zxc_logo_mark() {
 	static $n = 0;
 	$id = 'zxg' . ( ++$n );
-	return '<svg class="logo-mark" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="' . $id . '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366F1"/><stop offset=".55" stop-color="#8B5CF6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient></defs><rect width="48" height="48" rx="14" fill="url(#' . $id . ')"/><path d="M14 15.5h17.5L15.5 33H34" fill="none" stroke="#fff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="35" cy="14.5" r="3.2" fill="#fff"/></svg>';
+	return '<svg class="logo-mark" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="' . $id . '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF4FD8"/><stop offset=".5" stop-color="#A855F7"/><stop offset="1" stop-color="#22D3EE"/></linearGradient></defs><rect width="48" height="48" rx="14" fill="url(#' . $id . ')"/><rect x="3" y="3" width="42" height="42" rx="11.5" fill="#1A1C4A"/><path d="M15 15.5h17.5L15.5 32.5H33" fill="none" stroke="url(#' . $id . ')" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="35.5" cy="13.5" r="2.8" fill="#22D3EE"/></svg>';
 }
 
 function zxc_logo( $href = '' ) {
@@ -210,7 +210,11 @@ function zxc_asset( $path ) {
 }
 
 function zxc_page( $title, $body, array $opts = array() ) {
-	$opts    = wp_parse_args( $opts, array( 'body_class' => '', 'style' => '', 'description' => '', 'scripts' => array(), 'robots' => '', 'aurora' => true ) );
+	$opts    = wp_parse_args( $opts, array( 'body_class' => '', 'style' => '', 'description' => '', 'scripts' => array(), 'robots' => '', 'aurora' => true, 'app' => null, 'splash' => null ) );
+	$app     = is_array( $opts['app'] ) ? $opts['app'] : array();
+	$app     = wp_parse_args( $app, array( 'slug' => '', 'name' => zxc_setting( 'platform_name' ), 'sub' => 'Hotspot billing, made simple' ) );
+	$splash  = null === $opts['splash'] ? $opts['aurora'] : $opts['splash'];
+	$icon    = ZXC_URL . 'assets/img/icon-192.png';
 	$scripts = '';
 	foreach ( $opts['scripts'] as $s ) {
 		$scripts .= '<script src="' . zxc_asset( 'js/' . $s ) . '" defer></script>';
@@ -221,17 +225,26 @@ function zxc_page( $title, $body, array $opts = array() ) {
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#05060E">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#171A45">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="<?php echo esc_attr( $app['name'] ); ?>">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="<?php echo esc_url( home_url( '/manifest.webmanifest' ) . ( $app['slug'] ? '?t=' . rawurlencode( $app['slug'] ) : '' ) ); ?>">
+<link rel="apple-touch-icon" href="<?php echo esc_url( ZXC_URL . 'assets/img/apple-touch-icon.png' ); ?>">
 <?php if ( $opts['description'] ) : ?><meta name="description" content="<?php echo esc_attr( $opts['description'] ); ?>"><?php endif; ?>
 <?php if ( $opts['robots'] ) : ?><meta name="robots" content="<?php echo esc_attr( $opts['robots'] ); ?>"><?php endif; ?>
 <title><?php echo esc_html( $title ); ?></title>
-<script>(function(){try{var t=localStorage.getItem('zx-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<script>(function(){var d=document.documentElement;try{var t=localStorage.getItem('zx-theme');if(t==='dark'||t==='light')d.setAttribute('data-theme',t);if(localStorage.getItem('zx-hidebal')==='1')d.classList.add('zx-hidebal');}catch(e){}<?php if ( $splash ) : ?>try{if(!sessionStorage.getItem('zx-splash'))d.classList.add('zx-splashing');}catch(e){d.classList.add('zx-splashing');}<?php endif; ?>window.ZX_ICON=<?php echo wp_json_encode( $icon ); ?>;})();</script>
+<?php if ( $splash ) : ?><style><?php echo zxc_splash_css(); // phpcs:ignore ?></style><?php endif; ?>
 <link rel="icon" href="<?php echo zxc_asset( 'img/favicon.svg' ); // phpcs:ignore ?>" type="image/svg+xml">
 <link rel="preload" href="<?php echo esc_url( ZXC_URL . 'assets/fonts/inter.woff2' ); ?>" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="<?php echo zxc_asset( 'css/app.css' ); // phpcs:ignore ?>">
 </head>
 <body class="<?php echo esc_attr( $opts['body_class'] ); ?>"<?php echo $opts['style'] ? ' style="' . esc_attr( $opts['style'] ) . '"' : ''; ?>>
+<?php if ( $splash ) : ?><?php echo zxc_splash( $app['name'], $app['sub'] ); // phpcs:ignore ?><?php endif; ?>
 <?php if ( $opts['aurora'] ) : ?><div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div><?php endif; ?>
 <?php echo $body; // phpcs:ignore WordPress.Security.EscapeOutput ?>
 <script src="<?php echo zxc_asset( 'js/ui.js' ); // phpcs:ignore ?>" defer></script>
@@ -290,4 +303,69 @@ function zxc_bar_chart( array $series, $money = true ) {
 		$h  .= '<div class="chart-col' . ( $n - 1 === $i ? ' now' : '' ) . '" tabindex="0"><span class="a-grow" style="height:' . esc_attr( $pct ) . '%;animation-delay:' . esc_attr( $i * 0.03 ) . 's"></span><span class="tip">' . esc_html( $tip ) . '</span></div>';
 	}
 	return $h . '</div></div><div class="chart-x"><span>' . esc_html( $series[0]['label'] ?? '' ) . '</span><span>' . esc_html( $series[ $n - 1 ]['label'] ?? '' ) . '</span></div>';
+}
+
+/** Animated 5-second launch screen, shown once per app session. */
+function zxc_splash( $name, $sub ) {
+	$word = preg_match( '/^(.*?)(Connect)$/', $name, $m ) ? esc_html( $m[1] ) . '<b>' . esc_html( $m[2] ) . '</b>' : esc_html( $name );
+	$letters = '';
+	return '<div id="zx-splash" aria-hidden="true">
+  <div class="sp-glow g1"></div><div class="sp-glow g2"></div><div class="sp-grid"></div>
+  <div class="sp-center">
+    <div class="sp-orbit"><span class="sp-ring"></span><span class="sp-ring r2"></span><i class="sp-dot d1"></i><i class="sp-dot d2"></i><i class="sp-dot d3"></i>
+      <svg class="sp-mark" viewBox="0 0 48 48"><defs><linearGradient id="zxsp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF4FD8"/><stop offset=".5" stop-color="#A855F7"/><stop offset="1" stop-color="#22D3EE"/></linearGradient></defs>
+        <rect class="sp-box" x="2" y="2" width="44" height="44" rx="13" fill="#1A1C4A" stroke="url(#zxsp)" stroke-width="2.6"/>
+        <path class="sp-z" d="M15 15.5h17.5L15.5 32.5H33" fill="none" stroke="url(#zxsp)" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle class="sp-c" cx="35.5" cy="13.5" r="2.8" fill="#22D3EE"/>
+        <g class="sp-wave" fill="none" stroke="#8EF3FF" stroke-width="1.6" stroke-linecap="round"><path d="M38 6.5a7 7 0 0 1 4 4"/><path d="M39 2.5a11 11 0 0 1 7 7"/></g>
+      </svg>
+    </div>
+    <div class="sp-word">' . $word . '</div>
+    <div class="sp-sub">' . esc_html( $sub ) . '</div>
+  </div>
+  <div class="sp-foot"><div class="sp-bar"><span></span></div><div class="sp-load">Starting secure session<span class="sp-dots"><i>.</i><i>.</i><i>.</i></span></div></div>
+</div>
+<script>(function(){var d=document.documentElement;if(!d.classList.contains("zx-splashing")){var e=document.getElementById("zx-splash");if(e)e.parentNode.removeChild(e);return;}try{sessionStorage.setItem("zx-splash","1");}catch(x){}setTimeout(function(){d.classList.add("zx-splash-out");},4550);setTimeout(function(){d.classList.remove("zx-splashing","zx-splash-out");var e=document.getElementById("zx-splash");if(e)e.parentNode.removeChild(e);},5100);})();</script>';
+}
+
+function zxc_splash_css() {
+	return '#zx-splash{display:none}
+html.zx-splashing{overflow:hidden}
+html.zx-splashing #zx-splash{display:flex;position:fixed;inset:0;z-index:2147483000;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;color:#fff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;background:radial-gradient(900px 600px at 15% 0%,#3A2484 0%,transparent 60%),radial-gradient(800px 600px at 100% 100%,#0F4A63 0%,transparent 60%),linear-gradient(165deg,#15183F,#1B1F52 50%,#152A4C);transition:opacity .55s ease,transform .55s ease,filter .55s ease}
+html.zx-splash-out #zx-splash{opacity:0;transform:scale(1.06);filter:blur(6px)}
+.sp-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(168,176,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(168,176,255,.07) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 65%);-webkit-mask-image:radial-gradient(circle at 50% 45%,#000 0,transparent 65%);animation:spFade 1.2s ease both}
+.sp-glow{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(60px);opacity:.55}
+.sp-glow.g1{background:radial-gradient(circle,rgba(255,79,216,.45),transparent 60%);left:-25vmax;top:-25vmax;animation:spDrift 5s ease-in-out both}
+.sp-glow.g2{background:radial-gradient(circle,rgba(34,211,238,.35),transparent 60%);right:-25vmax;bottom:-25vmax;animation:spDrift 5s ease-in-out reverse both}
+.sp-center{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 24px}
+.sp-orbit{position:relative;width:180px;height:180px;display:grid;place-items:center}
+.sp-ring{position:absolute;inset:18px;border-radius:50%;border:1.5px dashed rgba(142,243,255,.4);animation:spSpin 9s linear infinite,spPop .9s cubic-bezier(.2,1.3,.4,1) .2s both}
+.sp-ring.r2{inset:0;border:1px solid rgba(255,255,255,.08);border-top-color:rgba(255,79,216,.8);border-right-color:rgba(34,211,238,.6);animation:spSpin 2.4s linear infinite,spPop .9s cubic-bezier(.2,1.3,.4,1) .35s both}
+.sp-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#22D3EE;box-shadow:0 0 12px #22D3EE;top:50%;left:50%;margin:-4px;animation:spOrb 3.2s linear infinite,spFade .6s ease 1s both}
+.sp-dot.d2{background:#FF4FD8;box-shadow:0 0 12px #FF4FD8;animation-delay:-1.07s,1.1s}.sp-dot.d3{background:#A855F7;box-shadow:0 0 12px #A855F7;width:6px;height:6px;animation-delay:-2.13s,1.2s}
+.sp-mark{position:relative;width:96px;height:96px;filter:drop-shadow(0 0 18px rgba(217,70,239,.55)) drop-shadow(0 0 28px rgba(34,211,238,.35));animation:spPop .9s cubic-bezier(.2,1.4,.4,1) .1s both,spPulse 2.2s ease-in-out 1.6s infinite}
+.sp-box{stroke-dasharray:180;stroke-dashoffset:180;animation:spDraw 1.1s cubic-bezier(.6,0,.2,1) .25s forwards}
+.sp-z{stroke-dasharray:60;stroke-dashoffset:60;animation:spDraw .9s cubic-bezier(.6,0,.2,1) 1s forwards}
+.sp-c{transform-origin:35.5px 13.5px;transform:scale(0);animation:spDotIn .5s cubic-bezier(.2,1.6,.4,1) 1.75s forwards}
+.sp-wave path{opacity:0;animation:spWave 1.6s ease-in-out 2s infinite}.sp-wave path+path{animation-delay:2.25s}
+.sp-word{margin-top:26px;font-family:Sora,Inter,sans-serif;font-weight:800;font-size:clamp(30px,8vw,44px);letter-spacing:-.045em;line-height:1;animation:spRise .8s cubic-bezier(.2,.8,.2,1) 1.9s both}
+.sp-word b{background:linear-gradient(100deg,#FF4FD8,#A855F7 45%,#22D3EE);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sp-sub{margin-top:12px;font-size:14px;font-weight:500;letter-spacing:.02em;color:rgba(218,221,247,.75);animation:spRise .8s cubic-bezier(.2,.8,.2,1) 2.3s both}
+.sp-foot{position:absolute;left:0;right:0;bottom:calc(48px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:12px;animation:spFade .6s ease 2.6s both}
+.sp-bar{width:min(220px,60vw);height:4px;border-radius:99px;background:rgba(168,176,255,.15);overflow:hidden}
+.sp-bar span{display:block;height:100%;width:100%;border-radius:inherit;background:linear-gradient(90deg,#FF4FD8,#A855F7,#22D3EE);box-shadow:0 0 12px rgba(217,70,239,.8);transform-origin:left;transform:scaleX(0);animation:spLoad 4.3s cubic-bezier(.4,.1,.2,1) .3s forwards}
+.sp-load{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(169,174,218,.8)}
+.sp-dots i{font-style:normal;animation:spBlink 1.2s infinite}.sp-dots i:nth-child(2){animation-delay:.2s}.sp-dots i:nth-child(3){animation-delay:.4s}
+@keyframes spDraw{to{stroke-dashoffset:0}}
+@keyframes spDotIn{to{transform:scale(1)}}
+@keyframes spPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes spPulse{0%,100%{filter:drop-shadow(0 0 18px rgba(217,70,239,.55)) drop-shadow(0 0 28px rgba(34,211,238,.35))}50%{filter:drop-shadow(0 0 28px rgba(217,70,239,.85)) drop-shadow(0 0 44px rgba(34,211,238,.6))}}
+@keyframes spSpin{to{rotate:360deg}}
+@keyframes spOrb{from{transform:rotate(0) translateX(90px)}to{transform:rotate(360deg) translateX(90px)}}
+@keyframes spRise{from{opacity:0;transform:translateY(16px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes spFade{from{opacity:0}to{opacity:1}}
+@keyframes spDrift{from{transform:scale(.8)}to{transform:scale(1.1) translate(4vmax,4vmax)}}
+@keyframes spLoad{0%{transform:scaleX(0)}40%{transform:scaleX(.45)}70%{transform:scaleX(.72)}100%{transform:scaleX(1)}}
+@keyframes spWave{0%,100%{opacity:0}50%{opacity:1}}
+@keyframes spBlink{0%,100%{opacity:.2}50%{opacity:1}}';
 }

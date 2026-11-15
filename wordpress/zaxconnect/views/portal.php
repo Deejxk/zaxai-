@@ -15,7 +15,7 @@ function zxc_portal_nav( $t, $active = '', $back = '' ) {
       <span class="brand-text"><span class="brand-name"><?php echo esc_html( $t->name ); ?></span><span class="brand-sub">Powered by <?php echo esc_html( zxc_setting( 'platform_name' ) ); ?></span></span>
     </a>
     <nav class="nav-links" aria-label="Portal">
-      <?php foreach ( array( array( '', 'Home', 'home' ), array( 'plans', 'Plans', 'plans' ), array( 'plan?tab=voucher', 'Voucher', 'voucher' ), array( 'plan', 'My plan', 'plan' ), array( 'help', 'Help', 'help' ) ) as $l ) : ?>
+      <?php foreach ( array( array( '', 'Home', 'home' ), array( 'plans', 'Plans', 'plans' ), array( 'wallet', 'Wallet', 'wallet' ), array( 'plan?tab=voucher', 'Voucher', 'voucher' ), array( 'plan', 'My plan', 'plan' ), array( 'help', 'Help', 'help' ) ) as $l ) : ?>
         <a href="<?php echo esc_url( zxc_portal_url( $t, $l[0] ) ); ?>" class="<?php echo $l[2] === $active ? 'on' : ''; ?>"><?php echo esc_html( $l[1] ); ?></a>
       <?php endforeach; ?>
     </nav>
@@ -50,15 +50,15 @@ function zxc_portal_page( $t, $title, $content, $active = 'home', $back = '' ) {
 	$dock = zxc_dock(
 		array(
 			array( zxc_portal_url( $t ), 'home', 'Home', 'home' === $active ),
-			array( zxc_portal_url( $t, 'plan' ) . '?tab=voucher', 'ticket', 'Voucher', 'voucher' === $active ),
+			array( zxc_portal_url( $t, 'wallet' ), 'wallet', 'Wallet', 'wallet' === $active ),
 			array( zxc_portal_url( $t, 'plans' ), 'wifi', 'Buy', 'plans' === $active, true ),
-			array( zxc_portal_url( $t, 'plan' ), 'clock', 'My plan', 'plan' === $active ),
+			array( zxc_portal_url( $t, 'plan' ), 'clock', 'My plan', in_array( $active, array( 'plan', 'voucher' ), true ) ),
 			array( zxc_portal_url( $t, 'help' ), 'help', 'Help', 'help' === $active ),
 		),
 		'Portal'
 	);
 	$body = zxc_portal_nav( $t, $active, $back ) . '<main class="wrap">' . $content . '</main>' . zxc_portal_foot( $t ) . $dock;
-	return zxc_page( $title . ' · ' . $t->name, $body, array( 'body_class' => 'has-dock', 'style' => zxc_brand_style( $t ), 'robots' => 'noindex' ) );
+	return zxc_page( $title . ' · ' . $t->name, $body, array( 'body_class' => 'has-dock', 'style' => zxc_brand_style( $t ), 'robots' => 'noindex', 'app' => array( 'slug' => $t->slug, 'name' => $t->name, 'sub' => 'Fast Wi-Fi · Powered by ' . zxc_setting( 'platform_name' ) ) ) );
 }
 
 function zxc_hero_art() {
@@ -145,7 +145,7 @@ function zxc_view_portal_home( $t, array $a ) {
     <a href="<?php echo esc_url( zxc_portal_url( $t, 'plans' ) ); ?>"><span class="ico"><?php echo zxc_icon( 'zap' ); // phpcs:ignore ?></span>Buy plan</a>
     <a href="<?php echo esc_url( zxc_portal_url( $t, 'plan' ) . '?tab=voucher' ); ?>"><span class="ico teal"><?php echo zxc_icon( 'ticket', 'a-float' ); // phpcs:ignore ?></span>Voucher</a>
     <a href="<?php echo esc_url( zxc_portal_url( $t, 'plan' ) ); ?>"><span class="ico amber"><?php echo zxc_icon( 'clockAnim' ); // phpcs:ignore ?></span>My plan</a>
-    <a href="<?php echo esc_url( zxc_portal_url( $t, 'help' ) ); ?>"><span class="ico pink"><?php echo zxc_icon( 'help' ); // phpcs:ignore ?></span>Help</a>
+    <a href="<?php echo esc_url( zxc_portal_url( $t, 'wallet' ) ); ?>"><span class="ico pink"><?php echo zxc_icon( 'wallet' ); // phpcs:ignore ?></span>Wallet</a>
   </nav>
   <?php echo zxc_plans_section( $t, $a['plans'] ); // phpcs:ignore ?>
   <section class="stack" style="gap:12px">
@@ -166,7 +166,9 @@ function zxc_view_portal_plans( $t, array $a ) {
 }
 
 function zxc_view_portal_checkout( $t, array $a ) {
-	$p = $a['plan'];
+	$p    = $a['plan'];
+	$wc   = zxc_customer_session( $t );
+	$wbal = $wc ? zxc_customer_balance( $wc->id ) : null;
 	ob_start();
 	?>
 <div class="pt">
@@ -197,6 +199,7 @@ function zxc_view_portal_checkout( $t, array $a ) {
         <?php endforeach; ?>
       </div>
       <button class="btn btn-primary btn-lg btn-block" type="submit" <?php disabled( ! empty( $a['closed'] ) ); ?>><?php echo zxc_icon( 'lock' ); // phpcs:ignore ?> Pay <?php echo esc_html( zxc_money( $p->price ) ); ?> securely</button>
+      <a class="wallet-pay" href="<?php echo esc_url( zxc_portal_url( $t, 'wallet' ) . '?buy=' . $p->id ); ?>"><span class="ico sm pink"><?php echo zxc_icon( 'wallet' ); // phpcs:ignore ?></span><span class="grow"><b>Pay from my Wi-Fi wallet</b><small><?php echo null !== $wbal ? 'Balance ' . esc_html( zxc_money( $wbal ) ) : 'Use your balance, or open a wallet'; ?></small></span><?php echo zxc_icon( 'chevron' ); // phpcs:ignore ?></a>
       <?php if ( ! empty( $a['demo'] ) && empty( $a['closed'] ) ) : ?><?php echo zxc_alert( 'warn', 'Test mode: this hotspot has not connected Flutterwave yet, so payment is simulated.' ); // phpcs:ignore ?><?php else : ?><div class="trust"><?php echo zxc_icon( 'shield' ); // phpcs:ignore ?><span>Secured by Flutterwave. Card details never touch this site.</span></div><?php endif; ?>
     </form>
   </div>
@@ -429,4 +432,124 @@ function zxc_view_portal_terms( $t ) {
 function zxc_view_portal_missing() {
 	$body = zxc_site_nav() . '<main class="auth-form" style="min-height:70vh"><div class="card center stack" style="justify-items:center;max-width:440px;padding:34px"><span class="ico lg amber">' . zxc_icon( 'wifi' ) . '</span><h1 style="font-size:26px">Hotspot not found</h1><p class="muted">This hotspot page doesn’t exist or is temporarily offline.</p><a class="btn btn-primary" href="' . esc_url( home_url( '/' ) ) . '">Go to homepage</a></div></main>';
 	return zxc_page( 'Hotspot not found', $body, array( 'robots' => 'noindex' ) );
+}
+
+/* ---------- Customer wallet ---------- */
+
+function zxc_view_portal_wallet_login( $t, array $a ) {
+	$buy = (int) zxc_get( 'buy', 10 );
+	ob_start();
+	?>
+<div class="pt narrow">
+  <section class="wallet-hero a-rise">
+    <div class="wh-art" aria-hidden="true"><span class="coin c1">₦</span><span class="coin c2">₦</span><span class="wh-card"><?php echo zxc_icon( 'wallet' ); // phpcs:ignore ?></span></div>
+    <span class="eyebrow">Wi-Fi wallet</span>
+    <h1>Load once, browse anytime</h1>
+    <p>Keep a balance with <?php echo esc_html( $t->name ); ?> and buy plans in one tap — no card details every time.</p>
+  </section>
+  <form method="post" class="card stack a-rise2" action="<?php echo esc_url( zxc_portal_url( $t, 'wallet' ) . ( $buy ? '?buy=' . $buy : '' ) ); ?>">
+    <input type="hidden" name="action" value="login">
+    <div><div class="card-title" style="font-size:18px">Open or sign in to your wallet</div><div class="card-sub">New here? Choose a 4-digit PIN and your wallet is created instantly.</div></div>
+    <?php echo zxc_alert( 'bad', $a['error'] ?? '' ); // phpcs:ignore ?>
+    <label class="field">Phone number<span class="input-group"><span class="addon">+234</span><input class="input" type="tel" name="phone" inputmode="tel" placeholder="803 123 4567" value="<?php echo esc_attr( $a['values']['phone'] ?? '' ); ?>" required autocomplete="tel"></span></label>
+    <label class="field">4-digit PIN<input class="input pin-input" type="password" name="pin" inputmode="numeric" pattern="\d{4}" maxlength="4" placeholder="••••" required autocomplete="current-password"></label>
+    <label class="field">Your name <em>optional</em><input class="input" type="text" name="name" maxlength="120" placeholder="e.g. Tunde" value="<?php echo esc_attr( $a['values']['name'] ?? '' ); ?>" autocomplete="name"></label>
+    <button class="btn btn-primary btn-lg btn-block" type="submit"><?php echo zxc_icon( 'lock' ); // phpcs:ignore ?> Continue to wallet</button>
+    <div class="trust"><?php echo zxc_icon( 'shield' ); // phpcs:ignore ?><span>Your PIN is encrypted. Never share it with anyone, including staff.</span></div>
+  </form>
+  <div class="glass list how-grid" style="margin-top:4px">
+    <div class="list-row"><span class="num">1</span><span><b>Top up</b><small>Card, transfer or USSD</small></span></div>
+    <div class="list-row"><span class="num">2</span><span><b>Buy any plan</b><small>Paid instantly from balance</small></span></div>
+    <div class="list-row"><span class="num">3</span><span><b>Get online</b><small>Connected automatically</small></span></div>
+  </div>
+</div>
+	<?php
+	return zxc_portal_page( $t, 'Wallet', ob_get_clean(), 'wallet', zxc_portal_url( $t ) );
+}
+
+function zxc_view_portal_wallet( $t, array $a ) {
+	$c       = $a['customer'];
+	$bal     = (int) $a['balance'];
+	$types   = array(
+		'deposit'  => array( 'download', 'ok', 'Top-up' ),
+		'credit'   => array( 'sparkles', 'ok', 'Bonus from ' . $t->name ),
+		'purchase' => array( 'wifi', '', 'Plan purchase' ),
+		'debit'    => array( 'receipt', 'amber', 'Adjustment' ),
+	);
+	$picked = null;
+	foreach ( $a['plans'] as $p ) {
+		if ( (int) $p->id === $a['buy'] ) {
+			$picked = $p;
+		}
+	}
+	ob_start();
+	?>
+<div class="pt">
+  <?php if ( 'ok' === $a['topup'] ) : ?><?php echo zxc_alert( 'ok', 'Top-up successful. Your new balance is ' . zxc_money( $bal ) . '.' ); // phpcs:ignore ?><?php elseif ( 'pending' === $a['topup'] ) : ?><?php echo zxc_alert( 'warn', 'Your top-up is being confirmed. Bank transfers can take a few minutes — refresh this page shortly.' ); // phpcs:ignore ?><?php elseif ( 'failed' === $a['topup'] ) : ?><?php echo zxc_alert( 'bad', 'The top-up did not go through. You have not been charged.' ); // phpcs:ignore ?><?php endif; ?>
+  <?php echo zxc_alert( 'bad', $a['error'] ?? '' ); // phpcs:ignore ?>
+  <div class="wallet-grid">
+    <div class="stack" style="gap:18px">
+      <section class="bank-card a-rise" aria-label="Wallet balance">
+        <div class="row between"><span class="row" style="gap:10px"><?php echo zxc_brand_mark( $t ); // phpcs:ignore ?><b style="font-family:var(--display);font-weight:600"><?php echo esc_html( $t->name ); ?> Wallet</b></span><span class="chip-ic" aria-hidden="true"></span></div>
+        <div><small>Available balance</small><div class="bal" data-count="<?php echo (int) $bal; ?>"><?php echo esc_html( zxc_money( $bal ) ); ?></div></div>
+        <div class="row between wrap-row" style="gap:10px"><span class="mono" style="letter-spacing:.14em;opacity:.85"><?php echo esc_html( zxc_mask_phone( $c->phone ) ); ?></span><span style="opacity:.85;font-size:13px"><?php echo esc_html( $c->name ? $c->name : 'Wi-Fi customer' ); ?></span></div>
+      </section>
+      <?php if ( $picked ) : ?>
+        <form method="post" class="card stack confirm-buy a-rise2"><input type="hidden" name="action" value="buy"><input type="hidden" name="plan" value="<?php echo (int) $picked->id; ?>">
+          <div class="row"><span class="ico"><?php echo zxc_icon( 'wifiAnim' ); // phpcs:ignore ?></span><div class="grow"><div class="card-title"><?php echo esc_html( $picked->name ); ?></div><div class="card-sub"><?php echo esc_html( zxc_duration( $picked->duration_min ) . ' · ' . zxc_data_label( $picked->data_mb ) ); ?></div></div><b class="price-tag"><?php echo esc_html( zxc_money( $picked->price ) ); ?></b></div>
+          <?php if ( $bal >= $picked->price ) : ?><button class="btn btn-primary btn-lg btn-block" type="submit"><?php echo zxc_icon( 'zap' ); // phpcs:ignore ?> Pay <?php echo esc_html( zxc_money( $picked->price ) ); ?> from wallet</button>
+          <?php else : ?><p class="fine">Top up at least <b><?php echo esc_html( zxc_money( $picked->price - $bal ) ); ?></b> to buy this plan.</p><?php endif; ?>
+        </form>
+      <?php endif; ?>
+      <section class="card">
+        <div class="card-head"><div><div class="card-title">Buy with your balance</div><div class="card-sub">Instant — no payment page</div></div></div>
+        <div class="wplans">
+          <?php foreach ( $a['plans'] as $p ) : ?>
+            <form method="post" class="wplan <?php echo $bal >= $p->price ? '' : 'short'; ?>"><input type="hidden" name="action" value="buy"><input type="hidden" name="plan" value="<?php echo (int) $p->id; ?>">
+              <span class="ico sm"><?php echo zxc_icon( 'wifi' ); // phpcs:ignore ?></span>
+              <span class="grow"><b><?php echo esc_html( $p->name ); ?></b><small><?php echo esc_html( zxc_duration( $p->duration_min ) . ' · ' . zxc_data_label( $p->data_mb ) ); ?></small></span>
+              <b class="pp"><?php echo esc_html( zxc_money( $p->price ) ); ?></b>
+              <button class="btn btn-sm <?php echo $bal >= $p->price ? 'btn-primary' : 'btn-ghost'; ?>" type="submit" <?php disabled( $bal < $p->price ); ?>><?php echo $bal >= $p->price ? 'Buy' : 'Low balance'; ?></button>
+            </form>
+          <?php endforeach; ?>
+          <?php if ( ! $a['plans'] ) : ?><p class="fine">No plans available yet.</p><?php endif; ?>
+        </div>
+      </section>
+    </div>
+    <div class="stack" style="gap:18px">
+      <form method="post" class="card stack a-rise2"><input type="hidden" name="action" value="topup">
+        <div class="row"><span class="ico"><?php echo zxc_icon( 'plus' ); // phpcs:ignore ?></span><div><div class="card-title">Top up</div><div class="card-sub">Card, bank transfer or USSD</div></div></div>
+        <label class="field">Amount (₦)<span class="input-group"><span class="addon">₦</span><input class="input" type="number" name="amount" min="100" max="200000" step="50" value="1000" required data-amount style="font-family:var(--display);font-size:20px;font-weight:700"></span></label>
+        <div class="chips" style="flex-wrap:wrap"><?php foreach ( array( 200, 500, 1000, 2000, 5000 ) as $q ) : ?><button type="button" class="chip" data-quick="<?php echo (int) $q; ?>"><?php echo esc_html( zxc_money( $q ) ); ?></button><?php endforeach; ?></div>
+        <button class="btn btn-primary btn-lg btn-block" type="submit" <?php disabled( ! $a['open'] ); ?>><?php echo zxc_icon( 'lock' ); // phpcs:ignore ?> Top up securely</button>
+        <?php if ( ! $a['open'] ) : ?><?php echo zxc_alert( 'warn', 'Online top-up is not available here right now. Ask the attendant to load your wallet with cash.' ); // phpcs:ignore ?>
+        <?php elseif ( $a['demo'] ) : ?><?php echo zxc_alert( 'warn', 'Test mode: this hotspot has not connected Flutterwave yet, so top-ups are simulated.' ); // phpcs:ignore ?>
+        <?php else : ?><div class="trust"><?php echo zxc_icon( 'shield' ); // phpcs:ignore ?><span>Secured by Flutterwave</span></div><?php endif; ?>
+      </form>
+      <section class="card">
+        <div class="card-head"><div class="card-title">Activity</div><a class="btn btn-ghost btn-sm" href="<?php echo esc_url( zxc_portal_url( $t, 'wallet/logout' ) ); ?>"><?php echo zxc_icon( 'logout' ); // phpcs:ignore ?> Sign out</a></div>
+        <?php if ( $a['history'] ) : ?><div class="tx-list"><?php foreach ( $a['history'] as $h ) : ?><?php $ty = $types[ $h->type ] ?? array( 'wallet', '', ucfirst( $h->type ) ); ?>
+          <div class="tx"><span class="ico sm <?php echo esc_attr( 'failed' === $h->status ? 'bad' : ( $h->amount < 0 ? '' : $ty[1] ) ); ?>"><?php echo zxc_icon( 'failed' === $h->status ? 'x' : $ty[0] ); // phpcs:ignore ?></span><span class="grow"><b><?php echo esc_html( 'failed' === $h->status ? 'Top-up failed' : $ty[2] ); ?></b><small><?php echo esc_html( ( 'purchase' === $h->type ? strtok( $h->note, '·' ) . ' · ' : '' ) . zxc_date( $h->created ) ); ?></small></span><b class="amt <?php echo $h->amount >= 0 && 'success' === $h->status ? 'up' : ''; ?>"><?php echo esc_html( ( $h->amount >= 0 ? '+' : '−' ) . zxc_money( abs( $h->amount ) ) ); ?></b></div>
+        <?php endforeach; ?></div>
+        <?php else : ?><div class="empty" style="padding:18px"><span class="ico"><?php echo zxc_icon( 'wallet', 'a-float' ); // phpcs:ignore ?></span>No activity yet. Top up to get started.</div><?php endif; ?>
+      </section>
+    </div>
+  </div>
+</div>
+	<?php
+	return zxc_portal_page( $t, 'My wallet', ob_get_clean(), 'wallet', zxc_portal_url( $t ) );
+}
+
+function zxc_view_portal_wallet_demo( $t, $w ) {
+	ob_start();
+	?>
+<div class="pt narrow"><form method="post" class="card stack center" style="justify-items:center;padding:30px">
+  <span class="badge badge-warn">Test payment</span>
+  <h1 style="font-size:38px"><?php echo esc_html( zxc_money( $w->amount ) ); ?></h1>
+  <p class="muted">Wallet top-up · Ref <?php echo esc_html( $w->reference ); ?></p>
+  <button class="btn btn-primary btn-lg btn-block" name="result" value="success" type="submit">Simulate successful top-up</button>
+  <button class="btn btn-ghost btn-block" name="result" value="failed" type="submit">Simulate failed top-up</button>
+</form></div>
+	<?php
+	return zxc_portal_page( $t, 'Test top-up', ob_get_clean(), 'wallet' );
 }

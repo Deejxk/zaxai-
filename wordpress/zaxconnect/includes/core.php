@@ -226,6 +226,37 @@ function zxc_install_db() {
   KEY tenant_status (tenant_id,status)
 ) $c;" );
 
+	dbDelta( "CREATE TABLE {$t('customers')} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  tenant_id bigint(20) unsigned NOT NULL,
+  phone varchar(30) NOT NULL,
+  name varchar(120) NOT NULL DEFAULT '',
+  pin_hash varchar(255) NOT NULL DEFAULT '',
+  created bigint(20) NOT NULL DEFAULT 0,
+  last_login bigint(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY  (id),
+  UNIQUE KEY tenant_phone (tenant_id,phone)
+) $c;" );
+
+	dbDelta( "CREATE TABLE {$t('cledger')} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  tenant_id bigint(20) unsigned NOT NULL,
+  customer_id bigint(20) unsigned NOT NULL,
+  type varchar(20) NOT NULL DEFAULT 'deposit',
+  amount bigint(20) NOT NULL DEFAULT 0,
+  reference varchar(40) DEFAULT NULL,
+  status varchar(20) NOT NULL DEFAULT 'pending',
+  gateway varchar(20) NOT NULL DEFAULT 'flutterwave',
+  channel varchar(40) DEFAULT NULL,
+  note varchar(190) NOT NULL DEFAULT '',
+  created bigint(20) NOT NULL DEFAULT 0,
+  completed bigint(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY  (id),
+  UNIQUE KEY reference (reference),
+  KEY customer_status (customer_id,status),
+  KEY tenant_status (tenant_id,status)
+) $c;" );
+
 	update_option( 'zxc_db_version', ZXC_DB_VERSION, false );
 }
 

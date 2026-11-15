@@ -243,7 +243,12 @@ add_action( 'rest_api_init', function () {
 			if ( ! $t || ! zxc_flw_webhook_valid( $t->flw_hash, $req ) ) {
 				return new WP_REST_Response( array( 'ok' => false ), 401 );
 			}
-			if ( $ref ) {
+			if ( $ref && 0 === strpos( $ref, 'ZXC' ) ) {
+				$w = zxc_cledger_row( sanitize_text_field( $ref ) );
+				if ( $w && (int) $w->tenant_id === (int) $t->id ) {
+					zxc_customer_verify_deposit( $w->reference );
+				}
+			} elseif ( $ref ) {
 				$o = zxc_order( sanitize_text_field( $ref ), $t->id );
 				if ( $o ) {
 					zxc_verify_order( $o->reference );
@@ -347,4 +352,98 @@ function zxc_login_link( $ctx, $code, $dst = '' ) {
 	}
 	$args = array_filter( array( 'username' => $code, 'password' => $code, 'dst' => $dst ? $dst : ( $ctx['dst'] ?? '' ) ) );
 	return add_query_arg( array_map( 'rawurlencode', $args ), $ctx['login'] );
+}
+
+/* -------------------------------------------------------------------------
+ * Installable web app: manifest, service worker and offline page
+ * ---------------------------------------------------------------------- */
+
+add_action( 'init', 'zxc_pwa_routes', 1 );
+function zxc_pwa_routes() {
+	$path = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_parse_url( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH ) : '';
+	$base = (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH );
+	$rel  = '/' . ltrim( substr( $path, strlen( rtrim( $base, '/' ) ) ), '/' );
+	if ( '/manifest.webmanifest' === $rel ) {
+		zxc_pwa_manifest();
+	} elseif ( '/zx-sw.js' === $rel ) {
+		zxc_pwa_worker();
+	} elseif ( '/zx-offline' === $rel ) {
+		nocache_headers();
+		echo zxc_page( 'Offline', '<main class="wrap narrow" style="min-height:100vh;display:grid;place-items:center"><div class="card stack center" style="justify-items:center;padding:32px"><span class="ico lg">' . zxc_icon( 'wifi', 'a-float' ) . '</span><h1 style="font-size:24px">You’re offline</h1><p class="muted">Check your Wi-Fi or mobile data, then try again.</p><button class="btn btn-primary btn-block" onclick="location.reload()">Try again</button></div></main>', array( 'robots' => 'noindex', 'splash' => false ) ); // phpcs:ignore
+		exit;
+	}
+}
+
+function zxc_pwa_manifest() {
+	$t    = ! empty( $_GET['t'] ) ? zxc_tenant_by_slug( sanitize_title( wp_unslash( $_GET['t'] ) ) ) : null; // phpcs:ignore WordPress.Security.NonceVerification
+	$name = $t ? $t->name : zxc_setting( 'platform_name' );
+	$img  = ZXC_URL . 'assets/img/';
+	$m    = array(
+		'id'               => $t ? '/h/' . $t->slug : '/',
+		'name'             => $name,
+		'short_name'       => mb_substr( $name, 0, 14 ),
+		'description'      => $t ? 'Buy Wi-Fi plans at ' . $name : 'Run your Wi-Fi hotspot business: plans, vouchers, sales and analytics.',
+		'start_url'        => $t ? zxc_portal_url( $t ) . '?source=app' : home_url( '/dashboard?source=app' ),
+		'scope'            => home_url( '/' ),
+		'display'          => 'standalone',
+		'display_override' => array( 'standalone', 'minimal-ui' ),
+		'orientation'      => 'portrait',
+		'background_color' => '#15183F',
+		'theme_color'      => '#171A45',
+		'categories'       => array( 'business', 'utilities' ),
+		'icons'            => array(
+			array( 'src' => $img . 'icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any' ),
+			array( 'src' => $img . 'icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any' ),
+			array( 'src' => $img . 'maskable-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable' ),
+		),
+	);
+	if ( ! $t ) {
+		$m['shortcuts'] = array(
+			array( 'name' => 'New vouchers', 'url' => home_url( '/dashboard/vouchers' ), 'icons' => array( array( 'src' => $img . 'icon-192.png', 'sizes' => '192x192' ) ) ),
+			array( 'name' => 'Sales', 'url' => home_url( '/dashboard/sales' ), 'icons' => array( array( 'src' => $img . 'icon-192.png', 'sizes' => '192x192' ) ) ),
+			array( 'name' => 'Analytics', 'url' => home_url( '/dashboard/analytics' ), 'icons' => array( array( 'src' => $img . 'icon-192.png', 'sizes' => '192x192' ) ) ),
+		);
+	}
+	header( 'Content-Type: application/manifest+json; charset=utf-8' );
+	header( 'Cache-Control: public, max-age=3600' );
+	echo wp_json_encode( $m, JSON_UNESCAPED_SLASHES );
+	exit;
+}
+
+function zxc_pwa_worker() {
+	header( 'Content-Type: application/javascript; charset=utf-8' );
+	header( 'Service-Worker-Allowed: /' );
+	header( 'Cache-Control: no-cache' );
+	$assets = array( 'css/app.css', 'js/ui.js', 'fonts/inter.woff2', 'fonts/sora.woff2', 'img/icon-192.png', 'img/favicon.svg' );
+	$urls   = array_map( function ( $a ) { return zxc_asset( $a ); }, $assets );
+	$urls   = array_map( 'html_entity_decode', $urls );
+	?>
+const VERSION = 'zx-<?php echo esc_js( ZXC_VERSION ); ?>';
+const PRECACHE = <?php echo wp_json_encode( array_values( $urls ), JSON_UNESCAPED_SLASHES ); ?>;
+const OFFLINE = <?php echo wp_json_encode( home_url( '/zx-offline' ), JSON_UNESCAPED_SLASHES ); ?>;
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(PRECACHE.concat([OFFLINE]))).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== location.origin) return;
+  if (url.pathname.indexOf('/wp-json/') !== -1 || url.pathname.indexOf('/wp-admin') !== -1) return;
+  if (req.mode === 'navigate') {
+    e.respondWith(fetch(req).catch(() => caches.match(OFFLINE)));
+    return;
+  }
+  if (url.pathname.indexOf('/wp-content/plugins/zaxconnect/assets/') !== -1) {
+    e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+      if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); }
+      return res;
+    })));
+  }
+});
+	<?php
+	exit;
 }

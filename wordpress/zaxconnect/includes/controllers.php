@@ -378,6 +378,10 @@ function zxc_ctl_portal( $t, $path ) {
 			zxc_render( zxc_view_portal_recover( $t, $args ) );
 			break;
 
+		case 'wallet':
+			zxc_portal_wallet( $t, $seg, $ctx, $sub );
+			break;
+
 		case 'plans':
 			zxc_render( zxc_view_portal_plans( $t, array( 'plans' => zxc_plans( $t->id, true ), 'ctx' => $ctx ) ) );
 			break;
@@ -557,7 +561,15 @@ function zxc_ctl_dashboard( $path ) {
 					$t->id, $like
 				)
 			);
-			zxc_render( zxc_view_dash_customers( $t, $rows, $q ) );
+			$wmap = array();
+			foreach ( zxc_customer_wallets( $t->id, '', 1000 ) as $w ) {
+				$wmap[ $w->phone ] = (int) $w->balance;
+			}
+			zxc_render( zxc_view_dash_customers( $t, $rows, $q, $wmap ) );
+			break;
+		case 'cwallets':
+			$q = zxc_get( 'q', 40 );
+			zxc_render( zxc_view_dash_cwallets( $t, zxc_customer_wallets( $t->id, $q ), zxc_customer_wallet_totals( $t->id ), $q ) );
 			break;
 		case 'reports':
 		case 'analytics':
@@ -781,6 +793,23 @@ function zxc_dashboard_post( $t, $seg ) {
 			}
 			wp_redirect( $link, 303 ); // phpcs:ignore WordPress.Security.SafeRedirect
 			exit;
+		case 'cwallet_adjust':
+			$phone  = zxc_normalize_phone( zxc_post( 'phone', 20 ) );
+			$amount = (int) zxc_post( 'amount', 10 );
+			$type   = 'debit' === zxc_post( 'type', 10 ) ? 'debit' : 'credit';
+			$note   = zxc_post( 'note', 150 );
+			$cust   = zxc_valid_phone( $phone ) ? zxc_customer_by_phone( $t->id, $phone ) : null;
+			if ( ! $cust ) {
+				zxc_flash( 'No wallet found for that phone number. The customer must open a wallet on your portal first.', 'bad' );
+			} elseif ( $amount < 1 || $amount > 500000 ) {
+				zxc_flash( 'Enter an amount between ₦1 and ₦500,000.', 'bad' );
+			} elseif ( zxc_customer_entry( $t->id, $cust->id, $type, 'debit' === $type ? -$amount : $amount, $note ? $note : ( 'debit' === $type ? 'Adjustment by ' : 'Cash top-up at ' ) . $t->name, 'owner' ) ) {
+				zxc_flash( ( 'debit' === $type ? 'Removed ' : 'Added ' ) . zxc_money( $amount ) . ( 'debit' === $type ? ' from ' : ' to ' ) . zxc_mask_phone( $phone ) . '’s wallet.' );
+			} else {
+				zxc_flash( 'That customer does not have enough balance for this debit.', 'bad' );
+			}
+			zxc_redirect( $base . '/cwallets' );
+			break;
 		case 'wallet_demo':
 			$w = zxc_wallet_row( zxc_post( 'reference', 40 ) );
 			if ( $w && (int) $w->tenant_id === (int) $t->id && 'demo' === $w->gateway && ! zxc_billing_ready() ) {
@@ -1275,4 +1304,120 @@ function zxc_platform_stats() {
 	$s['unread']   = zxc_unread_count( null );
 	$s['recent_subs'] = $wpdb->get_results( 'SELECT s.*, t.name AS tenant_name FROM ' . zxc_table( 'subscriptions' ) . ' s JOIN ' . zxc_table( 'tenants' ) . " t ON t.id = s.tenant_id WHERE s.status = 'success' ORDER BY s.paid_at DESC LIMIT 6" );
 	return $s;
+}
+
+/** Customer wallet on the hotspot portal: /h/{slug}/wallet[/demo/REF|/return|/logout] */
+function zxc_portal_wallet( $t, array $seg, array $ctx, array $sub ) {
+	$base = zxc_portal_url( $t, 'wallet' );
+	$c    = zxc_customer_session( $t );
+	$demo = ! zxc_gateway_ready( $t );
+	$open = $sub['active'] && ( ! $demo || $t->demo_payments );
+	$sub2 = $seg[1] ?? '';
+
+	if ( 'logout' === $sub2 ) {
+		zxc_customer_clear_session( $t );
+		zxc_redirect( $base );
+	}
+	if ( 'return' === $sub2 ) { // Flutterwave redirect after a top-up
+		$w = zxc_cledger_row( sanitize_text_field( zxc_get( 'tx_ref', 40 ) ) );
+		if ( $w && (int) $w->tenant_id === (int) $t->id ) {
+			$w = zxc_customer_verify_deposit( $w->reference );
+			if ( 'pending' === $w->status && 'cancelled' === zxc_get( 'status', 20 ) ) {
+				global $wpdb;
+				$wpdb->update( zxc_table( 'cledger' ), array( 'status' => 'failed' ), array( 'id' => $w->id, 'status' => 'pending' ) );
+				$w->status = 'failed';
+			}
+			zxc_redirect( $base . '?topup=' . ( 'success' === $w->status ? 'ok' : ( 'failed' === $w->status ? 'failed' : 'pending' ) ) );
+		}
+		zxc_redirect( $base );
+	}
+	if ( 'demo' === $sub2 ) {
+		$w = zxc_cledger_row( sanitize_text_field( $seg[2] ?? '' ) );
+		if ( ! $c || ! $w || (int) $w->customer_id !== (int) $c->id || 'demo' !== $w->gateway || 'pending' !== $w->status ) {
+			zxc_redirect( $base );
+		}
+		if ( zxc_is_post() && $demo ) {
+			if ( 'success' === zxc_post( 'result', 10 ) ) {
+				zxc_customer_complete_deposit( $w->reference, null, 'demo' );
+				zxc_redirect( $base . '?topup=ok' );
+			}
+			global $wpdb;
+			$wpdb->update( zxc_table( 'cledger' ), array( 'status' => 'failed' ), array( 'id' => $w->id ) );
+			zxc_redirect( $base . '?topup=failed' );
+		}
+		zxc_render( zxc_view_portal_wallet_demo( $t, $w ) );
+	}
+
+	$args = array( 'ctx' => $ctx, 'open' => $open, 'demo' => $demo );
+	if ( zxc_is_post() ) {
+		$action = zxc_post( 'action', 20 );
+		if ( 'login' === $action ) {
+			$phone = zxc_normalize_phone( zxc_post( 'phone', 20 ) );
+			list( $nc, $err ) = zxc_customer_auth( $t, $phone, zxc_post( 'pin', 10 ), zxc_post( 'name', 120 ) );
+			if ( $nc ) {
+				zxc_customer_set_session( $t, $nc );
+				zxc_redirect( $base . ( zxc_get( 'buy', 10 ) ? '?buy=' . (int) zxc_get( 'buy', 10 ) : '' ) );
+			}
+			$args['error']  = $err;
+			$args['values'] = array( 'phone' => zxc_post( 'phone', 20 ), 'name' => zxc_post( 'name', 120 ) );
+			zxc_render( zxc_view_portal_wallet_login( $t, $args ), 400 );
+		}
+		if ( ! $c ) {
+			zxc_redirect( $base );
+		}
+		if ( 'topup' === $action ) {
+			$amount = (int) zxc_post( 'amount', 10 );
+			if ( ! $open ) {
+				$args['error'] = 'Online top-up is not available at this hotspot right now.';
+			} elseif ( $amount < 100 || $amount > 200000 ) {
+				$args['error'] = 'Enter an amount between ₦100 and ₦200,000.';
+			} else {
+				$w = zxc_customer_create_deposit( $t, $c, $amount );
+				if ( 'demo' === $w->gateway ) {
+					zxc_redirect( $base . '/demo/' . $w->reference );
+				}
+				$link = zxc_flw_checkout(
+					$t->flw_secret,
+					array(
+						'reference' => $w->reference,
+						'amount'    => $amount,
+						'email'     => $c->phone . '@customers.' . wp_parse_url( home_url(), PHP_URL_HOST ),
+						'phone'     => $c->phone,
+						'redirect'  => $base . '/return',
+						'title'     => $t->name . ' · Wallet top-up',
+						'logo'      => $t->logo_url,
+						'meta'      => array( 'hotspot' => $t->slug, 'type' => 'wallet' ),
+					)
+				);
+				if ( ! is_wp_error( $link ) ) {
+					wp_redirect( $link, 303 ); // phpcs:ignore WordPress.Security.SafeRedirect -- Flutterwave checkout host
+					exit;
+				}
+				$args['error'] = 'We could not reach the payment provider. Please try again in a moment.';
+			}
+		} elseif ( 'buy' === $action ) {
+			$plan = zxc_plan( $t->id, (int) zxc_post( 'plan', 10 ) );
+			if ( ! $sub['active'] ) {
+				$args['error'] = 'Online sales are paused at this hotspot. Please ask the attendant.';
+			} elseif ( ! $plan || ! $plan->active ) {
+				$args['error'] = 'That plan is no longer available.';
+			} else {
+				$r = zxc_customer_buy_plan( $t, $c, $plan, $ctx );
+				if ( is_object( $r ) && 'success' === $r->status ) {
+					zxc_redirect( zxc_portal_url( $t, 'success/' . $r->reference ) );
+				}
+				$args['error'] = is_string( $r ) ? $r : 'Something went wrong. Your balance has not been charged.';
+			}
+		}
+	}
+	if ( ! $c ) {
+		zxc_render( zxc_view_portal_wallet_login( $t, $args ) );
+	}
+	$args['customer'] = $c;
+	$args['balance']  = zxc_customer_balance( $c->id );
+	$args['history']  = zxc_customer_history( $c->id );
+	$args['plans']    = zxc_plans( $t->id, true );
+	$args['buy']      = (int) zxc_get( 'buy', 10 );
+	$args['topup']    = zxc_get( 'topup', 10 );
+	zxc_render( zxc_view_portal_wallet( $t, $args ) );
 }

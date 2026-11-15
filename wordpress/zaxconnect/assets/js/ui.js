@@ -8,7 +8,7 @@
   function currentTheme() {
     var t = root.getAttribute('data-theme');
     if (t) return t;
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'dark';
   }
   $$('[data-theme-toggle]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -196,5 +196,66 @@
       if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
+  });
+
+  // Show / hide balances (remembered per device)
+  $$('[data-hide-toggle]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var on = !root.classList.contains('zx-hidebal');
+      root.classList.toggle('zx-hidebal', on);
+      try { localStorage.setItem('zx-hidebal', on ? '1' : '0'); } catch (e) {}
+    });
+  });
+
+  // Featured carousel
+  $$('[data-carousel]').forEach(function (c) {
+    var track = $('.fc-track', c), dots = $$('.fc-dots i', c), n = dots.length, i = 0, timer;
+    if (!track || n < 2) return;
+    var go = function (k) { i = (k + n) % n; track.style.transform = 'translateX(' + (-100 * i) + '%)'; dots.forEach(function (d, j) { d.classList.toggle('on', j === i); }); };
+    var auto = function () { clearInterval(timer); timer = setInterval(function () { go(i + 1); }, 6000); };
+    var p = $('[data-prev]', c), nx = $('[data-next]', c);
+    if (p) p.addEventListener('click', function () { go(i - 1); auto(); });
+    if (nx) nx.addEventListener('click', function () { go(i + 1); auto(); });
+    var sx = null;
+    c.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; }, { passive: true });
+    c.addEventListener('touchend', function (e) { if (sx === null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 40) { go(i + (dx < 0 ? 1 : -1)); auto(); } sx = null; });
+    auto();
+  });
+
+  // Block pinch / double-tap zoom (iOS ignores user-scalable=no)
+  document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchmove', function (e) { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+
+  // Installable app: service worker + install prompt
+  if ('serviceWorker' in navigator && window.isSecureContext) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('/zx-sw.js', { scope: '/' }).catch(function () {}); });
+  }
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var deferred = null;
+  var dismissed = false;
+  try { dismissed = Number(localStorage.getItem('zx-install-x') || 0) > Date.now(); } catch (e) {}
+  function showInstall(ios, force) {
+    if (standalone || (!force && dismissed) || $('.install-bar') || (!force && !window.matchMedia('(max-width: 1060px)').matches)) return;
+    var bar = document.createElement('div');
+    bar.className = 'install-bar';
+    bar.setAttribute('role', 'dialog');
+    bar.innerHTML = '<span class="ib-ic"><img src="' + (window.ZX_ICON || '') + '" alt=""></span>' +
+      '<span class="grow"><b>Install the app</b><small>' + (ios ? 'Tap <svg viewBox="0 0 24 24" class="ib-share"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg> Share, then “Add to Home Screen”' : (deferred ? 'Fast, full-screen and one tap away' : 'Open your browser menu and choose “Install app” or “Add to Home screen”')) + '</small></span>' +
+      (ios || !deferred ? '' : '<button type="button" class="btn btn-primary btn-sm" data-ib-go>Install</button>') +
+      '<button type="button" class="ib-x" data-ib-x aria-label="Close">&times;</button>';
+    document.body.appendChild(bar);
+    requestAnimationFrame(function () { bar.classList.add('on'); });
+    var go = $('[data-ib-go]', bar);
+    if (go) go.addEventListener('click', function () { if (!deferred) return; deferred.prompt(); deferred.userChoice.finally(function () { deferred = null; bar.remove(); }); });
+    $('[data-ib-x]', bar).addEventListener('click', function () {
+      try { localStorage.setItem('zx-install-x', String(Date.now() + 7 * 864e5)); } catch (e) {}
+      bar.remove();
+    });
+  }
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; setTimeout(function () { showInstall(false); }, 6500); });
+  if (isIOS && !standalone) setTimeout(function () { showInstall(true); }, 7000);
+  $$('[data-install]').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.preventDefault(); if (deferred) { deferred.prompt(); } else { showInstall(isIOS, true); } });
   });
 })();
