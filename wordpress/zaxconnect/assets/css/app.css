@@ -224,7 +224,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 /* ---------- Marketing site ---------- */
 .mk-hero { position: relative; overflow: hidden; }
 .mk-hero::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(var(--dot) 1px, transparent 1px); background-size: 26px 26px; mask-image: linear-gradient(to bottom, #000 40%, transparent); }
-.mk-hero-inner { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 48px; padding: 72px 0 64px; }
+.mk-hero-inner { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 48px; padding-block: 72px 64px; }
 .mk-hero-copy { flex: 1 1 460px; min-width: 0; }
 .mk-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 13px; font-weight: 600; color: var(--muted); }
 .mk-badge span { padding: 3px 9px; border-radius: 999px; background: var(--primary-soft); color: var(--primary-ink); font-weight: 800; font-size: 11px; }
@@ -412,7 +412,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
 .bar-track { height: 10px; border-radius: 999px; background: var(--track); overflow: hidden; }
 .bar-track span { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
 .bar-track.warn span { background: linear-gradient(90deg, #F79009, #F04438); }
-.pt-foot { padding: 26px 0 30px; display: grid; justify-items: center; gap: 10px; text-align: center; font-size: 12.5px; color: var(--muted); }
+.pt-foot { padding-block: 26px 30px; display: grid; justify-items: center; gap: 10px; text-align: center; font-size: 12.5px; color: var(--muted); }
 .pt-foot .links { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .pt-foot .links a { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); font-weight: 600; }
 @media (min-width: 821px) {
@@ -567,7 +567,7 @@ select.input { appearance: none; background-image: linear-gradient(45deg, transp
   .kpi.hero .kpi-value { font-size: 34px; }
   .card-pad { padding: 18px; }
   .mk-section { padding: 64px 0; }
-  .mk-hero-inner { padding: 36px 0 40px; gap: 28px; }
+  .mk-hero-inner { padding-block: 36px 40px; gap: 28px; }
   .mk-visual { height: 420px; transform: scale(.82); transform-origin: top center; margin-bottom: -70px; }
   .mk-cta-band { padding: 36px 24px; }
   .wizard { padding-top: 20px; }

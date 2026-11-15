@@ -36,6 +36,10 @@ register_deactivation_hook( __FILE__, 'zxc_deactivate' );
 function zxc_activate() {
 	zxc_install_db();
 	zxc_add_role();
+	// Pretty links are required for /signup, /dashboard and /h/{slug}.
+	if ( '' === (string) get_option( 'permalink_structure' ) ) {
+		update_option( 'permalink_structure', '/%postname%/' );
+	}
 	zxc_register_rewrites();
 	flush_rewrite_rules();
 	if ( ! wp_next_scheduled( 'zxc_housekeeping' ) ) {
