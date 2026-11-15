@@ -1,0 +1,23 @@
+services:
+  zaxconnect:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:3000:3000"   # web (put Caddy in front for HTTPS)
+      - "1812:1812/udp"         # RADIUS auth from your MikroTik
+      - "1813:1813/udp"         # RADIUS accounting
+    volumes:
+      - ./data:/app/data
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    # host networking so Caddy can reach 127.0.0.1:3000 and listen on 80/443
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    network_mode: host
+
+volumes:
+  caddy_data:

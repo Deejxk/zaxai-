@@ -1,0 +1,16 @@
+# systemd unit — copy to /etc/systemd/system/zaxconnect.service, then:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now zaxconnect
+[Unit]
+Description=ZaxConnect hotspot billing
+After=network.target
+
+[Service]
+Type=simple
+User=zaxconnect
+WorkingDirectory=/opt/zaxconnect
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

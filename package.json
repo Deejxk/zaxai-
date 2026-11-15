@@ -1,0 +1,19 @@
+{
+  "name": "zaxconnect",
+  "version": "1.0.0",
+  "description": "ZaxConnect — Wi-Fi hotspot billing system with captive portal, Paystack payments, vouchers and a built-in RADIUS server for MikroTik.",
+  "main": "server.js",
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.2.5",
+    "express": "^5.1.0"
+  }
+}
