@@ -52,7 +52,8 @@
   }
   nameInput.addEventListener('input', paintName);
   document.addEventListener('zx:brand', function (e) {
-    if (e.detail.color && pv) pv.style.setProperty('--accent', e.detail.color);
+    if (e.detail.color && pv) pv.style.setProperty('--d-accent', e.detail.color);
+    if (e.detail.color) $$('[data-pv-btn]').forEach(function (el) { el.style.background = e.detail.color; });
     if (e.detail.color) $$('[data-pv-initial]').forEach(function (el) { el.style.background = e.detail.color; });
     if (e.detail.logo) $$('[data-pv-initial]').forEach(function (el) {
       var img = document.createElement('img'); img.src = e.detail.logo; img.alt = '';

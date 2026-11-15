@@ -13,8 +13,11 @@ This repository contains two editions:
 
 - **Marketing site** with pricing at `/` (optional homepage takeover)
 - **Owner sign-up wizard** at `/signup`: account → brand (name, colour, logo) → prices → Flutterwave → first router
-- **Owner dashboard** at `/dashboard`, separate from wp-admin (owners are blocked from wp-admin): revenue chart, sales and CSV, vouchers and printable cards, online users, routers and setup scripts, branding, payments, subscription
-- **Platform admin** at `/zx-admin` for WordPress administrators: all businesses, MRR, suspend or extend, subscription prices, platform Flutterwave keys
+- **Glass design** across every page (light/dark toggle, floating glass dock on mobile with animated icons), plus marketing pages: features, pricing, setup guide, about, FAQ, contact, terms, privacy, refunds
+- **Owner dashboard** at `/dashboard`, separate from wp-admin (owners are blocked from wp-admin): detailed analytics (revenue trend, conversion funnel, busiest hours and days, plan performance, payment methods, top customers), sales and CSV, customers, vouchers and printable cards, online users, routers and setup scripts, branding, payments, support inbox
+- **Wallet**: owners top up with Flutterwave and pay their subscription from the balance; platform staff can credit or debit it
+- **Admin console** at `/zx-admin/login`, with its own sign-in, separate from wp-admin: businesses, MRR, subscriptions, inbox, team accounts (staff are blocked from wp-admin), settings and platform Flutterwave keys
+- **Same-tab switch icons** in the header to jump between the website, your hotspot dashboard and the admin console
 - **Branded customer portal** per business at `/h/{business}`: plans, Flutterwave checkout (card, transfer, USSD), voucher login, plan status, voucher recovery
 - Light and dark toggle, sticky header, mobile footer menu, animated icons and illustrations
 

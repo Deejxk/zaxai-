@@ -3,7 +3,7 @@
  * Plugin Name:       ZaxConnect – Hotspot Billing SaaS
  * Plugin URI:        https://zaxconnect.cloud
  * Description:       Run a Wi-Fi hotspot billing platform on WordPress: hotspot owners sign up, brand their own captive portal, sell plans with Flutterwave and manage MikroTik routers from their own dashboard (separate from wp-admin).
- * Version:           1.0.0
+ * Version:           2.0.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            ZaxConnect
@@ -13,8 +13,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ZXC_VERSION', '1.0.0' );
-define( 'ZXC_DB_VERSION', '1' );
+define( 'ZXC_VERSION', '2.0.0' );
+define( 'ZXC_DB_VERSION', '3' );
 define( 'ZXC_FILE', __FILE__ );
 define( 'ZXC_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ZXC_URL', plugin_dir_url( __FILE__ ) );

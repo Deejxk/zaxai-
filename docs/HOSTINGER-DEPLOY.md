@@ -25,7 +25,7 @@ hPanel → **Websites** → zaxconnect.cloud → **Security** → **SSL** → in
 
 ## 4. Set up the platform
 
-1. Open **https://zaxconnect.cloud/zx-admin**. This is your platform panel; it is separate from wp-admin.
+1. Open **https://zaxconnect.cloud/zx-admin/login** and sign in with your WordPress administrator account. This is your admin console; it is separate from wp-admin. Add staff under **Team**.
 2. **Platform settings**:
    - Set your **subscription prices** (what hotspot owners pay you monthly) and the free-trial length.
    - Add **your Flutterwave keys** (dashboard.flutterwave.com → Settings → API Keys). These collect subscription fees.

@@ -63,7 +63,7 @@
   var bar = $('[data-select-bar]');
   $$('[data-plan]').forEach(function (card) {
     card.addEventListener('click', function (e) {
-      if (window.matchMedia('(min-width: 821px)').matches) return; // desktop cards use their own Buy button
+      if (window.matchMedia('(min-width: 861px)').matches) return; // desktop cards use their own Buy button
       e.preventDefault();
       $$('[data-plan]').forEach(function (c) { c.classList.toggle('on', c === card); c.setAttribute('aria-pressed', c === card); });
       if (bar) {
@@ -164,5 +164,37 @@
       };
       reader.readAsDataURL(f);
     });
+  });
+
+  // Glass header gets stronger once you scroll
+  var nav = $('[data-nav]');
+  if (nav) {
+    var onScroll = function () { nav.classList.toggle('scrolled', window.scrollY > 8); };
+    onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
+  }
+  // Toast notifications fade away
+  $$('[data-toast]').forEach(function (t) {
+    setTimeout(function () { t.style.transition = 'opacity .4s, transform .4s'; t.style.opacity = '0'; t.style.transform = 'translate(-50%, -10px)'; }, 4200);
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 4800);
+  });
+  // Wallet quick amounts
+  var amt = $('[data-amount]');
+  $$('[data-quick]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (amt) amt.value = b.getAttribute('data-quick');
+      $$('[data-quick]').forEach(function (x) { x.classList.toggle('on', x === b); });
+    });
+  });
+  // Animated balance counter
+  $$('[data-count]').forEach(function (el) {
+    var end = Number(el.getAttribute('data-count')) || 0;
+    if (!end) return;
+    var start = performance.now(), dur = 900;
+    var step = function (now) {
+      var p = Math.min(1, (now - start) / dur), v = Math.round(end * (1 - Math.pow(1 - p, 3)));
+      el.textContent = '₦' + v.toLocaleString('en-NG');
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
   });
 })();

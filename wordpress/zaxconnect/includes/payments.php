@@ -251,3 +251,113 @@ function zxc_verify_subscription( $ref ) {
 	}
 	return zxc_subscription_row( $ref );
 }
+
+/* -------------------------------------------------------------------------
+ * Owner wallet: deposits via Flutterwave, spend on subscriptions
+ * ---------------------------------------------------------------------- */
+
+function zxc_wallet_balance( $tenant_id ) {
+	global $wpdb;
+	return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'wallet' ) . " WHERE tenant_id = %d AND status = 'success'", $tenant_id ) );
+}
+
+function zxc_wallet_row( $ref ) {
+	global $wpdb;
+	return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . zxc_table( 'wallet' ) . ' WHERE reference = %s', $ref ) );
+}
+
+function zxc_wallet_history( $tenant_id, $limit = 100 ) {
+	global $wpdb;
+	return $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zxc_table( 'wallet' ) . ' WHERE tenant_id = %d ORDER BY id DESC LIMIT %d', $tenant_id, $limit ) );
+}
+
+function zxc_wallet_create_deposit( $t, $amount ) {
+	global $wpdb;
+	$ref = zxc_reference( 'ZXW' );
+	$wpdb->insert(
+		zxc_table( 'wallet' ),
+		array(
+			'tenant_id' => $t->id,
+			'type'      => 'deposit',
+			'amount'    => (int) $amount,
+			'reference' => $ref,
+			'gateway'   => zxc_billing_ready() ? 'flutterwave' : 'demo',
+			'note'      => 'Wallet top-up',
+			'created'   => time(),
+		)
+	);
+	return zxc_wallet_row( $ref );
+}
+
+/** Mark a deposit successful exactly once. */
+function zxc_wallet_complete( $ref, $amount_paid = null, $channel = '' ) {
+	global $wpdb;
+	$w = zxc_wallet_row( $ref );
+	if ( ! $w || 'pending' !== $w->status ) {
+		return $w;
+	}
+	if ( null !== $amount_paid && $amount_paid < (int) $w->amount ) {
+		return $w;
+	}
+	$wpdb->query( $wpdb->prepare( 'UPDATE ' . zxc_table( 'wallet' ) . " SET status = 'success', channel = %s, completed = %d WHERE id = %d AND status = 'pending'", $channel, time(), $w->id ) );
+	return zxc_wallet_row( $ref );
+}
+
+function zxc_wallet_verify( $ref ) {
+	$w = zxc_wallet_row( $ref );
+	if ( ! $w || 'pending' !== $w->status || 'flutterwave' !== $w->gateway ) {
+		return $w;
+	}
+	$r = zxc_flw_verify( zxc_setting( 'flw_secret' ), $ref );
+	if ( 'success' === $r['status'] ) {
+		return zxc_wallet_complete( $ref, $r['amount'], $r['channel'] );
+	}
+	if ( 'failed' === $r['status'] ) {
+		global $wpdb;
+		$wpdb->update( zxc_table( 'wallet' ), array( 'status' => 'failed' ), array( 'id' => $w->id ) );
+	}
+	return zxc_wallet_row( $ref );
+}
+
+/** Add a ledger entry (negative = debit). Returns false when funds are insufficient. */
+function zxc_wallet_entry( $tenant_id, $type, $amount, $note, $gateway = 'wallet' ) {
+	global $wpdb;
+	$lock = 'zxc_wallet_' . (int) $tenant_id;
+	$wpdb->query( $wpdb->prepare( 'SELECT GET_LOCK(%s, 10)', $lock ) );
+	try {
+		if ( $amount < 0 && zxc_wallet_balance( $tenant_id ) + $amount < 0 ) {
+			return false;
+		}
+		$wpdb->insert(
+			zxc_table( 'wallet' ),
+			array(
+				'tenant_id' => (int) $tenant_id,
+				'type'      => $type,
+				'amount'    => (int) $amount,
+				'reference' => zxc_reference( 'ZXL' ),
+				'status'    => 'success',
+				'gateway'   => $gateway,
+				'note'      => substr( $note, 0, 190 ),
+				'created'   => time(),
+				'completed' => time(),
+			)
+		);
+		return true;
+	} finally {
+		$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+	}
+}
+
+/** Pay a subscription from the wallet balance. */
+function zxc_wallet_pay_subscription( $t, $tier, $months ) {
+	$tiers  = zxc_tiers();
+	$amount = $tiers[ $tier ]['price'] * $months;
+	if ( ! zxc_wallet_entry( $t->id, 'subscription', -$amount, $tiers[ $tier ]['name'] . ' plan · ' . $months . ' month' . ( $months > 1 ? 's' : '' ) ) ) {
+		return false;
+	}
+	global $wpdb;
+	$ref = zxc_reference( 'ZXS' );
+	$wpdb->insert( zxc_table( 'subscriptions' ), array( 'tenant_id' => $t->id, 'reference' => $ref, 'tier' => $tier, 'amount' => $amount, 'months' => $months, 'gateway' => 'wallet', 'created' => time() ) );
+	zxc_activate_subscription( $ref );
+	return true;
+}

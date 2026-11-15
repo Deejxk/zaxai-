@@ -21,6 +21,9 @@ function zxc_settings_defaults() {
 		'price_enterprise' => '45000',
 		'trial_days'       => '14',
 		'takeover_home'    => '1', // show the ZaxConnect landing page as the site homepage
+		'support_phone'    => '',
+		'support_whatsapp' => '',
+		'address'          => 'Lagos, Nigeria',
 	);
 }
 
@@ -189,6 +192,38 @@ function zxc_install_db() {
   PRIMARY KEY  (id),
   UNIQUE KEY router_code_mac (router_id,code,mac),
   KEY tenant_seen (tenant_id,seen_at)
+) $c;" );
+
+	dbDelta( "CREATE TABLE {$t('messages')} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  tenant_id bigint(20) unsigned DEFAULT NULL,
+  from_type varchar(20) NOT NULL DEFAULT 'visitor',
+  name varchar(120) NOT NULL DEFAULT '',
+  email varchar(190) NOT NULL DEFAULT '',
+  phone varchar(40) NOT NULL DEFAULT '',
+  subject varchar(190) NOT NULL DEFAULT '',
+  body text NOT NULL,
+  is_read tinyint(1) NOT NULL DEFAULT 0,
+  created bigint(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY  (id),
+  KEY tenant_read (tenant_id,is_read)
+) $c;" );
+
+	dbDelta( "CREATE TABLE {$t('wallet')} (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  tenant_id bigint(20) unsigned NOT NULL,
+  type varchar(20) NOT NULL DEFAULT 'deposit',
+  amount bigint(20) NOT NULL DEFAULT 0,
+  reference varchar(40) DEFAULT NULL,
+  status varchar(20) NOT NULL DEFAULT 'pending',
+  gateway varchar(20) NOT NULL DEFAULT 'flutterwave',
+  channel varchar(40) DEFAULT NULL,
+  note varchar(190) NOT NULL DEFAULT '',
+  created bigint(20) NOT NULL DEFAULT 0,
+  completed bigint(20) NOT NULL DEFAULT 0,
+  PRIMARY KEY  (id),
+  UNIQUE KEY reference (reference),
+  KEY tenant_status (tenant_id,status)
 ) $c;" );
 
 	update_option( 'zxc_db_version', ZXC_DB_VERSION, false );

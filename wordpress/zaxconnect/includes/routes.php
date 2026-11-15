@@ -21,16 +21,47 @@ function zxc_add_role() {
 	if ( ! get_role( 'zx_owner' ) ) {
 		add_role( 'zx_owner', 'Hotspot Owner', array( 'read' => true ) );
 	}
+	if ( ! get_role( 'zx_platform' ) ) {
+		add_role( 'zx_platform', 'ZaxConnect Admin', array( 'read' => true, 'zx_platform' => true ) );
+	}
+	$admin = get_role( 'administrator' );
+	if ( $admin && ! $admin->has_cap( 'zx_platform' ) ) {
+		$admin->add_cap( 'zx_platform' );
+	}
+}
+add_action( 'init', function () {
+	if ( get_option( 'zxc_roles_version' ) !== ZXC_VERSION ) {
+		zxc_add_role();
+		update_option( 'zxc_roles_version', ZXC_VERSION, false );
+	}
+} );
+
+/** Can this user use the ZaxConnect platform admin (/zx-admin)? */
+function zxc_is_platform_admin( $user = null ) {
+	$user = $user ? $user : wp_get_current_user();
+	return $user && $user->exists() && ( user_can( $user, 'zx_platform' ) || user_can( $user, 'manage_options' ) );
 }
 
+/** Users who must never see wp-admin: hotspot owners and ZaxConnect staff (not WordPress administrators). */
 function zxc_is_owner_only( $user = null ) {
 	$user = $user ? $user : wp_get_current_user();
-	return $user && $user->exists() && in_array( 'zx_owner', (array) $user->roles, true ) && ! user_can( $user, 'manage_options' );
+	if ( ! $user || ! $user->exists() || user_can( $user, 'manage_options' ) ) {
+		return false;
+	}
+	return (bool) array_intersect( array( 'zx_owner', 'zx_platform' ), (array) $user->roles );
+}
+
+function zxc_home_panel( $user = null ) {
+	$user = $user ? $user : wp_get_current_user();
+	if ( zxc_tenant_for_user( $user->ID ) ) {
+		return home_url( '/dashboard' );
+	}
+	return zxc_is_platform_admin( $user ) ? home_url( '/zx-admin' ) : home_url( '/signup' );
 }
 
 add_action( 'admin_init', function () {
 	if ( zxc_is_owner_only() && ! wp_doing_ajax() && ! ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
-		wp_safe_redirect( home_url( '/dashboard' ) );
+		wp_safe_redirect( zxc_home_panel() );
 		exit;
 	}
 } );
@@ -41,7 +72,7 @@ add_filter( 'show_admin_bar', function ( $show ) {
 
 add_filter( 'login_redirect', function ( $redirect, $requested, $user ) {
 	if ( $user instanceof WP_User && zxc_is_owner_only( $user ) ) {
-		return home_url( '/dashboard' );
+		return zxc_home_panel( $user );
 	}
 	return $redirect;
 }, 10, 3 );
@@ -51,6 +82,7 @@ add_filter( 'login_redirect', function ( $redirect, $requested, $user ) {
  * ---------------------------------------------------------------------- */
 
 function zxc_register_rewrites() {
+	add_rewrite_rule( '^(features|pricing|about|contact|faq|guide|terms|privacy|refunds|forgot)/?$', 'index.php?zxc=page&zxc_path=$matches[1]', 'top' );
 	add_rewrite_rule( '^signup/?$', 'index.php?zxc=signup', 'top' );
 	add_rewrite_rule( '^login/?$', 'index.php?zxc=login', 'top' );
 	add_rewrite_rule( '^logout/?$', 'index.php?zxc=logout', 'top' );
@@ -93,6 +125,9 @@ add_action( 'template_redirect', function () {
 	}
 	zxc_no_cache();
 	switch ( $route ) {
+		case 'page':
+			zxc_ctl_page( $path );
+			break;
 		case 'signup':
 			zxc_ctl_signup();
 			break;
@@ -199,7 +234,8 @@ add_action( 'rest_api_init', function () {
 					return new WP_REST_Response( array( 'ok' => false ), 401 );
 				}
 				if ( $ref ) {
-					zxc_verify_subscription( sanitize_text_field( $ref ) );
+					$ref = sanitize_text_field( $ref );
+					0 === strpos( $ref, 'ZXW' ) ? zxc_wallet_verify( $ref ) : zxc_verify_subscription( $ref );
 				}
 				return array( 'ok' => true );
 			}

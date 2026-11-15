@@ -356,3 +356,66 @@ add_action( 'zxc_housekeeping', function () {
 	$wpdb->query( $wpdb->prepare( 'DELETE FROM ' . zxc_table( 'online' ) . ' WHERE seen_at < %d', time() - 7 * DAY_IN_SECONDS ) );
 	$wpdb->query( $wpdb->prepare( 'UPDATE ' . zxc_table( 'transactions' ) . " SET status = 'failed' WHERE status = 'pending' AND created < %d", time() - DAY_IN_SECONDS ) );
 } );
+
+/* -------------------------------------------------------------------------
+ * Messages (contact forms, customer support, owner-to-platform support)
+ * ---------------------------------------------------------------------- */
+
+function zxc_add_message( array $m ) {
+	global $wpdb;
+	$wpdb->insert(
+		zxc_table( 'messages' ),
+		array(
+			'tenant_id' => isset( $m['tenant_id'] ) ? (int) $m['tenant_id'] : null,
+			'from_type' => $m['from_type'] ?? 'visitor',
+			'name'      => substr( (string) ( $m['name'] ?? '' ), 0, 120 ),
+			'email'     => substr( (string) ( $m['email'] ?? '' ), 0, 190 ),
+			'phone'     => substr( (string) ( $m['phone'] ?? '' ), 0, 40 ),
+			'subject'   => substr( (string) ( $m['subject'] ?? '' ), 0, 190 ),
+			'body'      => substr( (string) ( $m['body'] ?? '' ), 0, 5000 ),
+			'created'   => time(),
+		)
+	);
+	return (int) $wpdb->insert_id;
+}
+
+/** Messages for a tenant inbox, or the platform inbox when $tenant_id is null. */
+function zxc_messages( $tenant_id = null, $limit = 100 ) {
+	global $wpdb;
+	$t = zxc_table( 'messages' );
+	if ( null === $tenant_id ) {
+		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $t WHERE tenant_id IS NULL ORDER BY id DESC LIMIT %d", $limit ) ); // phpcs:ignore
+	}
+	return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $t WHERE tenant_id = %d ORDER BY id DESC LIMIT %d", $tenant_id, $limit ) ); // phpcs:ignore
+}
+
+function zxc_unread_count( $tenant_id = null ) {
+	global $wpdb;
+	$t = zxc_table( 'messages' );
+	if ( null === $tenant_id ) {
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM $t WHERE tenant_id IS NULL AND is_read = 0" ); // phpcs:ignore
+	}
+	return (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $t WHERE tenant_id = %d AND is_read = 0", $tenant_id ) ); // phpcs:ignore
+}
+
+function zxc_mark_read( $tenant_id = null ) {
+	global $wpdb;
+	$t = zxc_table( 'messages' );
+	if ( null === $tenant_id ) {
+		$wpdb->query( "UPDATE $t SET is_read = 1 WHERE tenant_id IS NULL" ); // phpcs:ignore
+	} else {
+		$wpdb->query( $wpdb->prepare( "UPDATE $t SET is_read = 1 WHERE tenant_id = %d", $tenant_id ) ); // phpcs:ignore
+	}
+}
+
+/** Simple per-IP throttle for public forms. */
+function zxc_throttled( $key, $max = 5, $window = 600 ) {
+	$ip  = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+	$tk  = 'zxc_thr_' . md5( $key . '|' . $ip );
+	$hit = (int) get_transient( $tk );
+	if ( $hit >= $max ) {
+		return true;
+	}
+	set_transient( $tk, $hit + 1, $window );
+	return false;
+}

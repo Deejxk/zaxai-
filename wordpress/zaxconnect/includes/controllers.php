@@ -160,7 +160,7 @@ function zxc_ctl_signup() {
 
 function zxc_ctl_login() {
 	if ( is_user_logged_in() ) {
-		zxc_redirect( zxc_tenant_for_user( get_current_user_id() ) ? home_url( '/dashboard' ) : ( current_user_can( 'manage_options' ) ? home_url( '/zx-admin' ) : home_url( '/signup' ) ) );
+		zxc_redirect( zxc_home_panel() );
 	}
 	if ( ! zxc_is_post() ) {
 		zxc_render( zxc_view_login( array() ) );
@@ -179,10 +179,7 @@ function zxc_ctl_login() {
 		zxc_render( zxc_view_login( array( 'error' => 'Incorrect email or password.', 'email' => $email ) ), 401 );
 	}
 	wp_set_current_user( $user->ID );
-	if ( zxc_tenant_for_user( $user->ID ) ) {
-		zxc_redirect( home_url( '/dashboard' ) );
-	}
-	zxc_redirect( user_can( $user, 'manage_options' ) ? home_url( '/zx-admin' ) : home_url( '/signup' ) );
+	zxc_redirect( zxc_home_panel( $user ) );
 }
 
 /* -------------------------------------------------------------------------
@@ -381,6 +378,33 @@ function zxc_ctl_portal( $t, $path ) {
 			zxc_render( zxc_view_portal_recover( $t, $args ) );
 			break;
 
+		case 'plans':
+			zxc_render( zxc_view_portal_plans( $t, array( 'plans' => zxc_plans( $t->id, true ), 'ctx' => $ctx ) ) );
+			break;
+
+		case 'help':
+			$args = array();
+			if ( zxc_is_post() ) {
+				$name  = zxc_post( 'name', 120 );
+				$phone = zxc_normalize_phone( zxc_post( 'phone', 20 ) );
+				$body  = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+				if ( zxc_throttled( 'help' . $t->id, 4 ) ) {
+					$args['error'] = 'You have sent several messages already. Please wait a few minutes.';
+				} elseif ( '' === $name || ! zxc_valid_phone( $phone ) || strlen( $body ) < 5 ) {
+					$args['error'] = 'Please enter your name, a valid phone number and your message.';
+				} else {
+					zxc_add_message( array( 'tenant_id' => $t->id, 'from_type' => 'customer', 'name' => $name, 'phone' => $phone, 'subject' => zxc_post( 'topic', 80 ) ? zxc_post( 'topic', 80 ) : 'Support request', 'body' => $body ) );
+					$args['sent'] = true;
+				}
+				$args['values'] = array( 'name' => $name, 'phone' => zxc_post( 'phone', 20 ), 'message' => $body );
+			}
+			zxc_render( zxc_view_portal_help( $t, $args ) );
+			break;
+
+		case 'terms':
+			zxc_render( zxc_view_portal_terms( $t ) );
+			break;
+
 		default:
 			zxc_redirect( zxc_portal_url( $t ) );
 	}
@@ -428,7 +452,7 @@ function zxc_ctl_dashboard( $path ) {
 
 	switch ( $page ) {
 		case '':
-			zxc_render( zxc_view_dash_home( $t, zxc_dashboard_stats( $t, zxc_get( 'range', 3 ) ) ) );
+			zxc_render( zxc_view_dash_home( $t, zxc_dashboard_stats( $t, zxc_get( 'range', 3 ) ), zxc_analytics( $t, 30 ) ) );
 			break;
 		case 'plans':
 			if ( isset( $seg[1] ) ) {
@@ -520,6 +544,47 @@ function zxc_ctl_dashboard( $path ) {
 			break;
 		case 'account':
 			zxc_render( zxc_view_dash_account( $t, wp_get_current_user() ) );
+			break;
+		case 'customers':
+			$q    = zxc_get( 'q', 40 );
+			$like = '%' . $wpdb->esc_like( $q ) . '%';
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT x.phone, COUNT(*) AS purchases, SUM(x.amount) AS spent, MAX(x.paid_at) AS last_paid, MIN(x.paid_at) AS first_paid,
+					SUBSTRING_INDEX(GROUP_CONCAT(p.name ORDER BY x.paid_at DESC SEPARATOR "|"), "|", 1) AS last_plan
+					FROM ' . zxc_table( 'transactions' ) . ' x JOIN ' . zxc_table( 'plans' ) . " p ON p.id = x.plan_id
+					WHERE x.tenant_id = %d AND x.status = 'success' AND x.phone LIKE %s GROUP BY x.phone ORDER BY last_paid DESC LIMIT 300",
+					$t->id, $like
+				)
+			);
+			zxc_render( zxc_view_dash_customers( $t, $rows, $q ) );
+			break;
+		case 'reports':
+		case 'analytics':
+			zxc_render( zxc_view_dash_analytics( $t, zxc_analytics( $t, (int) zxc_get( 'range', 3 ) ) ) );
+			break;
+		case 'wallet':
+			if ( 'demo' === ( $seg[1] ?? '' ) ) {
+				$w = zxc_wallet_row( $seg[2] ?? '' );
+				if ( $w && (int) $w->tenant_id === (int) $t->id && 'pending' === $w->status && 'demo' === $w->gateway ) {
+					zxc_render( zxc_view_dash_wallet_demo( $t, $w ) );
+				}
+				zxc_redirect( $base . '/wallet' );
+			}
+			if ( 'return' === ( $seg[1] ?? '' ) ) {
+				$w = zxc_wallet_row( zxc_get( 'tx_ref', 40 ) );
+				if ( $w && (int) $w->tenant_id === (int) $t->id ) {
+					$w = zxc_wallet_verify( $w->reference );
+					zxc_flash( 'success' === $w->status ? zxc_money( $w->amount ) . ' added to your wallet.' : ( 'failed' === $w->status ? 'Your top-up did not go through.' : 'We are confirming your payment. Your balance updates shortly.' ), 'success' === $w->status ? 'ok' : 'warn' );
+				}
+				zxc_redirect( $base . '/wallet' );
+			}
+			zxc_render( zxc_view_dash_wallet( $t, zxc_wallet_balance( $t->id ), zxc_wallet_history( $t->id ) ) );
+			break;
+		case 'support':
+			$msgs = zxc_messages( $t->id );
+			zxc_mark_read( $t->id );
+			zxc_render( zxc_view_dash_support( $t, $msgs ) );
 			break;
 		default:
 			zxc_redirect( $base );
@@ -694,6 +759,61 @@ function zxc_dashboard_post( $t, $seg ) {
 			}
 			zxc_redirect( $base . '/billing' );
 			break;
+		case 'wallet_deposit':
+			$amount = absint( zxc_post( 'amount', 9 ) );
+			if ( $amount < 500 || $amount > 2000000 ) {
+				zxc_flash( 'Enter an amount between ₦500 and ₦2,000,000.', 'bad' );
+				zxc_redirect( $base . '/wallet' );
+			}
+			if ( ! zxc_billing_ready() && '1' !== zxc_setting( 'demo_billing' ) ) {
+				zxc_flash( 'Wallet top-ups are not available yet. Please contact support.', 'bad' );
+				zxc_redirect( $base . '/wallet' );
+			}
+			$w = zxc_wallet_create_deposit( $t, $amount );
+			if ( 'demo' === $w->gateway ) {
+				zxc_redirect( $base . '/wallet/demo/' . $w->reference );
+			}
+			$u    = wp_get_current_user();
+			$link = zxc_flw_checkout( zxc_setting( 'flw_secret' ), array( 'reference' => $w->reference, 'amount' => $amount, 'email' => $u->user_email, 'name' => $u->display_name, 'redirect' => $base . '/wallet/return', 'title' => zxc_setting( 'platform_name' ) . ' wallet top-up', 'meta' => array( 'hotspot' => $t->slug, 'type' => 'wallet' ) ) );
+			if ( is_wp_error( $link ) ) {
+				zxc_flash( 'We could not reach Flutterwave. Please try again shortly.', 'bad' );
+				zxc_redirect( $base . '/wallet' );
+			}
+			wp_redirect( $link, 303 ); // phpcs:ignore WordPress.Security.SafeRedirect
+			exit;
+		case 'wallet_demo':
+			$w = zxc_wallet_row( zxc_post( 'reference', 40 ) );
+			if ( $w && (int) $w->tenant_id === (int) $t->id && 'demo' === $w->gateway && ! zxc_billing_ready() ) {
+				zxc_wallet_complete( $w->reference, null, 'demo' );
+				zxc_flash( zxc_money( $w->amount ) . ' added to your wallet (test payment).' );
+			}
+			zxc_redirect( $base . '/wallet' );
+			break;
+		case 'subscribe_wallet':
+			$tier   = zxc_post( 'tier', 20 );
+			$months = in_array( (int) zxc_post( 'months', 2 ), array( 1, 3, 6, 12 ), true ) ? (int) zxc_post( 'months', 2 ) : 1;
+			if ( isset( zxc_tiers()[ $tier ] ) ) {
+				if ( zxc_wallet_pay_subscription( $t, $tier, $months ) ) {
+					zxc_flash( 'Paid from your wallet. Your ' . zxc_tiers()[ $tier ]['name'] . ' plan is active.' );
+				} else {
+					zxc_flash( 'Your wallet balance is too low. Top up first.', 'bad' );
+					zxc_redirect( $base . '/wallet' );
+				}
+			}
+			zxc_redirect( $base . '/billing' );
+			break;
+		case 'support_send':
+			$body = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+			if ( strlen( $body ) < 5 ) {
+				zxc_flash( 'Please write your message.', 'bad' );
+			} else {
+				$u = wp_get_current_user();
+				zxc_add_message( array( 'tenant_id' => null, 'from_type' => 'owner', 'name' => $u->display_name . ' · ' . $t->name, 'email' => $u->user_email, 'subject' => zxc_post( 'subject', 150 ) ? zxc_post( 'subject', 150 ) : 'Support request', 'body' => $body ) );
+				zxc_notify_platform( 'New support request from ' . $t->name, $body, $u->user_email );
+				zxc_flash( 'Message sent. The ' . zxc_setting( 'platform_name' ) . ' team will reply by email.' );
+			}
+			zxc_redirect( $base . '/support' );
+			break;
 		case 'account':
 			$user = wp_get_current_user();
 			$name = zxc_post( 'display_name', 60 );
@@ -778,85 +898,381 @@ function zxc_export_sales_csv( $rows ) {
 }
 
 /* -------------------------------------------------------------------------
- * Platform operator panel (WordPress administrators)
+ * Reports & notifications
+ * ---------------------------------------------------------------------- */
+
+/** Detailed analytics for one business over the last $days days (with the previous period for comparison). */
+function zxc_analytics( $t, $days = 30 ) {
+	global $wpdb;
+	$tx    = zxc_table( 'transactions' );
+	$vt    = zxc_table( 'vouchers' );
+	$pt    = zxc_table( 'plans' );
+	$ot    = zxc_table( 'online' );
+	$days  = in_array( (int) $days, array( 7, 30, 90 ), true ) ? (int) $days : 30;
+	$today = zxc_lagos_day_start();
+	$from  = $today - ( $days - 1 ) * DAY_IN_SECONDS;
+	$prev  = $from - $days * DAY_IN_SECONDS;
+	$tid   = (int) $t->id;
+
+	$period = function ( $a, $b ) use ( $wpdb, $tx, $tid ) {
+		return $wpdb->get_row( $wpdb->prepare( "SELECT COALESCE(SUM(amount),0) AS total, COUNT(*) AS cnt, COUNT(DISTINCT phone) AS customers FROM $tx WHERE tenant_id = %d AND status = 'success' AND paid_at >= %d AND paid_at < %d", $tid, $a, $b ) ); // phpcs:ignore
+	};
+	$cur = $period( $from, PHP_INT_MAX );
+	$old = $period( $prev, $from );
+
+	// Checkout conversion (orders created in the period).
+	$orders = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) AS started, SUM(status = 'success') AS paid, SUM(status = 'failed') AS failed FROM $tx WHERE tenant_id = %d AND created >= %d", $tid, $from ) ); // phpcs:ignore
+	$orders_old = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) AS started, SUM(status = 'success') AS paid FROM $tx WHERE tenant_id = %d AND created >= %d AND created < %d", $tid, $prev, $from ) ); // phpcs:ignore
+
+	// Daily series.
+	$rows   = $wpdb->get_results( $wpdb->prepare( "SELECT paid_at, amount, phone FROM $tx WHERE tenant_id = %d AND status = 'success' AND paid_at >= %d", $tid, $from ) ); // phpcs:ignore
+	$daily  = array();
+	$dow    = array_fill( 0, 7, 0 );
+	$hours  = array_fill( 0, 24, 0 );
+	for ( $i = 0; $i < $days; $i++ ) {
+		$daily[ $i ] = array( 'label' => wp_date( 'j M', $from + $i * DAY_IN_SECONDS + 3600, new DateTimeZone( 'UTC' ) ), 'total' => 0, 'count' => 0 );
+	}
+	foreach ( $rows as $r ) {
+		$i = (int) floor( ( $r->paid_at - $from ) / DAY_IN_SECONDS );
+		if ( isset( $daily[ $i ] ) ) {
+			$daily[ $i ]['total'] += (int) $r->amount;
+			$daily[ $i ]['count']++;
+		}
+		$local                       = (int) $r->paid_at + 3600;
+		$dow[ (int) gmdate( 'N', $local ) - 1 ] += (int) $r->amount;
+		$hours[ (int) gmdate( 'G', $local ) ]++;
+	}
+	$daily = array_values( $daily );
+
+	// New vs returning customers (returning = bought before this period).
+	$returning = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT c.phone) FROM $tx c WHERE c.tenant_id = %d AND c.status = 'success' AND c.paid_at >= %d AND EXISTS (SELECT 1 FROM $tx o WHERE o.tenant_id = c.tenant_id AND o.phone = c.phone AND o.status = 'success' AND o.paid_at < %d)", $tid, $from, $from ) ); // phpcs:ignore
+	$repeat    = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM (SELECT phone FROM $tx WHERE tenant_id = %d AND status = 'success' AND paid_at >= %d GROUP BY phone HAVING COUNT(*) > 1) r", $tid, $from ) ); // phpcs:ignore
+	$top_customers = $wpdb->get_results( $wpdb->prepare( "SELECT phone, COUNT(*) AS cnt, SUM(amount) AS total, MAX(paid_at) AS last_paid FROM $tx WHERE tenant_id = %d AND status = 'success' AND paid_at >= %d GROUP BY phone ORDER BY total DESC LIMIT 5", $tid, $from ) ); // phpcs:ignore
+
+	// Plans, channels.
+	$plans = $wpdb->get_results( $wpdb->prepare( "SELECT p.name, p.price, COUNT(x.id) AS cnt, COALESCE(SUM(x.amount),0) AS total FROM $pt p LEFT JOIN $tx x ON x.plan_id = p.id AND x.status = 'success' AND x.paid_at >= %d WHERE p.tenant_id = %d GROUP BY p.id, p.name, p.price ORDER BY total DESC, p.sort_order", $from, $tid ) ); // phpcs:ignore
+	$chan  = $wpdb->get_results( $wpdb->prepare( "SELECT COALESCE(NULLIF(channel,''),'other') AS channel, COUNT(*) AS cnt, SUM(amount) AS total FROM $tx WHERE tenant_id = %d AND status = 'success' AND paid_at >= %d GROUP BY channel ORDER BY total DESC", $tid, $from ) ); // phpcs:ignore
+
+	// Voucher funnel & data.
+	$vouch = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) AS issued, SUM(activated_at > 0) AS activated, SUM(status = 'expired') AS finished, SUM(source = 'online') AS online, SUM(source = 'batch') AS printed, COALESCE(SUM(bytes_used),0) AS bytes, COALESCE(AVG(NULLIF(bytes_used,0)),0) AS avg_bytes FROM $vt WHERE tenant_id = %d AND created >= %d", $tid, $from ) ); // phpcs:ignore
+	$data_served = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(bytes_used),0) FROM $vt WHERE tenant_id = %d AND last_seen >= %d", $tid, $from ) ); // phpcs:ignore
+
+	// Sessions from router check-ins.
+	$sess = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) AS sessions, COUNT(DISTINCT mac) AS devices, COALESCE(AVG(seen_at - first_seen),0) AS avg_secs FROM $ot WHERE tenant_id = %d AND first_seen >= %d", $tid, $from ) ); // phpcs:ignore
+	$locations = $wpdb->get_results( $wpdb->prepare( "SELECT r.name, r.last_seen, COUNT(o.id) AS sessions, COUNT(DISTINCT o.mac) AS devices, COALESCE(SUM(o.bytes),0) AS bytes FROM " . zxc_table( 'routers' ) . " r LEFT JOIN $ot o ON o.router_id = r.id AND o.first_seen >= %d WHERE r.tenant_id = %d GROUP BY r.id, r.name, r.last_seen ORDER BY sessions DESC", $from, $tid ) ); // phpcs:ignore
+	$online_now = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $ot WHERE tenant_id = %d AND seen_at >= %d", $tid, time() - 90 ) ); // phpcs:ignore
+
+	$pct = function ( $a, $b ) {
+		return $b > 0 ? round( ( $a - $b ) / $b * 100 ) : null;
+	};
+	$conv     = $orders->started ? round( $orders->paid / $orders->started * 100 ) : null;
+	$conv_old = $orders_old->started ? round( $orders_old->paid / $orders_old->started * 100 ) : null;
+	$peak_h   = array_search( max( $hours ), $hours, true );
+	$day_names = array( 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' );
+
+	return array(
+		'days'        => $days,
+		'revenue'     => (int) $cur->total,
+		'revenue_chg' => $pct( $cur->total, $old->total ),
+		'sales'       => (int) $cur->cnt,
+		'sales_chg'   => $pct( $cur->cnt, $old->cnt ),
+		'customers'   => (int) $cur->customers,
+		'cust_chg'    => $pct( $cur->customers, $old->customers ),
+		'avg'         => $cur->cnt ? (int) round( $cur->total / $cur->cnt ) : 0,
+		'avg_chg'     => $pct( $cur->cnt ? $cur->total / $cur->cnt : 0, $old->cnt ? $old->total / $old->cnt : 0 ),
+		'per_day'     => (int) round( $cur->total / $days ),
+		'conversion'  => $conv,
+		'conv_chg'    => ( null !== $conv && null !== $conv_old ) ? $conv - $conv_old : null,
+		'orders'      => $orders,
+		'returning'   => $returning,
+		'new_cust'    => max( 0, (int) $cur->customers - $returning ),
+		'repeat'      => $repeat,
+		'top_customers' => $top_customers,
+		'daily'       => $daily,
+		'dow'         => array_map( function ( $v, $k ) use ( $day_names ) { return array( 'label' => $day_names[ $k ], 'total' => $v ); }, $dow, array_keys( $dow ) ),
+		'hours'       => $hours,
+		'peak_hour'   => max( $hours ) > 0 ? $peak_h : null,
+		'best_day'    => max( $dow ) > 0 ? $day_names[ array_search( max( $dow ), $dow, true ) ] : null,
+		'plans'       => $plans,
+		'channels'    => $chan,
+		'vouchers'    => $vouch,
+		'data_served' => $data_served,
+		'sessions'    => $sess,
+		'locations'   => $locations,
+		'online_now'  => $online_now,
+	);
+}
+
+function zxc_notify_platform( $subject, $body, $reply_to = '' ) {
+	$to = zxc_setting( 'support_email' ) ? zxc_setting( 'support_email' ) : get_option( 'admin_email' );
+	if ( $to ) {
+		wp_mail( $to, '[' . zxc_setting( 'platform_name' ) . '] ' . $subject, $body, $reply_to ? array( 'Reply-To: ' . $reply_to ) : array() );
+	}
+}
+
+/* -------------------------------------------------------------------------
+ * Public marketing pages
+ * ---------------------------------------------------------------------- */
+
+function zxc_ctl_page( $page ) {
+	switch ( $page ) {
+		case 'contact':
+			$args = array();
+			if ( zxc_is_post() ) {
+				zxc_check_nonce( 'zxc_contact' );
+				$name  = zxc_post( 'name', 120 );
+				$email = sanitize_email( zxc_post( 'email', 190 ) );
+				$body  = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+				$args['values'] = array( 'name' => $name, 'email' => $email, 'phone' => zxc_post( 'phone', 30 ), 'topic' => zxc_post( 'topic', 60 ), 'message' => $body );
+				if ( ! empty( $_POST['website'] ) || zxc_throttled( 'contact', 5 ) ) { // honeypot + throttle
+					$args['error'] = 'Please wait a few minutes before sending another message.';
+				} elseif ( '' === $name || ! is_email( $email ) || strlen( $body ) < 10 ) {
+					$args['error'] = 'Please enter your name, a valid email and a message of at least 10 characters.';
+				} else {
+					zxc_add_message( array( 'from_type' => 'visitor', 'name' => $name, 'email' => $email, 'phone' => zxc_post( 'phone', 30 ), 'subject' => zxc_post( 'topic', 60 ) ? zxc_post( 'topic', 60 ) : 'Website enquiry', 'body' => $body ) );
+					zxc_notify_platform( 'New message from ' . $name, $body . "\n\n— " . $name . ' <' . $email . '>', $email );
+					$args = array( 'sent' => true );
+				}
+			}
+			zxc_render( zxc_view_contact( $args ) );
+			break;
+		case 'forgot':
+			$args = array();
+			if ( zxc_is_post() ) {
+				zxc_check_nonce( 'zxc_forgot' );
+				$email = sanitize_email( zxc_post( 'email', 190 ) );
+				if ( ! zxc_throttled( 'forgot', 5 ) && is_email( $email ) && email_exists( $email ) ) {
+					retrieve_password( $email );
+				}
+				$args['sent'] = true; // same answer whether or not the account exists
+			}
+			zxc_render( zxc_view_forgot( $args ) );
+			break;
+		default:
+			$fn = 'zxc_view_page_' . $page;
+			if ( function_exists( $fn ) ) {
+				zxc_render( $fn() );
+			}
+			zxc_redirect( home_url( '/' ) );
+	}
+}
+
+/* -------------------------------------------------------------------------
+ * Platform admin (/zx-admin) — its own login, separate from wp-admin
  * ---------------------------------------------------------------------- */
 
 function zxc_ctl_platform( $path ) {
-	if ( ! is_user_logged_in() ) {
-		wp_safe_redirect( wp_login_url( home_url( '/zx-admin' ) ) );
-		exit;
-	}
-	if ( ! current_user_can( 'manage_options' ) ) {
-		zxc_redirect( home_url( '/dashboard' ) );
-	}
 	global $wpdb;
 	$base = home_url( '/zx-admin' );
 	$seg  = $path ? explode( '/', $path ) : array( '' );
 
-	if ( zxc_is_post() ) {
-		zxc_check_nonce( 'zxc_platform' );
-		$action = zxc_post( 'action', 40 );
-		if ( 'settings' === $action ) {
-			$vals = array(
-				'platform_name'    => zxc_post( 'platform_name', 60 ) ? zxc_post( 'platform_name', 60 ) : 'ZaxConnect',
-				'support_email'    => sanitize_email( zxc_post( 'support_email', 190 ) ),
-				'flw_public'       => zxc_post( 'flw_public', 200 ),
-				'flw_hash'         => zxc_post( 'flw_hash', 200 ),
-				'demo_billing'     => empty( $_POST['demo_billing'] ) ? '0' : '1', // phpcs:ignore
-				'takeover_home'    => empty( $_POST['takeover_home'] ) ? '0' : '1', // phpcs:ignore
-				'price_starter'    => (string) absint( zxc_post( 'price_starter', 9 ) ),
-				'price_business'   => (string) absint( zxc_post( 'price_business', 9 ) ),
-				'price_enterprise' => (string) absint( zxc_post( 'price_enterprise', 9 ) ),
-				'trial_days'       => (string) max( 1, absint( zxc_post( 'trial_days', 3 ) ) ),
-			);
-			if ( zxc_post( 'flw_secret', 200 ) ) {
-				$vals['flw_secret'] = zxc_post( 'flw_secret', 200 );
-			}
-			zxc_update_settings( $vals );
-			zxc_flash( 'Platform settings saved.' );
-			zxc_redirect( $base . '/settings' );
+	if ( 'login' === $seg[0] ) {
+		if ( zxc_is_platform_admin() ) {
+			zxc_redirect( $base );
 		}
-		$t = zxc_tenant( absint( zxc_post( 'tenant_id', 12 ) ) );
-		if ( $t ) {
-			if ( 'suspend' === $action ) {
-				zxc_update_tenant( $t->id, array( 'status' => 'suspended' ) );
-				zxc_flash( $t->name . ' suspended. Its portal is offline.' );
-			} elseif ( 'activate' === $action ) {
-				zxc_update_tenant( $t->id, array( 'status' => 'active' ) );
-				zxc_flash( $t->name . ' re-activated.' );
-			} elseif ( 'extend' === $action ) {
-				zxc_update_tenant( $t->id, array( 'sub_ends' => max( time(), (int) $t->sub_ends ) + 30 * DAY_IN_SECONDS ) );
-				zxc_flash( $t->name . ' extended by 30 days.' );
+		$args = array();
+		if ( zxc_is_post() ) {
+			zxc_check_nonce( 'zxc_admin_login' );
+			$email = zxc_post( 'email', 190 );
+			$user  = zxc_throttled( 'adminlogin', 10, 900 ) ? new WP_Error( 'throttled' ) : wp_signon( array( 'user_login' => $email, 'user_password' => isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : '', 'remember' => true ), is_ssl() ); // phpcs:ignore
+			if ( is_wp_error( $user ) || ! zxc_is_platform_admin( $user ) ) {
+				if ( ! is_wp_error( $user ) ) {
+					wp_logout();
+				}
+				$args = array( 'error' => 'Incorrect email or password, or this account is not a platform admin.', 'email' => $email );
+			} else {
+				zxc_redirect( $base );
 			}
 		}
-		zxc_redirect( $base );
+		zxc_render( zxc_view_admin_login( $args ), empty( $args['error'] ) ? 200 : 401 );
+	}
+	if ( 'logout' === $seg[0] ) {
+		wp_logout();
+		zxc_redirect( $base . '/login' );
+	}
+	if ( ! zxc_is_platform_admin() ) {
+		zxc_redirect( $base . '/login' );
 	}
 
-	if ( 'settings' === $seg[0] ) {
-		zxc_render( zxc_view_platform_settings() );
+	if ( zxc_is_post() ) {
+		zxc_check_nonce( 'zxc_platform' );
+		zxc_platform_post( $seg );
 	}
-	$tenants = $wpdb->get_results(
-		'SELECT t.*, u.user_email, u.display_name,
-		(SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'transactions' ) . " x WHERE x.tenant_id = t.id AND x.status = 'success') AS revenue,
-		(SELECT MAX(last_seen) FROM " . zxc_table( 'routers' ) . " r WHERE r.tenant_id = t.id) AS router_seen
-		FROM " . zxc_table( 'tenants' ) . " t LEFT JOIN {$wpdb->users} u ON u.ID = t.owner_id ORDER BY t.id DESC LIMIT 500"
-	);
-	$stats = array(
-		'mrr'      => 0,
-		'paying'   => 0,
-		'trials'   => 0,
-		'gmv'      => (int) $wpdb->get_var( 'SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'transactions' ) . " WHERE status = 'success'" ),
-		'subs_rev' => (int) $wpdb->get_var( 'SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'subscriptions' ) . " WHERE status = 'success'" ),
-	);
-	$tiers = zxc_tiers();
-	foreach ( $tenants as $t ) {
-		$s = zxc_subscription( $t );
-		if ( 'active' === $s['state'] ) {
-			$stats['paying']++;
-			$stats['mrr'] += $tiers[ $t->tier ]['price'] ?? 0;
-		} elseif ( 'trial' === $s['state'] ) {
-			$stats['trials']++;
+
+	switch ( $seg[0] ) {
+		case '':
+			zxc_render( zxc_view_admin_overview( zxc_platform_stats() ) );
+			break;
+		case 'businesses':
+			if ( ! empty( $seg[1] ) ) {
+				$t = zxc_tenant( (int) $seg[1] );
+				if ( ! $t ) {
+					zxc_redirect( $base . '/businesses' );
+				}
+				$owner   = get_userdata( $t->owner_id );
+				$stats   = zxc_dashboard_stats( $t, 14 );
+				$subs    = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zxc_table( 'subscriptions' ) . ' WHERE tenant_id = %d ORDER BY id DESC LIMIT 10', $t->id ) );
+				zxc_render( zxc_view_admin_business( $t, $owner, $stats, $subs ) );
+			}
+			$q    = zxc_get( 'q', 60 );
+			$like = '%' . $wpdb->esc_like( $q ) . '%';
+			zxc_render( zxc_view_admin_businesses( zxc_platform_tenants( $q ? $wpdb->prepare( '(t.name LIKE %s OR t.slug LIKE %s OR u.user_email LIKE %s)', $like, $like, $like ) : '1=1' ), $q ) );
+			break;
+		case 'subscriptions':
+			$rows = $wpdb->get_results( 'SELECT s.*, t.name AS tenant_name, t.slug FROM ' . zxc_table( 'subscriptions' ) . ' s JOIN ' . zxc_table( 'tenants' ) . ' t ON t.id = s.tenant_id ORDER BY s.id DESC LIMIT 300' );
+			zxc_render( zxc_view_admin_subscriptions( $rows ) );
+			break;
+		case 'inbox':
+			$msgs = zxc_messages( null, 200 );
+			zxc_mark_read( null );
+			zxc_render( zxc_view_admin_inbox( $msgs ) );
+			break;
+		case 'team':
+			$team = get_users( array( 'role__in' => array( 'zx_platform', 'administrator' ), 'orderby' => 'registered' ) );
+			zxc_render( zxc_view_admin_team( $team ) );
+			break;
+		case 'settings':
+			zxc_render( zxc_view_admin_settings() );
+			break;
+		case 'account':
+			zxc_render( zxc_view_admin_account( wp_get_current_user() ) );
+			break;
+		default:
+			zxc_redirect( $base );
+	}
+}
+
+function zxc_platform_post( $seg ) {
+	$base   = home_url( '/zx-admin' );
+	$action = zxc_post( 'action', 40 );
+	$back   = wp_get_referer() ? wp_get_referer() : $base;
+	if ( 'settings' === $action ) {
+		$vals = array(
+			'platform_name'    => zxc_post( 'platform_name', 60 ) ? zxc_post( 'platform_name', 60 ) : 'ZaxConnect',
+			'support_email'    => sanitize_email( zxc_post( 'support_email', 190 ) ),
+			'support_phone'    => zxc_post( 'support_phone', 30 ),
+			'support_whatsapp' => zxc_post( 'support_whatsapp', 30 ),
+			'address'          => zxc_post( 'address', 160 ),
+			'flw_public'       => zxc_post( 'flw_public', 200 ),
+			'flw_hash'         => zxc_post( 'flw_hash', 200 ),
+			'demo_billing'     => empty( $_POST['demo_billing'] ) ? '0' : '1', // phpcs:ignore
+			'takeover_home'    => empty( $_POST['takeover_home'] ) ? '0' : '1', // phpcs:ignore
+			'price_starter'    => (string) absint( zxc_post( 'price_starter', 9 ) ),
+			'price_business'   => (string) absint( zxc_post( 'price_business', 9 ) ),
+			'price_enterprise' => (string) absint( zxc_post( 'price_enterprise', 9 ) ),
+			'trial_days'       => (string) max( 1, absint( zxc_post( 'trial_days', 3 ) ) ),
+		);
+		if ( zxc_post( 'flw_secret', 200 ) ) {
+			$vals['flw_secret'] = zxc_post( 'flw_secret', 200 );
+		}
+		zxc_update_settings( $vals );
+		zxc_flash( 'Platform settings saved.' );
+		zxc_redirect( $base . '/settings' );
+	}
+	if ( 'team_add' === $action ) {
+		$email = sanitize_email( zxc_post( 'email', 190 ) );
+		$name  = zxc_post( 'name', 80 );
+		$pass  = isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore
+		if ( ! is_email( $email ) || email_exists( $email ) || strlen( $pass ) < 10 || '' === $name ) {
+			zxc_flash( 'Enter a name, an email not already in use, and a password of at least 10 characters.', 'bad' );
+		} else {
+			$login = sanitize_user( strtolower( strstr( $email, '@', true ) ), true ) . wp_rand( 10, 99 );
+			$id    = wp_insert_user( array( 'user_login' => $login, 'user_email' => $email, 'user_pass' => $pass, 'display_name' => $name, 'role' => 'zx_platform' ) );
+			zxc_flash( is_wp_error( $id ) ? $id->get_error_message() : $name . ' can now sign in at ' . $base . '/login.', is_wp_error( $id ) ? 'bad' : 'ok' );
+		}
+		zxc_redirect( $base . '/team' );
+	}
+	if ( 'team_remove' === $action ) {
+		$uid  = absint( zxc_post( 'user_id', 12 ) );
+		$user = get_userdata( $uid );
+		if ( $user && in_array( 'zx_platform', (array) $user->roles, true ) && get_current_user_id() !== $uid ) {
+			$user->remove_role( 'zx_platform' );
+			zxc_flash( $user->display_name . ' no longer has admin access.' );
+		}
+		zxc_redirect( $base . '/team' );
+	}
+	if ( 'account' === $action ) {
+		$user = wp_get_current_user();
+		if ( zxc_post( 'display_name', 60 ) ) {
+			wp_update_user( array( 'ID' => $user->ID, 'display_name' => zxc_post( 'display_name', 60 ) ) );
+		}
+		$new = isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore
+		if ( '' !== $new ) {
+			$cur = isset( $_POST['current'] ) ? (string) wp_unslash( $_POST['current'] ) : ''; // phpcs:ignore
+			if ( ! wp_check_password( $cur, $user->user_pass, $user->ID ) || strlen( $new ) < 10 || zxc_post( 'confirm', 200 ) !== $new ) {
+				zxc_flash( 'Check your current password. New passwords must match and be at least 10 characters.', 'bad' );
+				zxc_redirect( $base . '/account' );
+			}
+			wp_set_password( $new, $user->ID );
+			wp_set_auth_cookie( $user->ID, true, is_ssl() );
+		}
+		zxc_flash( 'Account updated.' );
+		zxc_redirect( $base . '/account' );
+	}
+	$t = zxc_tenant( absint( zxc_post( 'tenant_id', 12 ) ) );
+	if ( $t ) {
+		if ( 'suspend' === $action ) {
+			zxc_update_tenant( $t->id, array( 'status' => 'suspended' ) );
+			zxc_flash( $t->name . ' suspended. Its portal is offline.' );
+		} elseif ( 'activate' === $action ) {
+			zxc_update_tenant( $t->id, array( 'status' => 'active' ) );
+			zxc_flash( $t->name . ' re-activated.' );
+		} elseif ( 'extend' === $action ) {
+			zxc_update_tenant( $t->id, array( 'sub_ends' => max( time(), (int) $t->sub_ends ) + 30 * DAY_IN_SECONDS ) );
+			zxc_flash( $t->name . ' extended by 30 days.' );
+		} elseif ( 'wallet_credit' === $action ) {
+			$amt = (int) zxc_post( 'amount', 10 );
+			if ( 0 !== $amt && zxc_wallet_entry( $t->id, $amt > 0 ? 'credit' : 'debit', $amt, zxc_post( 'note', 150 ) ? zxc_post( 'note', 150 ) : 'Adjustment by ' . zxc_setting( 'platform_name' ) ) ) {
+				zxc_flash( ( $amt > 0 ? 'Credited ' : 'Debited ' ) . zxc_money( abs( $amt ) ) . ( $amt > 0 ? ' to ' : ' from ' ) . $t->name . '’s wallet.' );
+			} else {
+				zxc_flash( 'Could not adjust the wallet (check the amount and balance).', 'bad' );
+			}
+		} elseif ( 'tier' === $action && isset( zxc_tiers()[ zxc_post( 'tier', 20 ) ] ) ) {
+			zxc_update_tenant( $t->id, array( 'tier' => zxc_post( 'tier', 20 ) ) );
+			zxc_flash( $t->name . ' moved to the ' . zxc_tiers()[ zxc_post( 'tier', 20 ) ]['name'] . ' plan.' );
 		}
 	}
-	zxc_render( zxc_view_platform_home( $tenants, $stats ) );
+	zxc_redirect( $back );
+}
+
+function zxc_platform_tenants( $where = '1=1' ) {
+	global $wpdb;
+	return $wpdb->get_results(
+		'SELECT t.*, u.user_email, u.display_name,
+		(SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'transactions' ) . " x WHERE x.tenant_id = t.id AND x.status = 'success') AS revenue,
+		(SELECT COUNT(*) FROM " . zxc_table( 'transactions' ) . " x WHERE x.tenant_id = t.id AND x.status = 'success') AS sales,
+		(SELECT MAX(last_seen) FROM " . zxc_table( 'routers' ) . " r WHERE r.tenant_id = t.id) AS router_seen
+		FROM " . zxc_table( 'tenants' ) . " t LEFT JOIN {$wpdb->users} u ON u.ID = t.owner_id WHERE $where ORDER BY t.id DESC LIMIT 500" // phpcs:ignore
+	);
+}
+
+function zxc_platform_stats() {
+	global $wpdb;
+	$tenants = zxc_platform_tenants();
+	$tiers   = zxc_tiers();
+	$s       = array( 'tenants' => $tenants, 'mrr' => 0, 'paying' => 0, 'trials' => 0, 'expired' => 0, 'online_routers' => 0 );
+	foreach ( $tenants as $t ) {
+		$sub = zxc_subscription( $t );
+		if ( 'active' === $sub['state'] ) {
+			$s['paying']++;
+			$s['mrr'] += $tiers[ $t->tier ]['price'] ?? 0;
+		} elseif ( 'trial' === $sub['state'] ) {
+			$s['trials']++;
+		} else {
+			$s['expired']++;
+		}
+		if ( $t->router_seen >= time() - 120 ) {
+			$s['online_routers']++;
+		}
+	}
+	$s['gmv']      = (int) $wpdb->get_var( 'SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'transactions' ) . " WHERE status = 'success'" );
+	$s['subs_rev'] = (int) $wpdb->get_var( 'SELECT COALESCE(SUM(amount),0) FROM ' . zxc_table( 'subscriptions' ) . " WHERE status = 'success'" );
+	$s['signups']  = array();
+	for ( $i = 11; $i >= 0; $i-- ) {
+		$start         = zxc_lagos_day_start() - $i * 7 * DAY_IN_SECONDS - 6 * DAY_IN_SECONDS;
+		$s['signups'][] = array( 'label' => 'Week of ' . gmdate( 'j M', $start + 3600 ), 'count' => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . zxc_table( 'tenants' ) . ' WHERE created >= %d AND created < %d', $start, $start + 7 * DAY_IN_SECONDS ) ) );
+	}
+	$s['unread']   = zxc_unread_count( null );
+	$s['recent_subs'] = $wpdb->get_results( 'SELECT s.*, t.name AS tenant_name FROM ' . zxc_table( 'subscriptions' ) . ' s JOIN ' . zxc_table( 'tenants' ) . " t ON t.id = s.tenant_id WHERE s.status = 'success' ORDER BY s.paid_at DESC LIMIT 6" );
+	return $s;
 }
