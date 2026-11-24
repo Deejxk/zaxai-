@@ -1,0 +1,8 @@
+<svg class="zp-ill" viewBox="0 0 220 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><linearGradient id="zpEtG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5efc"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+<ellipse cx="110" cy="146" rx="60" ry="7" fill="currentColor" opacity=".08"/>
+<g class="zp-a-float"><path d="M40 40a14 14 0 0 1 14-14h72a14 14 0 0 1 14 14v40a14 14 0 0 1-14 14H82l-20 16V94h-8a14 14 0 0 1-14-14V40Z" fill="var(--zp-surface-2,#eef)" stroke="var(--zp-border,#ccd)" stroke-width="1.5"/>
+<rect x="58" y="46" width="60" height="7" rx="3.5" fill="currentColor" opacity=".18"/><rect x="58" y="62" width="40" height="7" rx="3.5" fill="currentColor" opacity=".18"/></g>
+<g class="zp-a-float zp-a-d2"><path d="M110 78a12 12 0 0 1 12-12h46a12 12 0 0 1 12 12v28a12 12 0 0 1-12 12h-4v14l-16-14h-26a12 12 0 0 1-12-12V78Z" fill="url(#zpEtG)"/>
+<g fill="#fff"><circle cx="132" cy="92" r="4" class="zp-a-blink"/><circle cx="146" cy="92" r="4" class="zp-a-blink zp-a-d2"/><circle cx="160" cy="92" r="4" class="zp-a-blink zp-a-d3"/></g></g>
+</svg>

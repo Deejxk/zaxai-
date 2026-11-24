@@ -1,0 +1,10 @@
+<svg class="zp-ill" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<g class="zp-a-float zp-a-d2"><circle cx="150" cy="38" r="18" fill="#fff" fill-opacity=".2" stroke="#fff" stroke-opacity=".6"/><path d="M150 29v18M155 33.500c-1.5-1.7-3.3-2.5-5.5-2.5-3 0-5 1.6-5 3.8 0 5 11 2.4 11 7.6 0 2.3-2.2 4-5.5 4-2.5 0-4.6-1-6-2.8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></g>
+<g class="zp-a-float zp-a-d3"><circle cx="108" cy="24" r="10" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-opacity=".5"/></g>
+<g class="zp-a-float">
+<rect x="34" y="58" width="128" height="84" rx="16" fill="#fff" fill-opacity=".18" stroke="#fff" stroke-opacity=".7" stroke-width="1.5"/>
+<path d="M34 80h128" stroke="#fff" stroke-opacity=".45"/>
+<rect x="122" y="92" width="48" height="28" rx="10" fill="#fff" fill-opacity=".9"/><circle cx="138" cy="106" r="5" fill="#6d5efc"/>
+<rect x="50" y="96" width="40" height="6" rx="3" fill="#fff" fill-opacity=".8"/><rect x="50" y="110" width="26" height="6" rx="3" fill="#fff" fill-opacity=".4"/>
+</g>
+</svg>

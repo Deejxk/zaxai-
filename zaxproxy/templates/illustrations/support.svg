@@ -1,0 +1,12 @@
+<svg class="zp-ill" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><linearGradient id="zpSupG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5efc"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+<g class="zp-a-float">
+<path d="M40 34a16 16 0 0 1 16-16h66a16 16 0 0 1 16 16v38a16 16 0 0 1-16 16H82l-22 18V88h-4a16 16 0 0 1-16-16V34Z" fill="url(#zpSupG)"/>
+<g fill="#fff"><circle cx="70" cy="53" r="5" class="zp-a-blink"/><circle cx="89" cy="53" r="5" class="zp-a-blink zp-a-d2"/><circle cx="108" cy="53" r="5" class="zp-a-blink zp-a-d3"/></g>
+</g>
+<g class="zp-a-float zp-a-d2">
+<path d="M104 86a12 12 0 0 1 12-12h40a12 12 0 0 1 12 12v24a12 12 0 0 1-12 12h-2v14l-17-14h-21a12 12 0 0 1-12-12V86Z" fill="var(--zp-surface, #fff)" stroke="url(#zpSupG)" stroke-width="2"/>
+<path d="M124 98l8 8 14-15" stroke="url(#zpSupG)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<circle cx="26" cy="96" r="5" fill="#22d3ee" fill-opacity=".5" class="zp-a-pulse" style="transform-origin:26px 96px"/><circle cx="172" cy="30" r="4" fill="#6d5efc" fill-opacity=".5" class="zp-a-pulse zp-a-d2" style="transform-origin:172px 30px"/>
+</svg>

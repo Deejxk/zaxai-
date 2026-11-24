@@ -1,0 +1,347 @@
+<?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Front controller. Serves the standalone user panel (/panel), the standalone
+ * admin panel (/zax-admin), the landing page, PWA files and webhooks without
+ * touching the active theme or wp-admin.
+ */
+class ZP_Router {
+
+	const USER_PAGES  = array( 'dashboard', 'buy', 'proxies', 'orders', 'wallet', 'tickets', 'profile', 'help' );
+	const GUEST_PAGES = array( 'login', 'register', 'forgot', 'reset' );
+	const PUBLIC_PAGES = array(
+		''               => 'home',
+		'pricing'        => 'pricing',
+		'faq'            => 'faq',
+		'about'          => 'about',
+		'contact'        => 'contact',
+		'terms'          => 'terms',
+		'privacy'        => 'privacy',
+		'refund-policy'  => 'refund-policy',
+		'acceptable-use' => 'acceptable-use',
+		'cookies'        => 'cookies',
+	);
+	const ADMIN_PAGES = array( 'dashboard', 'pricing', 'orders', 'proxies', 'users', 'deposits', 'transactions', 'tickets', 'settings' );
+
+	public static function dispatch() {
+		if ( 'cli' === PHP_SAPI || is_admin() || wp_doing_ajax() || wp_doing_cron() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || ( defined( 'WP_CLI' ) && WP_CLI ) || ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) ) {
+			return;
+		}
+		list( $base, $page ) = self::parse();
+
+		switch ( $base ) {
+			case 'zp-manifest':
+				self::manifest();
+				break;
+			case 'zp-sw':
+				self::service_worker();
+				break;
+			case 'zp-offline':
+				self::no_cache();
+				include ZP_DIR . 'templates/offline.php';
+				exit;
+			case 'zp-webhook':
+				if ( 'paystack' === $page ) {
+					ZP_Gateways::paystack_webhook();
+				}
+				status_header( 404 );
+				exit;
+			case ZP_USER_BASE:
+				self::user( $page );
+				break;
+			case ZP_ADMIN_BASE:
+				self::admin( $page );
+				break;
+			default:
+				if ( zp_get( 'landing' ) && isset( self::PUBLIC_PAGES[ $base ] ) && '' === $page && ( '' !== $base || empty( $_GET ) ) ) { // phpcs:ignore
+					self::no_cache();
+					if ( 'contact' === $base && 'POST' === self::method() ) {
+						self::contact();
+					}
+					$view = self::PUBLIC_PAGES[ $base ];
+					include ZP_DIR . 'templates/public/layout.php';
+					exit;
+				}
+				break;
+		}
+	}
+
+	private static function method() {
+		return isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_key( $_SERVER['REQUEST_METHOD'] ) ) : 'GET';
+	}
+
+	/** @return array{0:string,1:string} [base, page] */
+	private static function parse() {
+		if ( isset( $_GET['zp'] ) ) { // phpcs:ignore
+			return array( sanitize_key( $_GET['zp'] ), sanitize_key( isset( $_GET['zpp'] ) ? $_GET['zpp'] : '' ) ); // phpcs:ignore
+		}
+		$uri  = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore
+		$path = (string) wp_parse_url( $uri, PHP_URL_PATH );
+		$home = (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH );
+		if ( $home && 0 === strpos( $path, $home ) ) {
+			$path = substr( $path, strlen( $home ) );
+		}
+		$path = trim( preg_replace( '#^index\.php#', '', trim( $path, '/' ) ), '/' );
+		$bits = explode( '/', $path );
+		$base = strtolower( $bits[0] );
+		if ( ! preg_match( '/^[a-z0-9.\-]*$/', $base ) ) {
+			return array( '-', '' );
+		}
+		return array( $base, isset( $bits[1] ) ? sanitize_key( $bits[1] ) : '' );
+	}
+
+	public static function no_cache() {
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+		nocache_headers();
+		header( 'X-LiteSpeed-Cache-Control: no-cache' );
+		header( 'X-Frame-Options: SAMEORIGIN' );
+		header( 'X-Content-Type-Options: nosniff' );
+		header( 'Referrer-Policy: strict-origin-when-cross-origin' );
+		status_header( 200 );
+	}
+
+	private static function contact() {
+		$back = zp_route_url( 'contact' );
+		if ( zp_post( 'zp_do' ) !== 'contact' || ! wp_verify_nonce( zp_post( '_zpnonce' ), 'zp_contact' ) || ! empty( $_POST['website'] ) ) { // phpcs:ignore
+			zp_flash( 'Something went wrong. Please try again.', 'error' );
+			zp_redirect( $back );
+		}
+		$name    = zp_post( 'name' );
+		$email   = sanitize_email( zp_post( 'email' ) );
+		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : ''; // phpcs:ignore
+		if ( mb_strlen( $name ) < 2 || ! is_email( $email ) || mb_strlen( $message ) < 10 ) {
+			zp_flash( 'Please fill in your name, a valid email and a message.', 'error' );
+			zp_redirect( $back );
+		}
+		if ( zp_throttled( 'contact', 5, HOUR_IN_SECONDS ) ) {
+			zp_flash( 'You have sent several messages already. Please try again later.', 'error' );
+			zp_redirect( $back );
+		}
+		$to = is_email( zp_get( 'support_email' ) ) ? zp_get( 'support_email' ) : get_option( 'admin_email' );
+		wp_mail( $to, '[' . zp_get( 'brand' ) . '] Contact form: ' . $name, $message . "\n\nFrom: {$name} <{$email}>", array( 'Reply-To: ' . $email ) );
+		zp_flash( 'Thanks, your message is on its way. We will reply by email.' );
+		zp_redirect( $back );
+	}
+
+	/* ---------- User panel ---------- */
+
+	private static function user( $page ) {
+		self::no_cache();
+		$page = $page ? $page : 'dashboard';
+
+		if ( 'logout' === $page ) {
+			if ( is_user_logged_in() && wp_verify_nonce( zp_query( '_zpnonce' ), 'zp_logout' ) ) {
+				wp_logout();
+			}
+			zp_redirect( zp_url( 'login' ) );
+		}
+
+		if ( in_array( $page, self::GUEST_PAGES, true ) ) {
+			if ( is_user_logged_in() ) {
+				zp_redirect( zp_url( 'dashboard' ) );
+			}
+			if ( 'POST' === self::method() ) {
+				ZP_User_Actions::handle_guest( $page );
+			}
+			$view = $page;
+			include ZP_DIR . 'templates/layout-auth.php';
+			exit;
+		}
+
+		if ( ! is_user_logged_in() ) {
+			if ( 'ajax' === $page ) {
+				wp_send_json( array( 'ok' => false, 'error' => 'Your session expired. Please sign in again.' ), 401 );
+			}
+			zp_redirect( zp_url( 'login' ) );
+		}
+
+		if ( 'ajax' === $page ) {
+			ZP_User_Actions::ajax();
+		}
+		if ( 'export' === $page ) {
+			ZP_User_Actions::export();
+		}
+		if ( ! in_array( $page, self::USER_PAGES, true ) ) {
+			zp_redirect( zp_url( 'dashboard' ) );
+		}
+		if ( 'POST' === self::method() ) {
+			ZP_User_Actions::handle( $page );
+		}
+		if ( 'wallet' === $page && zp_query( 'zp_verify' ) ) {
+			$res = ZP_Gateways::paystack_verify( zp_query( 'zp_verify' ) );
+			zp_flash( is_wp_error( $res ) ? $res->get_error_message() : 'Payment received. Your wallet has been credited.', is_wp_error( $res ) ? 'error' : 'success' );
+			zp_redirect( zp_url( 'wallet' ) );
+		}
+
+		$user = wp_get_current_user();
+		ZP_Orders::maybe_sync_user( $user->ID );
+		$view    = $page;
+		$balance = ZP_Wallet::balance( $user->ID );
+		include ZP_DIR . 'templates/layout-user.php';
+		exit;
+	}
+
+	/* ---------- Admin panel ---------- */
+
+	private static function admin( $page ) {
+		self::no_cache();
+		$page = $page ? $page : 'dashboard';
+
+		if ( 'login' === $page ) {
+			if ( current_user_can( 'manage_options' ) ) {
+				zp_redirect( zp_admin_url() );
+			}
+			if ( 'POST' === self::method() ) {
+				ZP_Admin_Actions::login();
+			}
+			$view = 'admin-login';
+			include ZP_DIR . 'templates/layout-auth.php';
+			exit;
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			zp_redirect( zp_admin_url( 'login' ) );
+		}
+		if ( ! in_array( $page, self::ADMIN_PAGES, true ) ) {
+			zp_redirect( zp_admin_url() );
+		}
+		if ( 'POST' === self::method() ) {
+			ZP_Admin_Actions::handle( $page );
+		}
+		$user = wp_get_current_user();
+		$view = $page;
+		include ZP_DIR . 'templates/layout-admin.php';
+		exit;
+	}
+
+	/* ---------- PWA ---------- */
+
+	private static function manifest() {
+		$brand = zp_get( 'brand' );
+		header( 'Content-Type: application/manifest+json; charset=utf-8' );
+		header( 'Cache-Control: public, max-age=3600' );
+		status_header( 200 );
+		echo wp_json_encode(
+			array(
+				'id'               => '/?zaxproxy-app',
+				'name'             => $brand,
+				'short_name'       => $brand,
+				'description'      => 'Buy and manage private proxies.',
+				'start_url'        => zp_url( 'dashboard' ) . ( zp_pretty() ? '?' : '&' ) . 'source=pwa',
+				'scope'            => home_url( '/' ),
+				'display'          => 'standalone',
+				'orientation'      => 'portrait-primary',
+				'background_color' => '#0b0d14',
+				'theme_color'      => '#0b0d14',
+				'categories'       => array( 'business', 'utilities' ),
+				'icons'            => array(
+					array( 'src' => ZP_URL . 'assets/icons/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any' ),
+					array( 'src' => ZP_URL . 'assets/icons/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any' ),
+					array( 'src' => ZP_URL . 'assets/icons/maskable-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable' ),
+				),
+				'shortcuts'        => array(
+					array( 'name' => 'Buy proxies', 'url' => zp_url( 'buy' ) ),
+					array( 'name' => 'My proxies', 'url' => zp_url( 'proxies' ) ),
+					array( 'name' => 'Wallet', 'url' => zp_url( 'wallet' ) ),
+				),
+			)
+		);
+		exit;
+	}
+
+	private static function service_worker() {
+		header( 'Content-Type: application/javascript; charset=utf-8' );
+		header( 'Service-Worker-Allowed: /' );
+		header( 'Cache-Control: no-cache' );
+		status_header( 200 );
+		$js = file_get_contents( ZP_DIR . 'assets/js/sw.js' ); // phpcs:ignore
+		echo str_replace( // phpcs:ignore
+			array( '__ZP_VERSION__', '__ZP_OFFLINE__', '__ZP_ASSETS__' ),
+			array( ZP_VERSION, esc_url_raw( zp_route_url( 'zp-offline' ) ), esc_url_raw( ZP_URL . 'assets/' ) ),
+			$js
+		);
+		exit;
+	}
+
+	/** Shared <head> tags for every standalone page. */
+	public static function head( $title, $index = false, $description = '' ) {
+		$brand = zp_get( 'brand' );
+		?>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title><?php echo esc_html( $title . ' · ' . $brand ); ?></title>
+<?php if ( $description ) : ?><meta name="description" content="<?php echo esc_attr( $description ); ?>"><?php endif; ?>
+<?php echo $index ? '' : '<meta name="robots" content="noindex">' . "\n"; // phpcs:ignore ?>
+<meta name="theme-color" content="#0b0d14" id="zp-theme-color">
+<link rel="manifest" href="<?php echo esc_url( zp_route_url( 'zp-manifest' ) ); ?>">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="<?php echo esc_attr( $brand ); ?>">
+<link rel="apple-touch-icon" href="<?php echo esc_url( ZP_URL . 'assets/icons/apple-touch-icon.png' ); ?>">
+<link rel="icon" type="image/png" sizes="192x192" href="<?php echo esc_url( ZP_URL . 'assets/icons/icon-192.png' ); ?>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('zp-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+<script>(function(){try{if(!sessionStorage.getItem('zp-splash')){sessionStorage.setItem('zp-splash','1');document.documentElement.className+=' zp-splashing';setTimeout(function(){document.documentElement.className=document.documentElement.className.replace(' zp-splashing','');},5700);}}catch(e){}})();</script>
+<link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/app.css' ) ); ?>">
+		<?php
+	}
+
+	/**
+	 * Launch splash: a 5 second animated intro shown once per app session
+	 * (first page opened in a tab or after launching the installed app).
+	 */
+	public static function splash() {
+		$brand = zp_get( 'brand' );
+		?>
+<div class="zp-splash" aria-hidden="true">
+	<div class="zp-splash__bg"></div>
+	<svg class="zp-splash__net" viewBox="0 0 400 400" fill="none" preserveAspectRatio="xMidYMid slice">
+		<g stroke="#fff" stroke-opacity=".5" stroke-width="1.2" stroke-dasharray="4 8" class="zp-a-dash">
+			<path d="M200 200 60 70"/><path d="M200 200 345 85"/><path d="M200 200 40 300"/><path d="M200 200 350 320"/><path d="M200 200 200 20"/><path d="M200 200 205 385"/>
+		</g>
+		<circle cx="200" cy="200" r="150" stroke="#fff" stroke-opacity=".16" stroke-dasharray="2 10" class="zp-splash__ring"/>
+		<circle cx="200" cy="200" r="104" stroke="#fff" stroke-opacity=".26" class="zp-splash__ring zp-splash__ring--rev" stroke-dasharray="60 18"/>
+		<g fill="#fff">
+			<circle cx="60" cy="70" r="7" class="zp-splash__node" style="--n:1"/><circle cx="345" cy="85" r="9" class="zp-splash__node" style="--n:2"/>
+			<circle cx="40" cy="300" r="8" class="zp-splash__node" style="--n:3"/><circle cx="350" cy="320" r="7" class="zp-splash__node" style="--n:4"/>
+			<circle cx="200" cy="20" r="6" class="zp-splash__node" style="--n:5"/><circle cx="205" cy="385" r="6" class="zp-splash__node" style="--n:6"/>
+		</g>
+		<g fill="#a5f3fc">
+			<circle r="4.5" class="zp-splash__pkt" style="offset-path:path('M60 70 200 200')"/>
+			<circle r="4.5" class="zp-splash__pkt" style="offset-path:path('M200 200 345 85');animation-delay:.5s"/>
+			<circle r="4.5" class="zp-splash__pkt" style="offset-path:path('M40 300 200 200');animation-delay:1s"/>
+			<circle r="4.5" class="zp-splash__pkt" style="offset-path:path('M200 200 350 320');animation-delay:1.5s"/>
+		</g>
+	</svg>
+	<div class="zp-splash__core">
+		<div class="zp-splash__logo">
+			<span class="zp-splash__pulse"></span><span class="zp-splash__pulse zp-splash__pulse--2"></span>
+			<svg viewBox="0 0 120 120" width="120" height="120"><rect width="120" height="120" rx="34" fill="#fff"/><path class="zp-splash__z" d="M38 40h44L40 82h44" fill="none" stroke="url(#zpSplashG)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" pathLength="100"/><defs><linearGradient id="zpSplashG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5efc"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs></svg>
+		</div>
+		<div class="zp-splash__name"><?php echo esc_html( $brand ); ?></div>
+		<div class="zp-splash__tag">Private proxies, ready in minutes</div>
+		<div class="zp-splash__bar"><i></i></div>
+		<div class="zp-splash__status"><span>Securing connection</span><span>Loading locations</span><span>Almost ready</span></div>
+	</div>
+</div>
+		<?php
+	}
+
+	public static function foot( $ajax = false ) {
+		$cfg = array( 'cur' => zp_get( 'currency_symbol', '₦' ), 'sw' => zp_route_url( 'zp-sw' ), 'scope' => wp_parse_url( home_url( '/' ), PHP_URL_PATH ) ?: '/' );
+		if ( $ajax ) {
+			$cfg['ajax']  = zp_url( 'ajax' );
+			$cfg['nonce'] = wp_create_nonce( 'zp_ajax' );
+		}
+		echo '<div class="zp-toasts" id="zp-toasts" aria-live="polite"></div>';
+		echo '<script>window.ZP=' . wp_json_encode( $cfg ) . ';</script>';
+		echo '<script src="' . esc_url( zp_asset( 'js/app.js' ) ) . '" defer></script>'; // phpcs:ignore
+	}
+}
