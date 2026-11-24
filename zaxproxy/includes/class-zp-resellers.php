@@ -40,6 +40,11 @@ class ZP_Resellers {
 		return $slug ? $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'resellers' ) . ' WHERE slug = %s', $slug ) ) : null;
 	}
 
+	/** Site administrators run a store without paying the activation, monthly or domain fees. */
+	public static function is_free( $user_id ) {
+		return user_can( (int) $user_id, 'manage_options' );
+	}
+
 	/** True for an account with an active, paid-up store: it buys at the reseller rate. */
 	public static function is_reseller( $user_id ) {
 		return self::is_live( self::get( $user_id ) );
@@ -69,7 +74,7 @@ class ZP_Resellers {
 			return $r; // already tried a moment ago
 		}
 		set_transient( $lock, 1, 10 * MINUTE_IN_SECONDS );
-		$fee = (float) zp_get( 'reseller_monthly', 15000 );
+		$fee = self::is_free( $r->user_id ) ? 0 : (float) zp_get( 'reseller_monthly', 15000 );
 		// Claim the renewal first so two requests cannot both charge for the same month.
 		$until   = gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS );
 		$claimed = $wpdb->query( $wpdb->prepare( 'UPDATE ' . zp_table( 'resellers' ) . ' SET paid_until = %s WHERE user_id = %d AND paid_until = %s', $until, $r->user_id, $r->paid_until ) );
@@ -109,7 +114,7 @@ class ZP_Resellers {
 		if ( $r->paid_until ) {
 			return true;
 		}
-		$fee = (float) zp_get( 'reseller_fee', 45000 );
+		$fee = self::is_free( $user_id ) ? 0 : (float) zp_get( 'reseller_fee', 45000 );
 		if ( $fee > 0 && ! ZP_Wallet::debit( $user_id, $fee, 'reseller_fee', 'store', 'Reseller store: activation' ) ) {
 			return new WP_Error( 'zp_funds', sprintf( 'You need %s in your wallet to activate your reseller account. Please add funds.', zp_money( $fee ) ) );
 		}
@@ -208,7 +213,7 @@ class ZP_Resellers {
 		if ( $used || $domain === $main ) {
 			return new WP_Error( 'zp_input', 'That domain is already taken. Please choose another name.' );
 		}
-		$fee = (float) zp_get( 'reseller_domain_fee', 12000 );
+		$fee = self::is_free( $user_id ) ? 0 : (float) zp_get( 'reseller_domain_fee', 12000 );
 		if ( $fee > 0 && ! ZP_Wallet::debit( $user_id, $fee, 'domain_fee', 'store', 'Branded domain: ' . $domain ) ) {
 			return new WP_Error( 'zp_funds', sprintf( 'A branded domain costs %s. Please add funds to your wallet.', zp_money( $fee ) ) );
 		}
@@ -336,7 +341,8 @@ class ZP_Resellers {
 		if ( 'reseller_save' === $do ) {
 			$before = self::get( $user->ID );
 			$new    = ! $before || ! $before->paid_until;
-			$fee    = (float) zp_get( 'reseller_fee', 45000 );
+			$free   = self::is_free( $user->ID );
+			$fee    = $free ? 0 : (float) zp_get( 'reseller_fee', 45000 );
 			$domain = $new ? trim( zp_post( 'domain' ) ) : '';
 			if ( '' !== $domain ) {
 				$clean = self::clean_domain( $domain );
@@ -344,7 +350,7 @@ class ZP_Resellers {
 					zp_flash( $clean->get_error_message(), 'error' );
 					zp_redirect( zp_url( 'reseller' ) );
 				}
-				$fee += (float) zp_get( 'reseller_domain_fee', 12000 ); // activation and the domain are paid together
+				$fee += $free ? 0 : (float) zp_get( 'reseller_domain_fee', 12000 ); // activation and the domain are paid together
 			}
 			if ( $new && ZP_Wallet::balance( $user->ID ) < $fee ) {
 				zp_flash( sprintf( 'Activation costs %s and your wallet has %s. Add funds, then come back to unlock your reseller account.', zp_money( $fee ), zp_money( ZP_Wallet::balance( $user->ID ) ) ), 'error' );

@@ -11,6 +11,7 @@ $host = wp_parse_url( home_url(), PHP_URL_HOST );
 if ( ! $me || ! $me->paid_until ) :
 	$fee      = (float) zp_get( 'reseller_fee', 45000 );
 	$monthly  = (float) zp_get( 'reseller_monthly', 15000 );
+	$free     = ZP_Resellers::is_free( $user->ID ); // administrators do not pay
 	$domain_fee = (float) zp_get( 'reseller_domain_fee', 12000 );
 	$r_pct    = (float) zp_get( 'reseller_markup', 150 );
 	$prices   = zp_public_prices();
@@ -32,7 +33,7 @@ if ( ! $me || ! $me->paid_until ) :
 			break;
 		}
 	}
-	$short    = max( 0, $fee - $balance );
+	$short    = $free ? 0 : max( 0, $fee - $balance );
 	?>
 	<section class="zp-hero zp-anim">
 		<div class="zp-hero__text">
@@ -111,7 +112,10 @@ if ( ! $me || ! $me->paid_until ) :
 		<?php if ( $short > 0 ) : ?>
 			<div class="zp-alert zp-alert--info" style="margin-bottom:16px"><?php echo zp_icon( 'wallet', 18 ); // phpcs:ignore ?><span>Your wallet has <?php echo esc_html( zp_money( $balance ) ); ?>. Add <?php echo esc_html( zp_money( $short ) ); ?> more to unlock.</span><a class="zp-btn zp-btn--sm zp-btn--primary" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">Add funds</a></div>
 		<?php endif; ?>
-		<form method="post" class="zp-form" onsubmit="return confirm('Pay from your wallet and unlock your reseller account?')">
+		<?php if ( $free ) : ?>
+			<div class="zp-alert zp-alert--success" style="margin-bottom:16px"><?php echo zp_icon( 'shield', 18 ); // phpcs:ignore ?><span>You are an administrator, so your reseller account is free: no activation fee, no monthly fee and no domain fee. Customers see the prices above.</span></div>
+		<?php endif; ?>
+		<form method="post" class="zp-form"<?php echo $free ? '' : ' onsubmit="return confirm(\'Pay from your wallet and unlock your reseller account?\')"'; ?>>
 			<?php zp_nonce_field( 'reseller_save' ); ?>
 			<div class="zp-fieldrow" style="margin-top:0">
 				<label class="zp-field"><span>Brand name</span><div class="zp-input"><?php echo zp_icon( 'shield', 18 ); // phpcs:ignore ?><input type="text" name="brand" value="<?php echo esc_attr( $me ? $me->brand : '' ); ?>" maxlength="40" required placeholder="e.g. SwiftProxy" id="zp-rs-brand"></div></label>
@@ -122,8 +126,12 @@ if ( ! $me || ! $me->paid_until ) :
 				<div class="zp-addon__head"><span class="zp-type__ico"><?php echo zp_icon( 'globe', 22 ); // phpcs:ignore ?></span><div><strong>Add your own branded domain <em>optional · +<?php echo esc_html( zp_money( $domain_fee ) ); ?></em></strong><span>Give customers an address like <span class="zp-mono">yourbrand.cloud</span> instead of <span class="zp-mono"><?php echo esc_html( $host ); ?>/s/yourbrand</span>. We register and connect it for you.</span></div></div>
 				<label class="zp-field"><span>Domain name</span><div class="zp-input"><input type="text" name="domain" maxlength="40" placeholder="yourbrand" id="zp-rs-domain" autocapitalize="none" pattern="[A-Za-z0-9][A-Za-z0-9\-]{1,38}[A-Za-z0-9]"><b class="zp-prefix">.cloud</b></div><small>Leave empty if you do not want a domain now. You can add one later from Store settings.</small></label>
 			</div>
-			<button class="zp-btn zp-btn--primary zp-btn--lg" type="submit" id="zp-rs-pay" data-fee="<?php echo esc_attr( $fee ); ?>" data-domain="<?php echo esc_attr( $domain_fee ); ?>"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?><span>Pay <?php echo esc_html( zp_money( $fee ) ); ?> and unlock</span></button>
-			<p class="zp-summary__note" style="margin:0">Charged from your wallet now. From day 31, <?php echo esc_html( zp_money( $monthly ) ); ?> per month is charged automatically.</p>
+			<?php if ( $free ) : ?>
+				<button class="zp-btn zp-btn--primary zp-btn--lg" type="submit"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Activate my reseller account</button>
+			<?php else : ?>
+				<button class="zp-btn zp-btn--primary zp-btn--lg" type="submit" id="zp-rs-pay" data-fee="<?php echo esc_attr( $fee ); ?>" data-domain="<?php echo esc_attr( $domain_fee ); ?>"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?><span>Pay <?php echo esc_html( zp_money( $fee ) ); ?> and unlock</span></button>
+				<p class="zp-summary__note" style="margin:0">Charged from your wallet now. From day 31, <?php echo esc_html( zp_money( $monthly ) ); ?> per month is charged automatically.</p>
+			<?php endif; ?>
 		</form>
 	</section>
 	<?php
@@ -180,8 +188,16 @@ $paid_ts = strtotime( $me->paid_until . ' UTC' );
 
 	<div class="zp-subinfo zp-anim" style="--d:2">
 		<?php echo zp_icon( 'active' === $me->status ? 'check' : 'lock', 18 ); // phpcs:ignore ?>
-		<span><?php echo 'active' === $me->status ? esc_html( sprintf( 'Reseller account active until %s (%s left). Then %s is charged from your wallet automatically each month.', zp_date( $me->paid_until, false ), zp_time_left( $me->paid_until ), zp_money( $monthly ) ) ) : 'Reseller account not active.'; ?></span>
-		<?php if ( 'active' === $me->status && $paid_ts - time() < 5 * DAY_IN_SECONDS && $balance < $monthly ) : ?><a class="zp-btn zp-btn--sm zp-btn--soft" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">Top up for renewal</a><?php endif; ?>
+		<span><?php
+		if ( 'active' !== $me->status ) {
+			echo 'Reseller account not active.';
+		} elseif ( ZP_Resellers::is_free( $user->ID ) ) {
+			echo 'Reseller account active. Free for administrators: no monthly fee.';
+		} else {
+			echo esc_html( sprintf( 'Reseller account active until %s (%s left). Then %s is charged from your wallet automatically each month.', zp_date( $me->paid_until, false ), zp_time_left( $me->paid_until ), zp_money( $monthly ) ) );
+		}
+		?></span>
+		<?php if ( 'active' === $me->status && ! ZP_Resellers::is_free( $user->ID ) && $paid_ts - time() < 5 * DAY_IN_SECONDS && $balance < $monthly ) : ?><a class="zp-btn zp-btn--sm zp-btn--soft" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">Top up for renewal</a><?php endif; ?>
 	</div>
 
 	<section class="zp-stats">
