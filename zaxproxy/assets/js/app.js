@@ -380,6 +380,31 @@
     $$('.zp-swatches button').forEach(function (b) { b.addEventListener('click', function () { rsColor.value = rsColorText.value = b.getAttribute('data-color'); }); });
   }
 
+  /* ---------- Reseller domain: say at once whether the name is free ---------- */
+  $$('[data-zp-domain]').forEach(function (inp) {
+    var hint = inp.closest('.zp-field').querySelector('.zp-domhint'), timer = null, seq = 0;
+    if (!hint) return;
+    inp.addEventListener('input', function () {
+      clearTimeout(timer);
+      var name = inp.value.toLowerCase().replace(/\.cloud$/, '').replace(/[^a-z0-9-]/g, '');
+      if (inp.value !== name) inp.value = name;
+      inp.setCustomValidity('');
+      if (name.length < 3) { hint.hidden = true; return; }
+      hint.hidden = false; hint.className = 'zp-domhint'; hint.textContent = 'Checking ' + name + '.cloud…';
+      timer = setTimeout(function () {
+        var mine = ++seq;
+        api('domain_check', { domain: name }).then(function (d) {
+          if (mine !== seq) return;
+          hint.className = 'zp-domhint is-ok'; hint.textContent = '✓ ' + d.domain + ' is available';
+        }).catch(function (e) {
+          if (mine !== seq) return;
+          hint.className = 'zp-domhint is-bad'; hint.textContent = '✕ ' + e.message;
+          inp.setCustomValidity(e.message);
+        });
+      }, 450);
+    });
+  });
+
   /* ---------- Wallet ---------- */
   var dep = $('#zp-deposit');
   if (dep) {

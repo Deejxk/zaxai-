@@ -345,6 +345,13 @@ class ZP_User_Actions {
 			if ( ! is_wp_error( $res ) ) {
 				$res = array( 'total' => $res['total'], 'count' => $res['count'], 'balance' => ZP_Wallet::balance( $user->ID ) );
 			}
+		} elseif ( 'domain_check' === $act ) {
+			if ( zp_throttled( 'domchk' . $user->ID, 40, 10 * MINUTE_IN_SECONDS ) ) {
+				$res = new WP_Error( 'zp_input', 'Too many checks. Please wait a moment.' );
+			} else {
+				$dom = ZP_Resellers::check_domain( zp_query( 'domain' ), $user->ID );
+				$res = is_wp_error( $dom ) ? $dom : array( 'domain' => $dom );
+			}
 		} elseif ( 'extend_days' === $act ) {
 			$res = ZP_API::days( sanitize_key( zp_query( 'type' ) ) );
 			if ( ! is_wp_error( $res ) ) {

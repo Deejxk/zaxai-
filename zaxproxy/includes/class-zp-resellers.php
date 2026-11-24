@@ -233,6 +233,24 @@ class ZP_Resellers {
 		return $name . '.cloud';
 	}
 
+	/**
+	 * Validate a name a reseller wants: well-formed, not used by another store, and not
+	 * already registered by someone else. Returns the full domain or a WP_Error to show them.
+	 */
+	public static function check_domain( $raw, $user_id ) {
+		global $wpdb;
+		$domain = self::clean_domain( $raw );
+		if ( is_wp_error( $domain ) ) {
+			return $domain;
+		}
+		$taken = new WP_Error( 'zp_taken', $domain . ' is already taken. Please choose another name.' );
+		$used  = $wpdb->get_var( $wpdb->prepare( 'SELECT user_id FROM ' . zp_table( 'resellers' ) . " WHERE domain = %s AND domain_status IN ('pending','active') AND user_id <> %d", $domain, $user_id ) );
+		if ( $used || $domain === ZP_Hosting::main_host() || false === ZP_Hosting::domain_available( $domain ) ) {
+			return $taken;
+		}
+		return $domain;
+	}
+
 	/** The active store that owns the host of the current request, if it is not the main site. */
 	public static function match_request_domain() {
 		global $wpdb;
@@ -271,14 +289,9 @@ class ZP_Resellers {
 		if ( $r->domain && in_array( $r->domain_status, array( 'pending', 'active' ), true ) ) {
 			return new WP_Error( 'zp_input', 'You already have a branded domain on this store.' );
 		}
-		$domain = self::clean_domain( $raw );
+		$domain = self::check_domain( $raw, $user_id ); // rejects names that are already taken, before any charge
 		if ( is_wp_error( $domain ) ) {
 			return $domain;
-		}
-		$main = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
-		$used = $wpdb->get_var( $wpdb->prepare( 'SELECT user_id FROM ' . zp_table( 'resellers' ) . " WHERE domain = %s AND domain_status IN ('pending','active') AND user_id <> %d", $domain, $user_id ) );
-		if ( $used || $domain === $main ) {
-			return new WP_Error( 'zp_input', 'That domain is already taken. Please choose another name.' );
 		}
 		$fee = self::is_free( $user_id ) ? 0 : (float) zp_get( 'reseller_domain_fee', 12000 );
 		if ( $fee > 0 && ! ZP_Wallet::debit( $user_id, $fee, 'domain_fee', 'store', 'Branded domain: ' . $domain ) ) {
@@ -377,8 +390,15 @@ class ZP_Resellers {
 		if ( mb_strlen( $brand ) < 2 || mb_strlen( $brand ) > 40 ) {
 			return new WP_Error( 'zp_input', 'Enter a brand name between 2 and 40 characters.' );
 		}
-		if ( ! preg_match( '/^[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]$/', $slug ) || in_array( $slug, self::RESERVED, true ) ) {
-			return new WP_Error( 'zp_input', 'Choose a store link of 3 to 30 letters, numbers or dashes.' );
+		if ( '' === $slug ) {
+			$slug = sanitize_title( $brand ); // no link typed: build one from the brand name
+		}
+		$slug = trim( substr( $slug, 0, 30 ), '-' );
+		if ( ! preg_match( '/^[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]$/', $slug ) ) {
+			return new WP_Error( 'zp_input', 'Your store link needs 3 to 30 characters: letters, numbers or dashes, for example "swift-proxy".' );
+		}
+		if ( in_array( $slug, self::RESERVED, true ) && ! self::is_free( $user_id ) ) {
+			return new WP_Error( 'zp_input', '"' . $slug . '" is a reserved name. Please choose a different store link.' );
 		}
 		$owner = self::by_slug( $slug );
 		if ( $owner && (int) $owner->user_id !== (int) $user_id ) {
@@ -473,7 +493,7 @@ class ZP_Resellers {
 			$fee    = $free ? 0 : (float) zp_get( 'reseller_fee', 45000 );
 			$domain = $new ? trim( zp_post( 'domain' ) ) : '';
 			if ( '' !== $domain ) {
-				$clean = self::clean_domain( $domain );
+				$clean = self::check_domain( $domain, $user->ID );
 				if ( is_wp_error( $clean ) ) {
 					zp_flash( $clean->get_error_message(), 'error' );
 					zp_redirect( zp_url( 'reseller' ) );

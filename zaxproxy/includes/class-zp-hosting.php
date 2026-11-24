@@ -70,6 +70,42 @@ class ZP_Hosting {
 		return new WP_Error( 'zp_host', 'This website was not found in the Hostinger account the token belongs to.' );
 	}
 
+	/**
+	 * Is this .cloud name free to register?
+	 * Asks the registrar when a token is saved; otherwise falls back to a DNS lookup
+	 * (a name that already resolves is certainly taken).
+	 *
+	 * @return bool|null true = free, false = taken, null = could not tell
+	 */
+	public static function domain_available( $domain ) {
+		$name = preg_replace( '/\.cloud$/', '', strtolower( $domain ) );
+		$key  = 'zp_dom_' . md5( $name );
+		$hit  = get_transient( $key );
+		if ( 'y' === $hit || 'n' === $hit ) {
+			return 'y' === $hit;
+		}
+		$free = null;
+		if ( self::configured() ) {
+			$res = self::request( 'POST', '/api/domains/v1/availability', array( 'domain' => $name, 'tlds' => array( 'cloud' ), 'with_alternatives' => false ) );
+			if ( ! is_wp_error( $res ) ) {
+				foreach ( (array) $res as $row ) {
+					if ( is_array( $row ) && isset( $row['is_available'] ) && empty( $row['is_alternative'] ) ) {
+						// A premium name costs far more than the domain fee, so it counts as unavailable.
+						$free = ! empty( $row['is_available'] ) && empty( $row['is_premium'] );
+						break;
+					}
+				}
+			}
+		}
+		if ( null === $free && function_exists( 'checkdnsrr' ) ) {
+			$free = ! ( @checkdnsrr( $name . '.cloud.', 'NS' ) || @checkdnsrr( $name . '.cloud.', 'A' ) ); // phpcs:ignore
+		}
+		if ( null !== $free ) {
+			set_transient( $key, $free ? 'y' : 'n', 10 * MINUTE_IN_SECONDS );
+		}
+		return $free;
+	}
+
 	public static function parked() {
 		$user = self::username();
 		if ( is_wp_error( $user ) ) {
