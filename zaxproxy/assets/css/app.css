@@ -601,3 +601,4 @@ label.zp-prefs{cursor:pointer}
 @keyframes zp-splash-status{0%{opacity:0;transform:translateY(6px)}20%,75%{opacity:.9;transform:none}100%{opacity:0;transform:translateY(-6px)}}
 @keyframes zp-splash-status-last{0%{opacity:0;transform:translateY(6px)}25%,100%{opacity:.9;transform:none}}
 @media (prefers-reduced-motion:reduce){.zp-splashing .zp-splash{animation:zp-splash-out .01ms linear 5s forwards!important}}
+.zp-splash__net{-webkit-mask-image:radial-gradient(circle,transparent 0 17%,#000 34%);mask-image:radial-gradient(circle,transparent 0 17%,#000 34%)}
