@@ -372,6 +372,14 @@
     rsDomain.addEventListener('input', rsTotal);
   }
 
+  /* ---------- Reseller store design: colour picker ---------- */
+  var rsColor = $('#zp-rs-color'), rsColorText = $('#zp-rs-colortext');
+  if (rsColor && rsColorText) {
+    rsColor.addEventListener('input', function () { rsColorText.value = rsColor.value; });
+    rsColorText.addEventListener('input', function () { if (/^#[0-9a-fA-F]{6}$/.test(rsColorText.value)) rsColor.value = rsColorText.value; });
+    $$('.zp-swatches button').forEach(function (b) { b.addEventListener('click', function () { rsColor.value = rsColorText.value = b.getAttribute('data-color'); }); });
+  }
+
   /* ---------- Wallet ---------- */
   var dep = $('#zp-deposit');
   if (dep) {

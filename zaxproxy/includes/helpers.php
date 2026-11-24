@@ -402,8 +402,13 @@ function zp_logo( $size = 30 ) {
 	if ( $r ) {
 		// Reseller stores show a monogram of their own brand instead of the platform mark.
 		++$n;
+		if ( ! empty( $r->logo_url ) ) {
+			return '<img class="zp-logo-mark zp-logo-img" src="' . esc_url( set_url_scheme( $r->logo_url ) ) . '" width="' . (int) $size . '" height="' . (int) $size . '" alt="">';
+		}
+		$c1     = ZP_Resellers::color( $r ) ? ZP_Resellers::color( $r ) : '#6d5efc';
+		$c2     = ZP_Resellers::color( $r ) ? $c1 : '#22d3ee';
 		$letter = esc_html( strtoupper( mb_substr( $r->brand, 0, 1 ) ) );
-		return '<svg xmlns="http://www.w3.org/2000/svg" class="zp-logo-mark" width="' . (int) $size . '" height="' . (int) $size . '" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="zpMono' . $n . '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5efc"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="17" fill="url(#zpMono' . $n . ')"/><text x="32" y="43" text-anchor="middle" font-family="Sora,Inter,Arial,sans-serif" font-size="30" font-weight="800" fill="#fff">' . $letter . '</text></svg>';
+		return '<svg xmlns="http://www.w3.org/2000/svg" class="zp-logo-mark" width="' . (int) $size . '" height="' . (int) $size . '" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="zpMono' . $n . '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' . $c1 . '"/><stop offset="1" stop-color="' . $c2 . '" stop-opacity="' . ( $c1 === $c2 ? '.72' : '1' ) . '"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="17" fill="url(#zpMono' . $n . ')"/><text x="32" y="43" text-anchor="middle" font-family="Sora,Inter,Arial,sans-serif" font-size="30" font-weight="800" fill="#fff">' . $letter . '</text></svg>';
 	}
 	if ( null === $svg ) {
 		$svg = (string) file_get_contents( ZP_DIR . 'assets/logo-mark.svg' ); // phpcs:ignore

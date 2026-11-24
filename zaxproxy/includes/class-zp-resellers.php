@@ -152,6 +152,73 @@ class ZP_Resellers {
 		return zp_route_url( 's', $reseller->slug . ( $page ? '/' . $page : '' ) );
 	}
 
+	/* ---------- Store design ---------- */
+
+	/** Brand colour of a store, or '' for the default look. */
+	public static function color( $r ) {
+		return $r && ! empty( $r->color ) && preg_match( '/^#[0-9a-f]{6}$/', $r->color ) ? $r->color : '';
+	}
+
+	/**
+	 * Handle the logo field of the settings form: upload a new image or remove the current one.
+	 * Only raster images are accepted (an SVG can carry scripts).
+	 *
+	 * @return true|WP_Error
+	 */
+	public static function save_logo( $user_id ) {
+		global $wpdb;
+		$r = self::get( $user_id );
+		if ( ! $r ) {
+			return true;
+		}
+		$remove = ! empty( $_POST['remove_logo'] ); // phpcs:ignore
+		$file   = isset( $_FILES['logo'] ) && ! empty( $_FILES['logo']['name'] ) ? $_FILES['logo'] : null; // phpcs:ignore
+		if ( ! $file && ! $remove ) {
+			return true;
+		}
+		$new_url = '';
+		if ( $file ) {
+			if ( ! empty( $file['error'] ) || $file['size'] > 1024 * 1024 ) {
+				return new WP_Error( 'zp_input', 'Your logo must be an image smaller than 1 MB.' );
+			}
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			$mimes = array( 'png' => 'image/png', 'jpg|jpeg' => 'image/jpeg', 'webp' => 'image/webp' );
+			$check = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'], $mimes );
+			if ( empty( $check['ext'] ) || empty( $check['type'] ) || ! @getimagesize( $file['tmp_name'] ) ) { // phpcs:ignore
+				return new WP_Error( 'zp_input', 'Upload your logo as a PNG, JPG or WebP image.' );
+			}
+			$file['name'] = 'store-' . (int) $user_id . '-' . wp_generate_password( 8, false ) . '.' . $check['ext'];
+			$up           = wp_handle_upload( $file, array( 'test_form' => false, 'mimes' => $mimes ) );
+			if ( isset( $up['error'] ) || empty( $up['url'] ) ) {
+				return new WP_Error( 'zp_input', 'The logo could not be uploaded. Please try another image.' );
+			}
+			$new_url = esc_url_raw( $up['url'] );
+		}
+		if ( $r->logo_url ) {
+			$uploads = wp_get_upload_dir();
+			$old     = str_replace( $uploads['baseurl'], $uploads['basedir'], $r->logo_url );
+			if ( 0 === strpos( $old, $uploads['basedir'] ) && false !== strpos( basename( $old ), 'store-' . (int) $user_id . '-' ) && is_file( $old ) ) {
+				wp_delete_file( $old );
+			}
+		}
+		$wpdb->update( zp_table( 'resellers' ), array( 'logo_url' => $new_url ), array( 'user_id' => $user_id ) );
+		$GLOBALS['zp_resellers_dirty'] = true;
+		return true;
+	}
+
+	/** A store's own policy text, or a sensible default written in the store's name. */
+	public static function policy( $r, $doc ) {
+		$own = isset( $r->$doc ) ? trim( (string) $r->$doc ) : '';
+		if ( '' !== $own ) {
+			return $own;
+		}
+		$b = $r->brand;
+		if ( 'refund' === $doc ) {
+			return "We want you to be happy with every proxy you buy from {$b}.\n\nOrders that cannot be delivered\nIf an order fails or cannot be delivered, the full amount is returned to your wallet automatically.\n\nProxies that do not work\nIf a proxy does not connect at all, contact us within 24 hours of delivery with the proxy IP or order number. We will replace it or refund it to your wallet.\n\nWhen a refund is not available\nRefunds are not given when a proxy works but a particular website blocks it, when you no longer need the proxy, when you ordered the wrong type, country or period, or for unused time on a rental.\n\nWallet balance\nRefunds are credited to your wallet. To ask for unused wallet funds to be returned, contact us.\n\nHow to ask\nOpen a support ticket from your dashboard with your order number and a short description of the problem.";
+		}
+		return "{$b} respects your privacy. This policy explains what we collect and why.\n\nWhat we collect\nYour name, email address and password (stored encrypted), your orders and wallet history, the payment details you send us, and any messages you send to support.\n\nHow we use it\nTo run your account, deliver the proxies you order, confirm your payments, answer your questions and prevent abuse.\n\nWho we share it with\nWe do not sell your data. Order details are passed to our infrastructure provider so that your proxies can be delivered. We may share information with authorities when the law requires it.\n\nHow long we keep it\nFor as long as your account is open, and afterwards for as long as records must be kept by law.\n\nYour rights\nYou can ask to see, correct or delete your personal data at any time by contacting us.\n\nCookies\nWe use only the cookies needed to keep you signed in and keep your account secure.";
+	}
+
 	/* ---------- Branded .cloud domains ---------- */
 
 	/** Normalise "My-Brand" or "mybrand.cloud" to "mybrand.cloud"; WP_Error when it is not a usable name. */
@@ -285,6 +352,22 @@ class ZP_Resellers {
 			'telegram'            => mb_substr( sanitize_text_field( isset( $in['telegram'] ) ? $in['telegram'] : '' ), 0, 80 ),
 			'updated_at'          => zp_now(),
 		);
+		// Store design and policies: only touched when the settings form sends them.
+		if ( isset( $in['color'] ) ) {
+			$color         = strtolower( trim( (string) $in['color'] ) );
+			$data['color'] = preg_match( '/^#[0-9a-f]{6}$/', $color ) ? $color : '';
+		}
+		if ( isset( $in['headline'] ) ) {
+			$data['headline'] = mb_substr( sanitize_text_field( $in['headline'] ), 0, 160 );
+		}
+		if ( isset( $in['tagline'] ) ) {
+			$data['tagline'] = mb_substr( sanitize_textarea_field( $in['tagline'] ), 0, 400 );
+		}
+		foreach ( array( 'privacy', 'refund' ) as $doc ) {
+			if ( isset( $in[ $doc ] ) ) {
+				$data[ $doc ] = mb_substr( sanitize_textarea_field( $in[ $doc ] ), 0, 20000 );
+			}
+		}
 		if ( $existing ) {
 			$wpdb->update( zp_table( 'resellers' ), $data, array( 'user_id' => $user_id ) );
 		} else {
@@ -357,6 +440,9 @@ class ZP_Resellers {
 				zp_redirect( zp_url( 'wallet' ) );
 			}
 			$res = self::save( $user->ID, wp_unslash( $_POST ) ); // phpcs:ignore
+			if ( ! is_wp_error( $res ) && ! $new ) {
+				$res = self::save_logo( $user->ID );
+			}
 			if ( ! is_wp_error( $res ) && $new ) {
 				$res = self::activate( $user->ID );
 			}

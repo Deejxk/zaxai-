@@ -42,8 +42,12 @@ $base   = zp_public_prices();
 		<div class="zp-wrap zp-phero__in">
 			<div class="zp-phero__text">
 				<span class="zp-ptag zp-anim"><i></i>IPv4 · IPv6 · ISP · Mobile</span>
-				<h1 class="zp-anim" style="--d:1"><?php echo esc_html( $brand ); ?>: <em>private proxies, ready in minutes.</em></h1>
-				<p class="zp-anim" style="--d:2">Fast, dedicated IPs from locations around the world. Create an account, fund your wallet and get your proxies delivered to your dashboard.</p>
+				<?php if ( $store->headline ) : ?>
+					<h1 class="zp-anim" style="--d:1"><em><?php echo esc_html( $store->headline ); ?></em></h1>
+				<?php else : ?>
+					<h1 class="zp-anim" style="--d:1"><?php echo esc_html( $brand ); ?>: <em>private proxies, ready in minutes.</em></h1>
+				<?php endif; ?>
+				<p class="zp-anim" style="--d:2"><?php echo $store->tagline ? nl2br( esc_html( $store->tagline ) ) : 'Fast, dedicated IPs from locations around the world. Create an account, fund your wallet and get your proxies delivered to your dashboard.'; ?></p>
 				<div class="zp-row zp-anim" style="--d:3">
 					<a class="zp-btn zp-btn--primary zp-btn--lg" href="<?php echo esc_url( $cta ); ?>"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?><?php echo $mine ? 'Buy proxies' : 'Create account'; ?></a>
 					<?php if ( ! $mine ) : ?><a class="zp-btn zp-btn--ghost zp-btn--lg" href="<?php echo esc_url( zp_url( 'login' ) ); ?>">Sign in</a><?php endif; ?>
@@ -94,7 +98,7 @@ $base   = zp_public_prices();
 <footer class="zp-pfoot">
 	<div class="zp-wrap zp-pfoot__base" style="margin-top:0;border-top:0;padding-top:0">
 		<span>© <?php echo esc_html( gmdate( 'Y' ) . ' ' . $brand ); ?>. All rights reserved.</span>
-		<span><a href="<?php echo esc_url( zp_url( 'login' ) ); ?>">Sign in</a> · <a href="<?php echo esc_url( zp_url( 'register' ) ); ?>">Create account</a></span>
+		<span><a href="<?php echo esc_url( ZP_Resellers::store_url( $store, 'privacy' ) ); ?>">Privacy Policy</a> · <a href="<?php echo esc_url( ZP_Resellers::store_url( $store, 'refund' ) ); ?>">Refund Policy</a> · <a href="<?php echo esc_url( zp_url( 'login' ) ); ?>">Sign in</a> · <a href="<?php echo esc_url( zp_url( 'register' ) ); ?>">Create account</a></span>
 	</div>
 </footer>
 <?php ZP_Router::foot(); ?>

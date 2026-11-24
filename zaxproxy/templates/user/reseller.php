@@ -417,7 +417,7 @@ $paid_ts = strtotime( $me->paid_until . ' UTC' );
 	<?php endif; ?>
 
 <?php else : ?>
-	<form method="post" class="zp-form">
+	<form method="post" class="zp-form" enctype="multipart/form-data">
 		<?php zp_nonce_field( 'reseller_save' ); ?><input type="hidden" name="tab" value="settings">
 		<div class="zp-grid2">
 			<section class="zp-card zp-anim" style="--d:1">
@@ -436,6 +436,42 @@ $paid_ts = strtotime( $me->paid_until . ' UTC' );
 				<label class="zp-field"><span>Telegram username for receipts</span><div class="zp-input"><?php echo zp_icon( 'send', 18 ); // phpcs:ignore ?><input type="text" name="telegram" value="<?php echo esc_attr( $me->telegram ); ?>" maxlength="80" placeholder="@yourusername"></div><small>Customers get a button to send you their payment receipt.</small></label>
 			</section>
 		</div>
+		<section class="zp-card zp-anim" style="--d:2">
+			<div class="zp-card__head"><h3><?php echo zp_icon( 'eye', 18 ); // phpcs:ignore ?> Store design</h3><a href="<?php echo esc_url( $store_url ); ?>" target="_blank" rel="noopener">Preview store</a></div>
+			<div class="zp-grid2">
+				<div class="zp-form">
+					<label class="zp-field"><span>Brand colour</span>
+						<div class="zp-colorpick">
+							<input type="color" id="zp-rs-color" value="<?php echo esc_attr( $me->color ? $me->color : '#6d5efc' ); ?>" aria-label="Pick a colour">
+							<div class="zp-input"><input type="text" name="color" id="zp-rs-colortext" value="<?php echo esc_attr( $me->color ); ?>" maxlength="7" placeholder="#6d5efc" pattern="#[0-9a-fA-F]{6}" autocapitalize="none"></div>
+						</div>
+						<div class="zp-swatches" aria-label="Suggested colours"><?php foreach ( array( '#6d5efc', '#2563eb', '#0ea5a0', '#10b981', '#f97316', '#e11d48', '#d946ef', '#111827' ) as $sw ) : ?><button type="button" data-color="<?php echo esc_attr( $sw ); ?>" style="background:<?php echo esc_attr( $sw ); ?>" aria-label="<?php echo esc_attr( $sw ); ?>"></button><?php endforeach; ?></div>
+						<small>Used for buttons, highlights and your logo tile on your store and in your customers' dashboard. Leave empty for the default.</small>
+					</label>
+					<label class="zp-field"><span>Logo</span>
+						<div class="zp-logopick">
+							<span class="zp-logopick__now"><?php $GLOBALS['zp_reseller_ctx'] = $me; echo zp_logo( 56 ); unset( $GLOBALS['zp_reseller_ctx'] ); // phpcs:ignore ?></span>
+							<div><input type="file" name="logo" accept="image/png,image/jpeg,image/webp"><small>Square PNG, JPG or WebP, under 1 MB. Without a logo we show the first letter of your brand.</small>
+							<?php if ( $me->logo_url ) : ?><label class="zp-check" style="margin-top:8px"><input type="checkbox" name="remove_logo" value="1"><span>Remove my logo</span></label><?php endif; ?></div>
+						</div>
+					</label>
+				</div>
+				<div class="zp-form">
+					<label class="zp-field"><span>Headline on your store</span><div class="zp-input"><input type="text" name="headline" value="<?php echo esc_attr( $me->headline ); ?>" maxlength="160" placeholder="<?php echo esc_attr( $me->brand . ': private proxies, ready in minutes.' ); ?>"></div></label>
+					<label class="zp-field"><span>Text under the headline</span><textarea name="tagline" rows="4" class="zp-textarea" maxlength="400" placeholder="Fast, dedicated IPs from locations around the world. Create an account, fund your wallet and get your proxies delivered to your dashboard."><?php echo esc_textarea( $me->tagline ); ?></textarea><small>Leave either one empty to use the standard wording.</small></label>
+				</div>
+			</div>
+		</section>
+
+		<section class="zp-card zp-anim" style="--d:3">
+			<div class="zp-card__head"><h3><?php echo zp_icon( 'receipt', 18 ); // phpcs:ignore ?> Your policies</h3></div>
+			<p class="zp-muted" style="margin-bottom:14px">Shown to your customers at the bottom of your store. Leave a box empty and we show a standard policy in your brand's name. Put a blank line between sections; a short line on its own becomes a heading.</p>
+			<div class="zp-grid2">
+				<label class="zp-field"><span>Privacy policy <a href="<?php echo esc_url( ZP_Resellers::store_url( $me, 'privacy' ) ); ?>" target="_blank" rel="noopener">view</a></span><textarea name="privacy" rows="10" class="zp-textarea" maxlength="20000" placeholder="Leave empty to use the standard privacy policy."><?php echo esc_textarea( (string) $me->privacy ); ?></textarea></label>
+				<label class="zp-field"><span>Refund policy <a href="<?php echo esc_url( ZP_Resellers::store_url( $me, 'refund' ) ); ?>" target="_blank" rel="noopener">view</a></span><textarea name="refund" rows="10" class="zp-textarea" maxlength="20000" placeholder="Leave empty to use the standard refund policy."><?php echo esc_textarea( (string) $me->refund ); ?></textarea></label>
+			</div>
+		</section>
+
 		<div class="zp-savebar"><button class="zp-btn zp-btn--primary zp-btn--lg" type="submit">Save store settings</button></div>
 	</form>
 

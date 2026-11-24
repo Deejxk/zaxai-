@@ -37,7 +37,7 @@ class ZP_Router {
 			// A reseller's own domain: the store lives at the root and nothing of the platform shows.
 			if ( in_array( $base, array( 'zp-manifest', 'zp-sw', 'zp-offline', ZP_USER_BASE ), true ) ) {
 				$GLOBALS['zp_reseller_ctx'] = $ds;
-			} elseif ( '' === $base || in_array( $base, self::GUEST_PAGES, true ) ) {
+			} elseif ( '' === $base || in_array( $base, self::GUEST_PAGES, true ) || 'privacy' === $base || 'refund' === $base ) {
 				self::store( $ds->slug, $base );
 				self::store_offline( $ds );
 			} else {
@@ -231,6 +231,11 @@ class ZP_Router {
 			include ZP_DIR . 'templates/store.php';
 			exit;
 		}
+		if ( 'privacy' === $page || 'refund' === $page ) {
+			$doc = $page;
+			include ZP_DIR . 'templates/store-policy.php';
+			exit;
+		}
 		if ( ! in_array( $page, self::GUEST_PAGES, true ) ) {
 			zp_redirect( ZP_Resellers::store_url( $store ) );
 		}
@@ -360,6 +365,12 @@ class ZP_Router {
 <script>(function(){try{var t=localStorage.getItem('zp-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 <script>(function(){try{if(!sessionStorage.getItem('zp-splash')){sessionStorage.setItem('zp-splash','1');document.documentElement.className+=' zp-splashing';setTimeout(function(){document.documentElement.className=document.documentElement.className.replace(' zp-splashing','');},5700);}}catch(e){}})();</script>
 <link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/app.css' ) ); ?>">
+<?php
+$zp_color = ZP_Resellers::color( zp_reseller_ctx() );
+if ( $zp_color ) : // a store's own brand colour replaces the platform palette everywhere on its pages
+	?>
+<style>html[data-theme]{--zp-brand:<?php echo esc_html( $zp_color ); ?>;--zp-brand-2:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 62%,#fff);--zp-grad:linear-gradient(135deg,<?php echo esc_html( $zp_color ); ?> 0%,color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 62%,#fff) 100%);--zp-soft:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 16%,transparent)}html[data-theme="dark"]{--zp-soft-ink:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 50%,#fff)}html[data-theme="light"]{--zp-soft-ink:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 78%,#000)}.zp-btn--primary,.zp-hero,.zp-balance,.zp-storelink,.zp-phero__orb,.zp-pcta,.zp-preseller,.zp-auth__art{box-shadow:0 20px 44px -26px <?php echo esc_html( $zp_color ); ?>!important}.zp-wordmark b,.zp-splash__name .zp-wordmark b,.zp-phero h1 em{background:var(--zp-grad);-webkit-background-clip:text;background-clip:text}.zp-splash__orb--a{background:radial-gradient(circle,<?php echo esc_html( $zp_color ); ?> 0%,transparent 68%)}.zp-splash__orb--b{background:radial-gradient(circle,color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 62%,#fff) 0%,transparent 68%)}.zp-phero__glow{background:radial-gradient(520px 320px at 18% 20%,color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 30%,transparent),transparent 65%)}</style>
+<?php endif; ?>
 		<?php
 	}
 

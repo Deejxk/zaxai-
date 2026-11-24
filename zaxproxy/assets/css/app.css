@@ -688,3 +688,18 @@ label.zp-prefs{cursor:pointer}
 .zp-addon .zp-input{background:var(--zp-surface)}
 .zp-domainline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px;border-radius:14px;background:var(--zp-surface-2);border:1px solid var(--zp-border)}
 .zp-domainline .zp-mono{font-size:18px;font-weight:700;flex:1;min-width:0;overflow-wrap:anywhere}
+/* ---------- Reseller store design ---------- */
+.zp-logo-img{object-fit:contain;border-radius:22%;filter:none;background:transparent}
+.zp-colorpick{display:flex;gap:10px;align-items:center}
+.zp-colorpick input[type=color]{width:48px;height:48px;padding:0;border:1px solid var(--zp-border);border-radius:13px;background:var(--zp-surface-2);cursor:pointer;flex:none}
+.zp-colorpick input[type=color]::-webkit-color-swatch-wrapper{padding:5px}
+.zp-colorpick input[type=color]::-webkit-color-swatch{border:0;border-radius:8px}
+.zp-colorpick .zp-input{flex:1}
+.zp-swatches{display:flex;gap:8px;flex-wrap:wrap}
+.zp-swatches button{width:30px;height:30px;border-radius:10px;border:2px solid var(--zp-surface);box-shadow:0 0 0 1px var(--zp-border-2);transition:transform .2s var(--zp-ease)}
+.zp-swatches button:hover{transform:scale(1.12)}
+.zp-logopick{display:flex;gap:14px;align-items:center}
+.zp-logopick__now{flex:none;line-height:0}
+.zp-logopick div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.zp-logopick input[type=file]{font-size:14px;max-width:100%;color:var(--zp-text-2)}
+.zp-field>span a{font-weight:500;margin-left:6px;font-size:12.5px}
