@@ -52,6 +52,11 @@ $toc    = array(
 	'problems'  => 'Common questions and problems',
 );
 ?>
+<?php $back_url = $unlocked ? zp_url( 'reseller', array( 'tab' => 'overview' ) ) : zp_url( 'reseller' ); ?>
+<div class="zp-docbar zp-anim">
+	<a class="zp-btn zp-btn--ghost zp-btn--sm" href="<?php echo esc_url( $back_url ); ?>"><?php echo zp_icon( 'back', 16 ); // phpcs:ignore ?>Back<?php echo $unlocked ? ' to my dashboard' : ' to reseller page'; ?></a>
+	<span class="zp-muted">Reseller documentation</span>
+</div>
 <div class="zp-doc">
 	<aside class="zp-doc__toc zp-anim">
 		<strong>On this page</strong>
@@ -306,6 +311,11 @@ $toc    = array(
 				<details><summary>Can I cancel?<?php echo zp_icon( 'plus', 18 ); // phpcs:ignore ?></summary><p>Yes. Simply stop funding the monthly fee and your account pauses at the end of the paid period. Fees already paid are not refunded.</p></details>
 			</div>
 		</section>
+
+		<div class="zp-row zp-row--between">
+			<a class="zp-btn zp-btn--ghost" href="<?php echo esc_url( $back_url ); ?>"><?php echo zp_icon( 'back', 18 ); // phpcs:ignore ?>Back<?php echo $unlocked ? ' to my dashboard' : ' to reseller page'; ?></a>
+			<a class="zp-btn zp-btn--soft" href="#zp-content" data-zp-top>Back to top</a>
+		</div>
 
 		<section class="zp-cta zp-anim">
 			<div><strong>Still have a question?</strong><span>Our team is happy to explain anything about reselling.</span></div>

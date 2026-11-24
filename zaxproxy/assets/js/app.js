@@ -54,6 +54,7 @@
     if (e.target.closest('[data-zp-close]')) { var s = e.target.closest('.zp-sheet'); if (s) s.hidden = true; }
     if (e.target.closest('#zp-theme,[data-zp-theme-toggle]')) { toggleTheme(); }
     if (e.target.closest('#zp-install,[data-zp-install]')) { installApp(); }
+    if (e.target.closest('[data-zp-top]')) { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
     var cp = e.target.closest('[data-zp-copy]');
     if (cp) { copy(cp.getAttribute('data-zp-copy'), cp.getAttribute('data-zp-copied')); }
     var reveal = e.target.closest('[data-zp-reveal]');

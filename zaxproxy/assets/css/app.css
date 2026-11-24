@@ -764,3 +764,5 @@ body.zp-body{overflow-x:clip}
 .zp-domhint{font-style:normal;font-size:13.5px;font-weight:600;color:var(--zp-text-2)}
 .zp-domhint.is-ok{color:var(--zp-ok)}
 .zp-domhint.is-bad{color:var(--zp-bad)}
+.zp-docbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.zp-docbar .zp-muted{font-size:13.5px}

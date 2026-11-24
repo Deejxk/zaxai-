@@ -383,6 +383,7 @@ function zp_icon( $name, $size = 20 ) {
 			'zap'      => '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>',
 			'chart'    => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
 			'card'     => '<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/>',
+			'back'     => '<path d="M19 12H5m0 0 5-5m-5 5 5 5"/>',
 			'arrow'    => '<path d="M5 12h14m0 0-5-5m5 5-5 5"/>',
 			'search'   => '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
 			'eye'      => '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
