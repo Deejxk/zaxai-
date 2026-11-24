@@ -14,6 +14,7 @@ function zp_defaults() {
 		'markup_ipv6'         => 30,
 		'markup_isp'          => 30,
 		'markup_mobile'       => 30,
+		'allowed_days'        => '30,60,90',
 		'registration'        => 1,
 		'landing'             => 1,
 		'currency_code'       => 'NGN',
@@ -461,4 +462,18 @@ function zp_receipt_message( $deposit, $user ) {
 		$user->user_email,
 		$deposit->note
 	);
+}
+
+/** Rental periods the store sells (admin setting). Empty list means every period the provider offers. */
+function zp_allowed_days() {
+	$days = array_filter( array_map( 'intval', preg_split( '/[\s,]+/', (string) zp_get( 'allowed_days', '30,60,90' ) ) ) );
+	sort( $days );
+	return array_values( array_unique( $days ) );
+}
+
+/** Keep only the provider periods the store sells. */
+function zp_filter_days( array $provider_days ) {
+	$provider_days = array_map( 'intval', $provider_days );
+	$allowed       = zp_allowed_days();
+	return array_values( $allowed ? array_intersect( $provider_days, $allowed ) : $provider_days );
 }

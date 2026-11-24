@@ -24,7 +24,7 @@ class ZP_Orders {
 		if ( is_wp_error( $days ) ) {
 			return $days;
 		}
-		$out = array( 'days' => array_map( 'intval', (array) $days['days'] ), 'countries' => array(), 'tariffs' => array() );
+		$out = array( 'days' => zp_filter_days( (array) $days['days'] ), 'countries' => array(), 'tariffs' => array() );
 
 		if ( 'mobile' === $type ) {
 			$tariffs = ZP_API::tariffs();
@@ -92,7 +92,8 @@ class ZP_Orders {
 		if ( 3 !== strlen( $spec['country'] ) ) {
 			return new WP_Error( 'zp_input', 'Choose a country.' );
 		}
-		if ( $spec['days'] < 1 ) {
+		$allowed = zp_allowed_days();
+		if ( $spec['days'] < 1 || ( $allowed && ! in_array( $spec['days'], $allowed, true ) ) ) {
 			return new WP_Error( 'zp_input', 'Choose a rental period.' );
 		}
 		$min = 'ipv6' === $type ? 10 : 1;
@@ -340,6 +341,10 @@ class ZP_Orders {
 	}
 
 	public static function extend_quote( $user_id, array $proxy_ids, $days ) {
+		$allowed = zp_allowed_days();
+		if ( $allowed && ! in_array( (int) $days, $allowed, true ) ) {
+			return new WP_Error( 'zp_input', 'Choose a renewal period.' );
+		}
 		$t = self::extend_targets( $user_id, $proxy_ids );
 		if ( is_wp_error( $t ) ) {
 			return $t;

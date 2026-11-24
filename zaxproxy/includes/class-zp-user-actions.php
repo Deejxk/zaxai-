@@ -323,7 +323,7 @@ class ZP_User_Actions {
 		} elseif ( 'extend_days' === $act ) {
 			$res = ZP_API::days( sanitize_key( zp_query( 'type' ) ) );
 			if ( ! is_wp_error( $res ) ) {
-				$res = array( 'days' => array_map( 'intval', (array) $res['days'] ) );
+				$res = array( 'days' => zp_filter_days( (array) $res['days'] ) );
 			}
 		}
 		if ( is_wp_error( $res ) ) {

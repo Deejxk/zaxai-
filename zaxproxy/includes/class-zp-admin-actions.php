@@ -143,6 +143,7 @@ class ZP_Admin_Actions {
 		$new   = array(
 			'brand'               => zp_post( 'brand', 'ZaxProxy' ),
 			'types'               => array_values( array_intersect( array_keys( zp_types() ), $types ) ),
+			'allowed_days'        => implode( ',', array_filter( array_map( 'intval', preg_split( '/[\s,]+/', zp_post( 'allowed_days' ) ) ) ) ),
 			'registration'        => zp_post( 'registration' ) ? 1 : 0,
 			'landing'             => zp_post( 'landing' ) ? 1 : 0,
 			'min_deposit'         => max( 0.5, (float) zp_post( 'min_deposit' ) ),
@@ -166,6 +167,7 @@ class ZP_Admin_Actions {
 		}
 		$key_changed = isset( $new['api_key'] ) && $new['api_key'] !== zp_get( 'api_key' );
 		zp_update_settings( $new );
+		delete_transient( 'zp_public_prices' );
 		if ( $key_changed ) {
 			ZP_API::flush_cache();
 		}
