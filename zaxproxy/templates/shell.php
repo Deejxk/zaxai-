@@ -121,6 +121,6 @@ $logout  = add_query_arg( '_zpnonce', wp_create_nonce( 'zp_logout' ), zp_url( 'l
 		<button class="zp-btn zp-btn--primary zp-btn--block" type="button" data-zp-close>Got it</button>
 	</div>
 </div>
-<?php ZP_Router::foot( ! $shell['admin'] ); ?>
+<?php ZP_Router::foot( ! $shell['admin'], $shell['admin'] ); ?>
 </body>
 </html>

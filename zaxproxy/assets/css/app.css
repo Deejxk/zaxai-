@@ -480,11 +480,10 @@ button{cursor:pointer}
   .zp-tab__ico{display:grid;place-items:center;transition:transform .3s var(--zp-ease)}
   .zp-tab:active .zp-tab__ico{transform:scale(.86)}
   .zp-tab.is-active{color:var(--zp-soft-ink)}
-  .zp-tab.is-active .zp-tab__ico{transform:translateY(-2px)}
-  .zp-tab.is-active::before{content:"";position:absolute;top:0;width:28px;height:3px;border-radius:0 0 4px 4px;background:var(--zp-grad);animation:zp-pop .3s var(--zp-ease)}
+  .zp-tab::before{content:"";position:absolute;top:0;width:28px;height:3px;border-radius:0 0 4px 4px;background:var(--zp-grad);opacity:0;transition:opacity .2s}
+  .zp-tab.is-active::before{opacity:1}
   .zp-tab--fab .zp-tab__ico{width:50px;height:50px;border-radius:17px;background:var(--zp-grad);color:#fff;margin-top:-26px;box-shadow:0 12px 24px -8px rgba(109,94,252,.95),0 0 0 5px var(--zp-bg)}
-  .zp-tab--fab.is-active::before{display:none}
-  .zp-tab--fab.is-active .zp-tab__ico{transform:none}
+  .zp-tab--fab::before{display:none}
   .zp-tab--fab{color:var(--zp-text-2)}
   .zp-grid2,.zp-grid2--wide,.zp-grid3,.zp-walletgrid{grid-template-columns:minmax(0,1fr)}
   .zp-buy{grid-template-columns:minmax(0,1fr)}
@@ -630,3 +629,19 @@ label.zp-prefs{cursor:pointer}
 /* shield logo: no tile behind it, so shadow follows the shape */
 .zp-logo-mark{border-radius:0;box-shadow:none;overflow:visible;filter:drop-shadow(0 6px 10px rgba(79,125,251,.45))}
 .zp-brand:hover .zp-logo-mark,.zp-top__logo:hover .zp-logo-mark{animation:zp-bump .5s var(--zp-ease)}
+
+/* ---------- Instant in-app navigation ---------- */
+.zp-fast .zp-anim{animation-duration:.2s;animation-delay:0s!important}
+.zp-quiet .zp-anim,.zp-quiet .zp-country,.zp-quiet .zp-msg,.zp-quiet .zp-bars__col i,.zp-quiet .zp-receipt{animation:none!important}
+.zp-skel{display:flex;flex-direction:column;gap:16px}
+.zp-skel i{display:block;height:120px;border-radius:var(--zp-radius);background:linear-gradient(100deg,var(--zp-surface) 30%,var(--zp-surface-2) 50%,var(--zp-surface) 70%);background-size:300% 100%;animation:zp-shimmer 1.2s linear infinite}
+.zp-skel i:first-child{height:190px}
+/* footer menu: one fixed size on every page, nothing shifts when a tab becomes active */
+@media (max-width:999px){
+  .zp-tabbar{height:calc(var(--zp-tab-h) + env(safe-area-inset-bottom));min-height:calc(var(--zp-tab-h) + env(safe-area-inset-bottom));transform:translateZ(0);contain:layout;touch-action:manipulation}
+  .zp-tab{height:var(--zp-tab-h);min-width:0;font-family:inherit;line-height:1.2;-webkit-tap-highlight-color:transparent;appearance:none;-webkit-appearance:none;margin:0}
+  .zp-tab__ico{width:26px;height:26px}
+  .zp-tab--fab .zp-tab__ico{width:50px;height:50px}
+  .zp-tab__label{white-space:nowrap}
+  html{overflow-x:hidden}
+}

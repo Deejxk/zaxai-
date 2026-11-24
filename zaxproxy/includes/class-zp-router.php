@@ -320,8 +320,15 @@ class ZP_Router {
 		<?php
 	}
 
-	public static function foot( $ajax = false ) {
+	public static function foot( $ajax = false, $admin = false ) {
 		$cfg = array( 'cur' => zp_get( 'currency_symbol', '₦' ), 'sw' => zp_route_url( 'zp-sw' ), 'scope' => wp_parse_url( home_url( '/' ), PHP_URL_PATH ) ?: '/' );
+		if ( is_user_logged_in() ) {
+			// In-app navigation: which URLs can be swapped in place without a reload.
+			$cfg['uid']   = get_current_user_id();
+			$cfg['base']  = $admin ? zp_admin_url() : zp_route_url( ZP_USER_BASE );
+			$cfg['pages'] = $admin ? self::ADMIN_PAGES : self::USER_PAGES;
+			$cfg['home']  = 'dashboard';
+		}
 		if ( $ajax ) {
 			$cfg['ajax']  = zp_url( 'ajax' );
 			$cfg['nonce'] = wp_create_nonce( 'zp_ajax' );
