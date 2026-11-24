@@ -9,6 +9,7 @@ $rev      = '(CASE WHEN reseller_id > 0 THEN reseller_cost ELSE amount END)'; //
 $revenue  = (float) $wpdb->get_var( "SELECT COALESCE(SUM($rev),0) FROM $o WHERE $paid" ); // phpcs:ignore
 $cost     = (float) $wpdb->get_var( "SELECT COALESCE(SUM(cost * fx_rate),0) FROM $o WHERE $paid" ); // phpcs:ignore
 $month    = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM($rev),0) FROM $o WHERE $paid AND created_at >= %s", gmdate( 'Y-m-01 00:00:00' ) ) ); // phpcs:ignore
+$fees     = -1 * (float) $wpdb->get_var( 'SELECT COALESCE(SUM(amount),0) FROM ' . zp_table( 'transactions' ) . " WHERE type = 'reseller_fee'" );
 $users    = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . $wpdb->users );
 $active   = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . zp_table( 'proxies' ) . ' WHERE date_end > %s', zp_now() ) );
 $wallets  = (float) $wpdb->get_var( 'SELECT COALESCE(SUM(balance),0) FROM ' . zp_table( 'wallets' ) );
@@ -36,7 +37,7 @@ $max = max( 1, max( $days ) );
 <?php endif; ?>
 
 <section class="zp-stats">
-	<div class="zp-stat zp-anim" style="--d:1"><span class="zp-stat__ico zp-tone-green"><?php echo zp_icon( 'chart' ); // phpcs:ignore ?></span><span class="zp-stat__label">Revenue (all time)</span><strong class="zp-stat__value"><?php echo esc_html( zp_money( $revenue ) ); ?></strong><span class="zp-sub">Profit <?php echo esc_html( zp_money( $revenue - $cost ) ); ?> · This month <?php echo esc_html( zp_money( $month ) ); ?></span></div>
+	<div class="zp-stat zp-anim" style="--d:1"><span class="zp-stat__ico zp-tone-green"><?php echo zp_icon( 'chart' ); // phpcs:ignore ?></span><span class="zp-stat__label">Revenue (all time)</span><strong class="zp-stat__value"><?php echo esc_html( zp_money( $revenue ) ); ?></strong><span class="zp-sub">Profit <?php echo esc_html( zp_money( $revenue - $cost ) ); ?> · This month <?php echo esc_html( zp_money( $month ) ); ?></span><?php if ( $fees > 0 ) : ?><span class="zp-sub">Plus reseller fees <?php echo esc_html( zp_money( $fees ) ); ?></span><?php endif; ?></div>
 	<div class="zp-stat zp-anim" style="--d:2"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'users' ); // phpcs:ignore ?></span><span class="zp-stat__label">Customers</span><strong class="zp-stat__value"><?php echo (int) $users; ?></strong><span class="zp-sub">Wallets hold <?php echo esc_html( zp_money( $wallets ) ); ?></span></div>
 	<div class="zp-stat zp-anim" style="--d:3"><span class="zp-stat__ico zp-tone-cyan"><?php echo zp_icon( 'globe' ); // phpcs:ignore ?></span><span class="zp-stat__label">Active proxies</span><strong class="zp-stat__value"><?php echo (int) $active; ?></strong><span class="zp-sub">Across all customers</span></div>
 	<div class="zp-stat zp-anim" style="--d:4"><span class="zp-stat__ico zp-tone-amber"><?php echo zp_icon( 'wallet' ); // phpcs:ignore ?></span><span class="zp-stat__label">Provider balance</span><strong class="zp-stat__value"><?php echo is_array( $upstream ) ? esc_html( zp_usd( $upstream['balance'] ) ) : '—'; ?></strong><span class="zp-sub"><?php echo is_array( $upstream ) ? esc_html( $upstream['user'] ) : 'Not connected'; ?></span></div>

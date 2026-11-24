@@ -25,8 +25,8 @@ $rows = $wpdb->get_results( 'SELECT r.*, u.user_email FROM ' . zp_table( 'resell
 				<td data-label="Store sales" class="zp-right"><?php echo esc_html( zp_money( $st['sales'] ) ); ?></td>
 				<td data-label="Paid to you" class="zp-right"><strong><?php echo esc_html( zp_money( $st['cost'] ) ); ?></strong></td>
 				<td data-label="Wallet" class="zp-right"><?php echo esc_html( zp_money( ZP_Wallet::balance( $r->user_id ) ) ); ?></td>
-				<td data-label="Status"><?php echo zp_badge( 'active' === $r->status ? 'active' : 'closed' ); // phpcs:ignore ?></td>
-				<td data-label=""><form method="post"><?php zp_nonce_field( 'reseller_status' ); ?><input type="hidden" name="user_id" value="<?php echo (int) $r->user_id; ?>"><input type="hidden" name="status" value="<?php echo 'active' === $r->status ? 'suspended' : 'active'; ?>"><button class="zp-btn zp-btn--sm <?php echo 'active' === $r->status ? 'zp-btn--danger' : 'zp-btn--soft'; ?>" type="submit"><?php echo 'active' === $r->status ? 'Suspend' : 'Reactivate'; ?></button></form></td>
+				<td data-label="Status"><?php echo zp_badge( $r->status ); // phpcs:ignore ?><span class="zp-sub"><?php echo $r->paid_until ? esc_html( 'Paid to ' . zp_date( $r->paid_until, false ) ) : 'Not activated'; ?></span></td>
+				<td data-label=""><form method="post"><?php zp_nonce_field( 'reseller_status' ); ?><input type="hidden" name="user_id" value="<?php echo (int) $r->user_id; ?>"><input type="hidden" name="status" value="<?php echo 'suspended' === $r->status ? 'active' : 'suspended'; ?>"><button class="zp-btn zp-btn--sm <?php echo 'suspended' === $r->status ? 'zp-btn--soft' : 'zp-btn--danger'; ?>" type="submit"><?php echo 'suspended' === $r->status ? 'Reactivate' : 'Suspend'; ?></button></form></td>
 			</tr>
 		<?php endforeach; ?>
 		</tbody>

@@ -65,6 +65,10 @@ if ( ! $error && $opts['countries'] ) {
 				<?php endforeach; ?>
 			</div>
 			<label class="zp-field" style="margin-top:14px"><span>Reseller markup (%), all proxy types</span><div class="zp-input"><?php echo zp_icon( 'users', 18 ); // phpcs:ignore ?><input type="number" name="reseller_markup" value="<?php echo esc_attr( $s['reseller_markup'] ); ?>" min="0" max="1000" step="0.1" required></div><small>The lower rate for accounts with a reseller store. It is what a reseller pays for their own orders and what their wallet is charged for each order in their store. Their customers pay this plus the reseller's own markup.</small></label>
+			<div class="zp-fieldrow">
+				<label class="zp-field"><span>Reseller activation fee (<?php echo esc_html( $s['currency_code'] ); ?>)</span><div class="zp-input"><input type="number" name="reseller_fee" value="<?php echo esc_attr( $s['reseller_fee'] ); ?>" min="0" step="1" required></div><small>One-time, includes the first 30 days.</small></label>
+				<label class="zp-field"><span>Reseller monthly fee (<?php echo esc_html( $s['currency_code'] ); ?>)</span><div class="zp-input"><input type="number" name="reseller_monthly" value="<?php echo esc_attr( $s['reseller_monthly'] ); ?>" min="0" step="1" required></div><small>Auto-charged from the wallet every 30 days.</small></label>
+			</div>
 			<div class="zp-callout" style="margin-top:16px">Selling price = provider price (USD) × exchange rate × (1 + markup %), rounded up to the next whole <?php echo esc_html( $s['currency_code'] ); ?>.</div>
 		</section>
 	</div>

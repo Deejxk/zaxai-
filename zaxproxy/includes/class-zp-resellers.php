@@ -7,6 +7,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Resellers run a branded store on top of the platform.
  *
  * - A reseller is a normal customer with a row in zp_resellers (brand, store slug, markup).
+ * - Opening a store costs a one-off activation fee that covers the first 30 days; after that a
+ *   monthly fee is taken from the reseller's wallet automatically. An unpaid store is `expired`:
+ *   it stops selling and loses the reseller rate until the fee is paid.
  * - Their customers are WordPress users tagged with user meta `zp_reseller_id`.
  * - A customer's wallet is store credit issued by the reseller (the reseller is paid directly
  *   and approves the deposit). When the customer buys, the customer's wallet is charged the
@@ -37,10 +40,82 @@ class ZP_Resellers {
 		return $slug ? $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'resellers' ) . ' WHERE slug = %s', $slug ) ) : null;
 	}
 
-	/** True for an account with an active store: it buys at the reseller rate. */
+	/** True for an account with an active, paid-up store: it buys at the reseller rate. */
 	public static function is_reseller( $user_id ) {
+		return self::is_live( self::get( $user_id ) );
+	}
+
+	/** A store that may sell right now: not suspended and its subscription is paid. Renews it first when due. */
+	public static function is_live( $r ) {
+		if ( ! $r ) {
+			return false;
+		}
+		$r = self::bill( $r );
+		return 'active' === $r->status && $r->paid_until && strtotime( $r->paid_until . ' UTC' ) > time();
+	}
+
+	/**
+	 * Take the monthly fee when a store's paid period has ended.
+	 * Success extends the period by 30 days; an empty wallet marks the store expired.
+	 * Returns the (possibly updated) store row.
+	 */
+	public static function bill( $r, $force = false ) {
+		global $wpdb;
+		if ( ! $r || 'suspended' === $r->status || ! $r->paid_until || strtotime( $r->paid_until . ' UTC' ) > time() ) {
+			return $r; // suspended, never activated, or still paid up
+		}
+		$lock = 'zp_rbill_' . (int) $r->user_id;
+		if ( ! $force && 'expired' === $r->status && get_transient( $lock ) ) {
+			return $r; // already tried a moment ago
+		}
+		set_transient( $lock, 1, 10 * MINUTE_IN_SECONDS );
+		$fee = (float) zp_get( 'reseller_monthly', 15000 );
+		// Claim the renewal first so two requests cannot both charge for the same month.
+		$until   = gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS );
+		$claimed = $wpdb->query( $wpdb->prepare( 'UPDATE ' . zp_table( 'resellers' ) . ' SET paid_until = %s WHERE user_id = %d AND paid_until = %s', $until, $r->user_id, $r->paid_until ) );
+		if ( ! $claimed ) {
+			$GLOBALS['zp_resellers_dirty'] = true;
+			return self::get( $r->user_id );
+		}
+		if ( $fee <= 0 || ZP_Wallet::debit( $r->user_id, $fee, 'reseller_fee', 'store', 'Reseller store: monthly fee' ) ) {
+			$wpdb->update( zp_table( 'resellers' ), array( 'status' => 'active' ), array( 'user_id' => $r->user_id ) );
+		} else {
+			$wpdb->update( zp_table( 'resellers' ), array( 'status' => 'expired', 'paid_until' => $r->paid_until ), array( 'user_id' => $r->user_id ) );
+		}
+		$GLOBALS['zp_resellers_dirty'] = true;
+		return self::get( $r->user_id );
+	}
+
+	/** Cron: renew every store whose period has ended. */
+	public static function bill_due() {
+		global $wpdb;
+		$due = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'resellers' ) . " WHERE status IN ('active','expired') AND paid_until IS NOT NULL AND paid_until <= %s LIMIT 200", zp_now() ) );
+		foreach ( $due as $r ) {
+			self::bill( $r );
+		}
+	}
+
+	/**
+	 * Pay the one-off activation fee and start the first 30 days.
+	 *
+	 * @return true|WP_Error
+	 */
+	public static function activate( $user_id ) {
+		global $wpdb;
 		$r = self::get( $user_id );
-		return $r && 'active' === $r->status;
+		if ( ! $r ) {
+			return new WP_Error( 'zp_input', 'Create your store first.' );
+		}
+		if ( $r->paid_until ) {
+			return true;
+		}
+		$fee = (float) zp_get( 'reseller_fee', 45000 );
+		if ( $fee > 0 && ! ZP_Wallet::debit( $user_id, $fee, 'reseller_fee', 'store', 'Reseller store: activation' ) ) {
+			return new WP_Error( 'zp_funds', sprintf( 'You need %s in your wallet to activate your reseller account. Please add funds.', zp_money( $fee ) ) );
+		}
+		$wpdb->update( zp_table( 'resellers' ), array( 'status' => 'active', 'paid_until' => gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS ) ), array( 'user_id' => $user_id ) );
+		$GLOBALS['zp_resellers_dirty'] = true;
+		return true;
 	}
 
 	/** The reseller a user buys from, or null for direct platform customers. */
@@ -106,7 +181,7 @@ class ZP_Resellers {
 			$wpdb->update( zp_table( 'resellers' ), $data, array( 'user_id' => $user_id ) );
 		} else {
 			$data['user_id']    = $user_id;
-			$data['status']     = 'active';
+			$data['status']     = 'pending'; // becomes active once the activation fee is paid
 			$data['created_at'] = zp_now();
 			$wpdb->insert( zp_table( 'resellers' ), $data );
 		}
@@ -116,7 +191,12 @@ class ZP_Resellers {
 
 	public static function set_status( $user_id, $status ) {
 		global $wpdb;
-		$wpdb->update( zp_table( 'resellers' ), array( 'status' => 'suspended' === $status ? 'suspended' : 'active' ), array( 'user_id' => (int) $user_id ) );
+		$r = self::get( $user_id );
+		if ( ! $r ) {
+			return;
+		}
+		$new = 'suspended' === $status ? 'suspended' : ( $r->paid_until ? 'active' : 'pending' );
+		$wpdb->update( zp_table( 'resellers' ), array( 'status' => $new ), array( 'user_id' => (int) $user_id ) );
 		$GLOBALS['zp_resellers_dirty'] = true;
 	}
 
@@ -151,18 +231,38 @@ class ZP_Resellers {
 		$back = zp_url( 'reseller', array( 'tab' => sanitize_key( zp_post( 'tab', 'overview' ) ) ) );
 
 		if ( 'reseller_save' === $do ) {
-			$new = ! self::get( $user->ID );
+			$before = self::get( $user->ID );
+			$new    = ! $before || ! $before->paid_until;
+			$fee    = (float) zp_get( 'reseller_fee', 45000 );
+			if ( $new && ZP_Wallet::balance( $user->ID ) < $fee ) {
+				zp_flash( sprintf( 'Activation costs %s and your wallet has %s. Add funds, then come back to unlock your reseller account.', zp_money( $fee ), zp_money( ZP_Wallet::balance( $user->ID ) ) ), 'error' );
+				zp_redirect( zp_url( 'wallet' ) );
+			}
 			$res = self::save( $user->ID, wp_unslash( $_POST ) ); // phpcs:ignore
+			if ( ! is_wp_error( $res ) && $new ) {
+				$res = self::activate( $user->ID );
+			}
 			if ( is_wp_error( $res ) ) {
 				zp_flash( $res->get_error_message(), 'error' );
 				zp_redirect( $new ? zp_url( 'reseller' ) : $back );
 			}
-			zp_flash( $new ? 'Your store is live. Share your link and start selling.' : 'Store settings saved.' );
+			zp_flash( $new ? 'Reseller account unlocked. Your store is live: share your link and start selling.' : 'Store settings saved.' );
 			zp_redirect( $new ? zp_url( 'reseller' ) : $back );
+		}
+		if ( 'reseller_renew' === $do ) {
+			$r = self::get( $user->ID );
+			$r = $r ? self::bill( $r, true ) : null;
+			if ( $r && 'active' === $r->status ) {
+				zp_flash( 'Monthly fee paid. Your store is active again.' );
+			} else {
+				zp_flash( sprintf( 'Your wallet needs %s to renew. Please add funds.', zp_money( zp_get( 'reseller_monthly', 15000 ) ) ), 'error' );
+				zp_redirect( zp_url( 'wallet' ) );
+			}
+			zp_redirect( zp_url( 'reseller' ) );
 		}
 
 		$me = self::get( $user->ID );
-		if ( ! $me ) {
+		if ( ! $me || ! $me->paid_until ) {
 			zp_redirect( zp_url( 'reseller' ) );
 		}
 

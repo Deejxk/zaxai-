@@ -67,7 +67,10 @@ class ZP_Orders {
 	 * Resellers (and orders placed in their stores) are priced with the lower reseller markup.
 	 */
 	public static function markup( $cost, $type, $wholesale = false ) {
-		$pct = max( 0, (float) ( $wholesale ? zp_get( 'reseller_markup', 150 ) : zp_get( 'markup_' . $type, 0 ) ) );
+		$pct = max( 0, (float) zp_get( 'markup_' . $type, 0 ) );
+		if ( $wholesale ) {
+			$pct = min( $pct, max( 0, (float) zp_get( 'reseller_markup', 150 ) ) ); // a reseller never pays more than a regular customer
+		}
 		return (float) ceil( round( (float) $cost * zp_fx() * ( 1 + $pct / 100 ), 4 ) );
 	}
 
@@ -320,7 +323,7 @@ class ZP_Orders {
 
 	/** Can the store owner's platform wallet cover this order? Records a notice for them when it cannot. */
 	private static function reseller_can_pay( $reseller, $platform_price ) {
-		if ( 'active' !== $reseller->status ) {
+		if ( ! ZP_Resellers::is_live( $reseller ) ) {
 			return false;
 		}
 		if ( ZP_Wallet::balance( $reseller->user_id ) >= $platform_price ) {
@@ -528,6 +531,7 @@ class ZP_Orders {
 	}
 
 	public static function cron_sync() {
+		ZP_Resellers::bill_due();
 		if ( '' === trim( (string) zp_get( 'api_key' ) ) ) {
 			return;
 		}

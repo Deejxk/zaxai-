@@ -8,33 +8,116 @@ $me   = ZP_Resellers::get( $user->ID );
 $host = wp_parse_url( home_url(), PHP_URL_HOST );
 
 /* ---------- Not a reseller yet: pitch + sign-up ---------- */
-if ( ! $me ) :
+if ( ! $me || ! $me->paid_until ) :
+	$fee      = (float) zp_get( 'reseller_fee', 45000 );
+	$monthly  = (float) zp_get( 'reseller_monthly', 15000 );
+	$r_pct    = (float) zp_get( 'reseller_markup', 150 );
+	$prices   = zp_public_prices();
+	$pct      = function ( $n ) {
+		return rtrim( rtrim( number_format( (float) $n, 1 ), '0' ), '.' ) . '%';
+	};
+	// How much cheaper the reseller rate is than the regular price, per proxy type.
+	$saving   = array();
+	foreach ( zp_enabled_types() as $slug => $t ) {
+		$retail          = 1 + (float) zp_get( 'markup_' . $slug, 0 ) / 100;
+		$whole           = 1 + $r_pct / 100;
+		$saving[ $slug ] = array( 'off' => max( 0, ( 1 - $whole / $retail ) * 100 ), 'gain' => max( 0, ( $retail / $whole - 1 ) * 100 ) );
+	}
+	$best     = $saving ? max( wp_list_pluck( $saving, 'gain' ) ) : 0;
+	$sample   = null;
+	foreach ( $prices as $slug => $row ) {
+		if ( isset( $row['wholesale'] ) && $row['price'] > $row['wholesale'] ) {
+			$sample = array( 'type' => zp_type_label( $slug ), 'days' => $row['days'], 'retail' => $row['price'], 'whole' => $row['wholesale'], 'gain' => $row['price'] - $row['wholesale'] );
+			break;
+		}
+	}
+	$short    = max( 0, $fee - $balance );
 	?>
 	<section class="zp-hero zp-anim">
 		<div class="zp-hero__text">
-			<span class="zp-eyebrow">Reseller program</span>
-			<h2>Sell proxies under your own brand.</h2>
-			<p>Open your own store in a minute. Your customers buy from you, with your name, your prices and your payment details. We deliver the proxies.</p>
+			<span class="zp-eyebrow"><?php echo zp_icon( 'lock', 14 ); // phpcs:ignore ?> Reseller program · locked</span>
+			<h2>Run your own proxy business under your own brand.</h2>
+			<p>Buy at the reseller price, sell at your price, keep the difference. Unlock your reseller account for <?php echo esc_html( zp_money( $fee ) ); ?> and get your own store, your own customers and your own dashboard.</p>
+			<div class="zp-row"><a class="zp-btn zp-btn--light" href="#zp-rs-unlock"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Unlock for <?php echo esc_html( zp_money( $fee ) ); ?></a></div>
 		</div>
 		<div class="zp-hero__art"><?php echo zp_illustration( 'network' ); // phpcs:ignore ?></div>
 	</section>
 
-	<div class="zp-grid3">
-		<div class="zp-card zp-guide zp-anim" style="--d:1"><span class="zp-type__ico"><?php echo zp_icon( 'home', 22 ); // phpcs:ignore ?></span><strong>1. Create your store</strong><p>Choose a brand name and a link like <span class="zp-mono"><?php echo esc_html( $host ); ?>/s/yourbrand</span>.</p></div>
-		<div class="zp-card zp-guide zp-anim" style="--d:2"><span class="zp-type__ico"><?php echo zp_icon( 'wallet', 22 ); // phpcs:ignore ?></span><strong>2. Fund your wallet</strong><p>As a reseller you buy at a lower rate. Each customer order is paid from your wallet at that rate, so keep it topped up.</p></div>
-		<div class="zp-card zp-guide zp-anim" style="--d:3"><span class="zp-type__ico"><?php echo zp_icon( 'chart', 22 ); // phpcs:ignore ?></span><strong>3. Keep the profit</strong><p>You set your markup. Customers pay you directly and the difference is yours.</p></div>
+	<section class="zp-stats">
+		<div class="zp-stat zp-anim" style="--d:1"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'lock' ); // phpcs:ignore ?></span><span class="zp-stat__label">One-time activation</span><strong class="zp-stat__value"><?php echo esc_html( zp_money( $fee ) ); ?></strong><span class="zp-sub">Includes your first 30 days</span></div>
+		<div class="zp-stat zp-anim" style="--d:2"><span class="zp-stat__ico zp-tone-cyan"><?php echo zp_icon( 'refresh' ); // phpcs:ignore ?></span><span class="zp-stat__label">Monthly, after 30 days</span><strong class="zp-stat__value"><?php echo esc_html( zp_money( $monthly ) ); ?></strong><span class="zp-sub">Taken from your wallet automatically</span></div>
+		<div class="zp-stat zp-anim" style="--d:3"><span class="zp-stat__ico zp-tone-amber"><?php echo zp_icon( 'chart' ); // phpcs:ignore ?></span><span class="zp-stat__label">Your buying discount</span><strong class="zp-stat__value"><?php echo esc_html( 'up to ' . $pct( $saving ? max( wp_list_pluck( $saving, 'off' ) ) : 0 ) ); ?></strong><span class="zp-sub">Below the regular price</span></div>
+		<div class="zp-stat zp-anim" style="--d:4"><span class="zp-stat__ico zp-tone-green"><?php echo zp_icon( 'zap' ); // phpcs:ignore ?></span><span class="zp-stat__label">Your gain per sale</span><strong class="zp-stat__value zp-pos"><?php echo esc_html( $pct( $best ) . '+' ); ?></strong><span class="zp-sub">When you sell at the regular price</span></div>
+	</section>
+
+	<div class="zp-grid2">
+		<section class="zp-card zp-anim" style="--d:5">
+			<div class="zp-card__head"><h3>How the reseller account works</h3></div>
+			<ol class="zp-rsteps">
+				<li><b>1</b><div><strong>Unlock your account</strong><span>Pay <?php echo esc_html( zp_money( $fee ) ); ?> once from your wallet. Your reseller dashboard and store open immediately.</span></div></li>
+				<li><b>2</b><div><strong>Get your own store link</strong><span>A page like <span class="zp-mono"><?php echo esc_html( $host ); ?>/s/yourbrand</span> with your brand name. Your customers register, pay and buy there.</span></div></li>
+				<li><b>3</b><div><strong>Customers pay you directly</strong><span>They transfer to your bank account and send you the receipt. You approve it and their wallet is credited.</span></div></li>
+				<li><b>4</b><div><strong>We deliver, your wallet pays the reseller price</strong><span>Each customer order takes the reseller price from your ZaxProxy wallet. Keep it funded or their orders cannot go through.</span></div></li>
+				<li><b>5</b><div><strong>You keep the difference</strong><span>You choose your own markup. Everything above the reseller price is your profit, shown on your dashboard.</span></div></li>
+			</ol>
+		</section>
+
+		<section class="zp-card zp-anim" style="--d:6">
+			<div class="zp-card__head"><h3>What you gain</h3></div>
+			<div class="zp-tablewrap"><table class="zp-table zp-table--keep">
+				<thead><tr><th>Proxy type</th><th class="zp-right">You buy for</th><th class="zp-right">Gain at regular price</th></tr></thead>
+				<tbody>
+				<?php foreach ( zp_enabled_types() as $slug => $t ) : ?>
+					<tr>
+						<td><strong><?php echo esc_html( $t['label'] ); ?></strong></td>
+						<td class="zp-right"><?php echo esc_html( $pct( $saving[ $slug ]['off'] ) ); ?> less</td>
+						<td class="zp-right"><strong class="zp-pos"><?php echo esc_html( $pct( $saving[ $slug ]['gain'] ) ); ?></strong></td>
+					</tr>
+				<?php endforeach; ?>
+				</tbody>
+			</table></div>
+			<?php if ( $sample ) : ?>
+				<div class="zp-callout" style="margin-top:14px">
+					<strong>Example: 1 <?php echo esc_html( $sample['type'] ); ?> proxy, <?php echo (int) $sample['days']; ?> days</strong><br>
+					Regular customers pay <?php echo esc_html( zp_money( $sample['retail'] ) ); ?>. You pay <?php echo esc_html( zp_money( $sample['whole'] ) ); ?>.<br>
+					Sell it at the regular price and you keep <strong class="zp-pos"><?php echo esc_html( zp_money( $sample['gain'] ) ); ?></strong>.
+					Sell 10 and you keep <?php echo esc_html( zp_money( $sample['gain'] * 10 ) ); ?>; 50, <?php echo esc_html( zp_money( $sample['gain'] * 50 ) ); ?>; 100, <?php echo esc_html( zp_money( $sample['gain'] * 100 ) ); ?>.
+				</div>
+			<?php endif; ?>
+			<ul class="zp-assure" style="padding:0;margin-top:14px">
+				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>You also buy your own proxies at the reseller price.</li>
+				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>You set your selling price: charge more or less than the regular price.</li>
+				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>Track customers, sales and profit in your dashboard.</li>
+			</ul>
+		</section>
 	</div>
 
-	<section class="zp-card zp-anim" style="--d:4">
-		<div class="zp-card__head"><h3>Open your store</h3></div>
-		<form method="post" class="zp-form">
+	<section class="zp-card zp-anim" style="--d:7">
+		<div class="zp-card__head"><h3>Fees and rules</h3></div>
+		<ul class="zp-rules">
+			<li><strong>Activation:</strong> <?php echo esc_html( zp_money( $fee ) ); ?>, paid once from your wallet. It covers your first 30 days.</li>
+			<li><strong>Monthly fee:</strong> <?php echo esc_html( zp_money( $monthly ) ); ?> is taken from your wallet automatically every 30 days to keep the account active.</li>
+			<li><strong>If the monthly fee cannot be paid:</strong> your store pauses, your customers cannot buy, and you go back to regular prices. Top up and renew, and everything is restored. Your customers and their proxies are kept.</li>
+			<li><strong>Your wallet funds every sale:</strong> customers pay you, and the reseller price of each order comes out of your wallet. An empty wallet means their orders are refused.</li>
+			<li><strong>You handle your customers:</strong> their payments, wallet credits and support tickets come to you.</li>
+			<li><strong>Fees are not refundable</strong> once the account is unlocked or renewed.</li>
+		</ul>
+	</section>
+
+	<section class="zp-card zp-anim" style="--d:8" id="zp-rs-unlock">
+		<div class="zp-card__head"><h3><?php echo zp_icon( 'lock', 18 ); // phpcs:ignore ?> Unlock your reseller account</h3><?php echo zp_badge( 'locked' ); // phpcs:ignore ?></div>
+		<?php if ( $short > 0 ) : ?>
+			<div class="zp-alert zp-alert--info" style="margin-bottom:16px"><?php echo zp_icon( 'wallet', 18 ); // phpcs:ignore ?><span>Your wallet has <?php echo esc_html( zp_money( $balance ) ); ?>. Add <?php echo esc_html( zp_money( $short ) ); ?> more to unlock.</span><a class="zp-btn zp-btn--sm zp-btn--primary" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">Add funds</a></div>
+		<?php endif; ?>
+		<form method="post" class="zp-form" onsubmit="return confirm('Pay <?php echo esc_js( zp_money( $fee ) ); ?> from your wallet to unlock your reseller account?')">
 			<?php zp_nonce_field( 'reseller_save' ); ?>
 			<div class="zp-fieldrow" style="margin-top:0">
-				<label class="zp-field"><span>Brand name</span><div class="zp-input"><?php echo zp_icon( 'shield', 18 ); // phpcs:ignore ?><input type="text" name="brand" maxlength="40" required placeholder="e.g. SwiftProxy" id="zp-rs-brand"></div></label>
-				<label class="zp-field"><span>Store link</span><div class="zp-input"><b class="zp-prefix"><?php echo esc_html( $host ); ?>/s/</b><input type="text" name="slug" maxlength="30" required pattern="[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]" placeholder="swiftproxy" id="zp-rs-slug" autocapitalize="none"></div><small>Lowercase letters, numbers and dashes.</small></label>
+				<label class="zp-field"><span>Brand name</span><div class="zp-input"><?php echo zp_icon( 'shield', 18 ); // phpcs:ignore ?><input type="text" name="brand" value="<?php echo esc_attr( $me ? $me->brand : '' ); ?>" maxlength="40" required placeholder="e.g. SwiftProxy" id="zp-rs-brand"></div></label>
+				<label class="zp-field"><span>Store link</span><div class="zp-input"><b class="zp-prefix"><?php echo esc_html( $host ); ?>/s/</b><input type="text" name="slug" value="<?php echo esc_attr( $me ? $me->slug : '' ); ?>" maxlength="30" required pattern="[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]" placeholder="swiftproxy" id="zp-rs-slug" autocapitalize="none"></div><small>Lowercase letters, numbers and dashes.</small></label>
 			</div>
-			<label class="zp-field"><span>Your markup (%)</span><div class="zp-input"><input type="number" name="markup" value="20" min="0" max="500" step="0.1" required></div><small>Added on top of your reseller price. With 20%, a proxy that costs you <?php echo esc_html( zp_money( 10000 ) ); ?> sells for <?php echo esc_html( zp_money( 12000 ) ); ?>. You can change it any time.</small></label>
-			<button class="zp-btn zp-btn--primary zp-btn--lg" type="submit"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Create my store</button>
+			<label class="zp-field"><span>Your markup on the reseller price (%)</span><div class="zp-input"><input type="number" name="markup" value="<?php echo esc_attr( $me ? (float) $me->markup : round( $best, 1 ) ); ?>" min="0" max="500" step="0.1" required></div><small><?php echo esc_html( $pct( $best ) ); ?> matches the regular price. Set it higher to earn more, or lower to undercut. You can change it any time.</small></label>
+			<button class="zp-btn zp-btn--primary zp-btn--lg" type="submit"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Pay <?php echo esc_html( zp_money( $fee ) ); ?> and unlock</button>
+			<p class="zp-summary__note" style="margin:0">Charged from your wallet now. From day 31, <?php echo esc_html( zp_money( $monthly ) ); ?> per month is charged automatically.</p>
 		</form>
 	</section>
 	<?php
@@ -54,7 +137,15 @@ $tab_url = function ( $t, $args = array() ) {
 	return zp_url( 'reseller', array_merge( array( 'tab' => $t ), $args ) );
 };
 ?>
-<?php if ( 'suspended' === $me->status ) : ?>
+<?php
+$me      = ZP_Resellers::bill( $me ); // renew now if the month has just ended
+$monthly = (float) zp_get( 'reseller_monthly', 15000 );
+$paid_ts = strtotime( $me->paid_until . ' UTC' );
+?>
+<?php if ( 'expired' === $me->status ) : ?>
+	<div class="zp-alert zp-alert--error"><?php echo zp_icon( 'lock', 18 ); // phpcs:ignore ?><span>Your reseller account is paused: the monthly fee of <?php echo esc_html( zp_money( $monthly ) ); ?> could not be taken from your wallet. Your store is offline and you are on regular prices until you renew.</span>
+		<form method="post"><?php zp_nonce_field( 'reseller_renew' ); ?><button class="zp-btn zp-btn--sm zp-btn--primary" type="submit">Renew for <?php echo esc_html( zp_money( $monthly ) ); ?></button></form></div>
+<?php elseif ( 'suspended' === $me->status ) : ?>
 	<div class="zp-alert zp-alert--error"><?php echo zp_icon( 'x', 18 ); // phpcs:ignore ?><span>Your store is suspended. Customers cannot sign in or buy. Please contact support.</span></div>
 <?php elseif ( is_array( $blocked ) && strtotime( $blocked['time'] . ' UTC' ) > time() - 3 * DAY_IN_SECONDS && $balance < (float) $blocked['amount'] ) : ?>
 	<div class="zp-alert zp-alert--error"><?php echo zp_icon( 'wallet', 18 ); // phpcs:ignore ?><span>A customer order of <?php echo esc_html( zp_money( $blocked['amount'] ) ); ?> could not go through on <?php echo esc_html( zp_date( $blocked['time'] ) ); ?> because your wallet was too low.</span><a class="zp-btn zp-btn--sm zp-btn--primary" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">Top up</a></div>
@@ -80,6 +171,12 @@ $tab_url = function ( $t, $args = array() ) {
 			<a class="zp-btn zp-btn--glass" href="<?php echo esc_url( $store_url ); ?>" target="_blank" rel="noopener"><?php echo zp_icon( 'eye', 18 ); // phpcs:ignore ?>View store</a>
 		</div>
 	</section>
+
+	<div class="zp-subinfo zp-anim" style="--d:2">
+		<?php echo zp_icon( 'active' === $me->status ? 'check' : 'lock', 18 ); // phpcs:ignore ?>
+		<span><?php echo 'active' === $me->status ? esc_html( sprintf( 'Reseller account active until %s (%s left). Then %s is charged from your wallet automatically each month.', zp_date( $me->paid_until, false ), zp_time_left( $me->paid_until ), zp_money( $monthly ) ) ) : 'Reseller account not active.'; ?></span>
+		<?php if ( 'active' === $me->status && $paid_ts - time() < 5 * DAY_IN_SECONDS && $balance < $monthly ) : ?><a class="zp-btn zp-btn--sm zp-btn--soft" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">Top up for renewal</a><?php endif; ?>
+	</div>
 
 	<section class="zp-stats">
 		<div class="zp-stat zp-anim" style="--d:2"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'wallet' ); // phpcs:ignore ?></span><span class="zp-stat__label">Your wallet</span><strong class="zp-stat__value"><?php echo esc_html( zp_money( $balance ) ); ?></strong><span class="zp-sub">Pays for customer orders</span></div>

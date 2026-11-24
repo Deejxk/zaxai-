@@ -20,6 +20,8 @@ function zp_defaults() {
 		'currency_symbol'     => '₦',
 		'fx_rate'             => 1600,
 		'reseller_markup'     => 150,
+		'reseller_fee'        => 45000,
+		'reseller_monthly'    => 15000,
 		'min_deposit'         => 1000,
 		'max_deposit'         => 5000000,
 		'manual_enabled'      => 1,
@@ -308,7 +310,7 @@ function zp_badge( $status ) {
 	$map = array(
 		'completed' => 'ok', 'active' => 'ok', 'answered' => 'ok', 'success' => 'ok',
 		'processing' => 'warn', 'pending' => 'warn', 'open' => 'warn', 'review' => 'warn', 'expiring' => 'warn',
-		'failed' => 'bad', 'rejected' => 'bad', 'expired' => 'bad', 'refunded' => 'mute', 'closed' => 'mute',
+		'failed' => 'bad', 'rejected' => 'bad', 'expired' => 'bad', 'refunded' => 'mute', 'closed' => 'mute', 'suspended' => 'bad',
 	);
 	$cls = isset( $map[ $status ] ) ? $map[ $status ] : 'mute';
 	return '<span class="zp-badge zp-badge--' . $cls . '">' . esc_html( ucfirst( $status ) ) . '</span>';

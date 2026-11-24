@@ -202,8 +202,8 @@ class ZP_Router {
 
 	private static function store( $slug, $page ) {
 		$store = ZP_Resellers::by_slug( $slug );
-		if ( ! $store || 'active' !== $store->status ) {
-			return; // unknown or suspended store: let WordPress answer with its normal 404
+		if ( ! ZP_Resellers::is_live( $store ) ) {
+			return; // unknown, suspended or unpaid store: let WordPress answer with its normal 404
 		}
 		self::no_cache();
 		$GLOBALS['zp_reseller_ctx'] = $store;

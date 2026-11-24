@@ -657,3 +657,24 @@ label.zp-prefs{cursor:pointer}
 .zp-prefix{font-weight:500;font-size:14px;color:var(--zp-text-3);white-space:nowrap}
 .zp-card.zp-is-admin{display:block}
 @media (max-width:640px){.zp-storelink{padding:20px}.zp-storelink .zp-btn{flex:1}.zp-prefix{font-size:12.5px}}
+/* ---------- Reseller: locked page ---------- */
+.zp-hero .zp-eyebrow{display:inline-flex;align-items:center;gap:6px}
+.zp-rsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.zp-rsteps li{display:flex;gap:12px;align-items:flex-start}
+.zp-rsteps b{width:30px;height:30px;flex:none;border-radius:10px;background:var(--zp-grad);color:#fff;font-size:13.5px;display:grid;place-items:center}
+.zp-rsteps div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.zp-rsteps span{color:var(--zp-text-2);font-size:14px}
+.zp-rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:9px;color:var(--zp-text-2);font-size:14.5px}
+.zp-rules strong{color:var(--zp-text)}
+.zp-subinfo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;border-radius:14px;background:var(--zp-ok-bg);color:var(--zp-ok);font-size:14px;font-weight:500}
+.zp-subinfo span{flex:1;min-width:200px}
+.zp-card__head h3{display:flex;align-items:center;gap:8px}
+@media (max-width:640px){
+  .zp-table--keep thead{display:table-header-group}
+  .zp-table--keep,.zp-table--keep tbody{display:table;width:100%}
+  .zp-table--keep tbody{display:table-row-group}
+  .zp-table--keep tr{display:table-row;padding:0;border:0}
+  .zp-table--keep td{display:table-cell;width:auto;padding:11px 8px;border-bottom:1px solid var(--zp-border);text-align:left}
+  .zp-table--keep td.zp-right{text-align:right}
+  .zp-table--keep td::before{content:none}
+}

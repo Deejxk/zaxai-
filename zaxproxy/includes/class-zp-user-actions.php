@@ -225,6 +225,7 @@ class ZP_User_Actions {
 				break;
 
 			case 'reseller_save':
+			case 'reseller_renew':
 			case 'reseller_deposit_approve':
 			case 'reseller_deposit_reject':
 			case 'reseller_adjust':

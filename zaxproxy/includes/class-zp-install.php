@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class ZP_Install {
 
-	const DB_VERSION = '3';
+	const DB_VERSION = '4';
 
 	public static function activate() {
 		self::tables();
@@ -176,6 +176,7 @@ class ZP_Install {
 			bank_account_number varchar(40) NOT NULL DEFAULT '',
 			telegram varchar(80) NOT NULL DEFAULT '',
 			status varchar(20) NOT NULL DEFAULT 'active',
+			paid_until datetime NULL,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (user_id),
