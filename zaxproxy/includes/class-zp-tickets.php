@@ -16,6 +16,7 @@ class ZP_Tickets {
 		if ( $id && $reseller ) {
 			// Tickets from a reseller's customers are answered by the reseller, not by platform staff.
 			self::add_message( $id, $user_id, $message, false );
+			ZP_Notify::add( $reseller->user_id, 'ticket', 'New customer message', ZP_Notify::name( $user_id ) . ': ' . $subject, ZP_Notify::user_path( 'reseller', array( 'tab' => 'tickets', 'id' => $id ) ) );
 			$owner = get_userdata( $reseller->user_id );
 			if ( $owner ) {
 				wp_mail( $owner->user_email, '[' . $reseller->brand . '] New ticket #' . $id . ': ' . $subject, $message . "\n\n" . zp_route_url( ZP_USER_BASE, 'reseller', array( 'tab' => 'tickets', 'id' => $id ) ) );
@@ -24,6 +25,7 @@ class ZP_Tickets {
 		}
 		if ( $id ) {
 			self::add_message( $id, $user_id, $message, false );
+			ZP_Notify::admins( 'ticket', 'New support ticket #' . $id, ZP_Notify::name( $user_id ) . ': ' . $subject, ZP_Notify::admin_path( 'tickets', array( 'id' => $id ) ) );
 			$to = zp_get( 'support_email' );
 			if ( is_email( $to ) ) {
 				wp_mail( $to, '[' . zp_get( 'brand' ) . '] New ticket #' . $id . ': ' . $subject, $message . "\n\n" . zp_admin_url( 'tickets', array( 'id' => $id ) ) );

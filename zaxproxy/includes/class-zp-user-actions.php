@@ -103,6 +103,7 @@ class ZP_User_Actions {
 		}
 		if ( zp_reseller_ctx() ) {
 			update_user_meta( $uid, 'zp_reseller_id', (int) zp_reseller_ctx()->user_id );
+			ZP_Notify::add( zp_reseller_ctx()->user_id, 'user', 'New customer joined your store', $name . ' just created an account. They can now fund their wallet and buy.', ZP_Notify::user_path( 'reseller', array( 'tab' => 'customers' ) ) );
 		}
 		wp_set_current_user( $uid );
 		wp_set_auth_cookie( $uid, true, is_ssl() );
@@ -227,6 +228,11 @@ class ZP_User_Actions {
 				$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : ''; // phpcs:ignore
 				if ( '' !== trim( $message ) ) {
 					ZP_Tickets::add_message( $t->id, $user->ID, $message, false );
+					if ( ! empty( $t->reseller_id ) ) {
+						ZP_Notify::add( $t->reseller_id, 'ticket', 'Customer replied to ticket #' . $t->id, ZP_Notify::name( $user->ID ) . ': ' . wp_trim_words( $message, 16 ), ZP_Notify::user_path( 'reseller', array( 'tab' => 'tickets', 'id' => $t->id ) ) );
+					} else {
+						ZP_Notify::admins( 'ticket', 'Reply on ticket #' . $t->id, ZP_Notify::name( $user->ID ) . ': ' . wp_trim_words( $message, 16 ), ZP_Notify::admin_path( 'tickets', array( 'id' => $t->id ) ) );
+					}
 				}
 				zp_redirect( zp_url( 'tickets', array( 'id' => $t->id ) ) );
 				break;

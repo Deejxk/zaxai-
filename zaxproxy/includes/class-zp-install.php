@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class ZP_Install {
 
-	const DB_VERSION = '7';
+	const DB_VERSION = '8';
 
 	public static function activate() {
 		self::tables();
@@ -42,6 +42,37 @@ class ZP_Install {
 		global $wpdb;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		$c = $wpdb->get_charset_collate();
+
+		dbDelta(
+			'CREATE TABLE ' . zp_table( 'notifications' ) . " (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			user_id bigint(20) unsigned NOT NULL,
+			type varchar(20) NOT NULL DEFAULT '',
+			title varchar(160) NOT NULL DEFAULT '',
+			body varchar(320) NOT NULL DEFAULT '',
+			url varchar(255) NOT NULL DEFAULT '',
+			is_read tinyint(1) NOT NULL DEFAULT 0,
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			KEY user_read (user_id,is_read),
+			KEY created_at (created_at)
+		) $c;"
+		);
+
+		dbDelta(
+			'CREATE TABLE ' . zp_table( 'push' ) . " (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			user_id bigint(20) unsigned NOT NULL,
+			hash char(32) NOT NULL,
+			endpoint text NOT NULL,
+			p256dh varchar(120) NOT NULL DEFAULT '',
+			auth varchar(60) NOT NULL DEFAULT '',
+			created_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY hash (hash),
+			KEY user_id (user_id)
+		) $c;"
+		);
 
 		dbDelta(
 			'CREATE TABLE ' . zp_table( 'wallets' ) . " (

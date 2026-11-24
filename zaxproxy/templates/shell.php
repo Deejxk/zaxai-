@@ -51,6 +51,20 @@ $logout  = add_query_arg( '_zpnonce', wp_create_nonce( 'zp_logout' ), zp_url( 'l
 				<?php if ( current_user_can( 'manage_options' ) ) : ?>
 					<a class="zp-iconbtn zp-switch" href="<?php echo esc_url( $shell['admin'] ? zp_url( 'dashboard' ) : zp_admin_url() ); ?>" title="<?php echo $shell['admin'] ? 'Switch to user panel' : 'Switch to admin panel'; ?>" aria-label="<?php echo $shell['admin'] ? 'Switch to user panel' : 'Switch to admin panel'; ?>"><?php echo zp_icon( $shell['admin'] ? 'user' : 'shield' ); // phpcs:ignore ?></a>
 				<?php endif; ?>
+				<?php $zp_unread = ZP_Notify::unread( $user->ID ); ?>
+				<div class="zp-menu zp-bell">
+					<button class="zp-iconbtn" id="zp-bell" type="button" title="Notifications" aria-label="Notifications" aria-haspopup="true"><?php echo zp_icon( 'bell' ); // phpcs:ignore ?><b class="zp-bell__dot" id="zp-bell-dot"<?php echo $zp_unread ? '' : ' hidden'; ?>><?php echo $zp_unread > 9 ? '9+' : (int) $zp_unread; ?></b></button>
+					<div class="zp-bell__panel" id="zp-bell-panel" hidden>
+						<div class="zp-bell__head"><strong>Notifications</strong><button type="button" class="zp-bell__x" id="zp-bell-close" aria-label="Close"><?php echo zp_icon( 'x', 18 ); // phpcs:ignore ?></button></div>
+						<div class="zp-bell__push" id="zp-bell-push" hidden>
+							<span class="zp-bell__pushico"><?php echo zp_icon( 'bell', 18 ); // phpcs:ignore ?></span>
+							<div><strong>Get alerts on this phone</strong><small id="zp-bell-push-text">Your phone will ring when something needs you, even when the app is closed.</small></div>
+							<button type="button" class="zp-btn zp-btn--primary zp-btn--sm" id="zp-bell-enable">Turn on</button>
+						</div>
+						<div class="zp-bell__list" id="zp-bell-list"><div class="zp-bell__empty">Loading…</div></div>
+						<div class="zp-bell__foot" id="zp-bell-foot" hidden><span><?php echo zp_icon( 'check', 14 ); // phpcs:ignore ?> Phone alerts are on for this device</span><button type="button" id="zp-bell-disable">Turn off</button></div>
+					</div>
+				</div>
 				<button class="zp-iconbtn" id="zp-refresh" type="button" title="Refresh" aria-label="Refresh this page"><?php echo zp_icon( 'refresh' ); // phpcs:ignore ?></button>
 				<button class="zp-iconbtn" id="zp-install" type="button" hidden title="Install app" aria-label="Install app"><?php echo zp_icon( 'download' ); // phpcs:ignore ?></button>
 				<button class="zp-iconbtn zp-theme" id="zp-theme" type="button" title="Toggle dark / light mode" aria-label="Toggle dark / light mode">

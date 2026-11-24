@@ -84,8 +84,14 @@ class ZP_Resellers {
 		}
 		if ( $fee <= 0 || ZP_Wallet::debit( $r->user_id, $fee, 'reseller_fee', 'store', 'Reseller store: monthly fee' ) ) {
 			$wpdb->update( zp_table( 'resellers' ), array( 'status' => 'active' ), array( 'user_id' => $r->user_id ) );
+			if ( $fee > 0 ) {
+				ZP_Notify::add( $r->user_id, 'store', 'Store renewed for 30 days', sprintf( 'The monthly fee of %s was taken from your wallet.', zp_money( $fee ) ), ZP_Notify::user_path( 'reseller' ) );
+			}
 		} else {
 			$wpdb->update( zp_table( 'resellers' ), array( 'status' => 'expired', 'paid_until' => $r->paid_until ), array( 'user_id' => $r->user_id ) );
+			if ( 'expired' !== $r->status ) {
+				ZP_Notify::add( $r->user_id, 'alert', 'Your store is paused', sprintf( 'The monthly fee of %s could not be charged. Add funds to your wallet to reopen your store.', zp_money( $fee ) ), ZP_Notify::user_path( 'wallet' ) );
+			}
 		}
 		$GLOBALS['zp_resellers_dirty'] = true;
 		return self::get( $r->user_id );
@@ -120,6 +126,10 @@ class ZP_Resellers {
 		}
 		$wpdb->update( zp_table( 'resellers' ), array( 'status' => 'active', 'paid_until' => gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS ) ), array( 'user_id' => $user_id ) );
 		$GLOBALS['zp_resellers_dirty'] = true;
+		ZP_Notify::add( $user_id, 'store', 'Your reseller account is active', 'Your store is open. Share your link and start selling.', ZP_Notify::user_path( 'reseller' ) );
+		if ( $fee > 0 ) {
+			ZP_Notify::admins( 'store', 'New reseller: ' . $r->brand, ZP_Notify::name( $user_id ) . ' activated a reseller account (' . zp_money( $fee ) . ').', ZP_Notify::admin_path( 'resellers' ) );
+		}
 		return true;
 	}
 
@@ -355,6 +365,7 @@ class ZP_Resellers {
 		}
 		$wpdb->update( zp_table( 'resellers' ), array( 'domain' => $domain, 'domain_status' => 'pending', 'domain_fee' => $fee ), array( 'user_id' => $user_id ) );
 		$GLOBALS['zp_resellers_dirty'] = true;
+		ZP_Notify::admins( 'store', 'Domain requested: ' . $domain, $r->brand . ' paid for a branded domain. Register it, then connect it.', ZP_Notify::admin_path( 'resellers' ) );
 		$to = zp_get( 'support_email' );
 		if ( is_email( $to ) ) {
 			wp_mail( $to, '[' . zp_get( 'brand' ) . '] Branded domain requested: ' . $domain, "Store: {$r->brand}\nDomain: {$domain}\n\nRegister the domain, point it at this website, then mark it connected:\n" . zp_admin_url( 'resellers' ) );
@@ -400,6 +411,7 @@ class ZP_Resellers {
 		}
 		$wpdb->update( zp_table( 'resellers' ), array( 'domain' => $domain, 'domain_status' => 'active' ), array( 'user_id' => (int) $user_id ) );
 		$GLOBALS['zp_resellers_dirty'] = true;
+		ZP_Notify::add( $user_id, 'store', 'Your domain is connected', $domain . ' now opens your store. Share it with your customers.', ZP_Notify::user_path( 'reseller', array( 'tab' => 'settings' ) ) );
 		$owner = get_userdata( $user_id );
 		if ( $owner ) {
 			wp_mail( $owner->user_email, '[' . zp_get( 'brand' ) . '] Your domain ' . $domain . ' is connected', "Good news: your store is now live on your own domain.\n\nhttps://{$domain}/\n\nShare this link with your customers. It can take a little while for a new domain to work everywhere." );
@@ -424,6 +436,9 @@ class ZP_Resellers {
 		$done = $wpdb->query( $wpdb->prepare( 'UPDATE ' . zp_table( 'resellers' ) . " SET domain_status = 'rejected' WHERE user_id = %d AND domain_status = 'pending'", $user_id ) );
 		if ( $done && $r->domain_fee > 0 ) {
 			ZP_Wallet::credit( $user_id, $r->domain_fee, 'refund', 'store', 'Refund: branded domain ' . $r->domain . ' not available' );
+		}
+		if ( $done ) {
+			ZP_Notify::add( $user_id, 'alert', 'Domain not available', $r->domain . ' could not be registered. Your payment was refunded, so you can choose another name.', ZP_Notify::user_path( 'reseller', array( 'tab' => 'settings' ) ) );
 		}
 		$GLOBALS['zp_resellers_dirty'] = true;
 		return (bool) $done;
@@ -656,6 +671,7 @@ class ZP_Resellers {
 				$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : ''; // phpcs:ignore
 				if ( '' !== trim( $message ) ) {
 					ZP_Tickets::add_message( $t->id, $user->ID, $message, true );
+					ZP_Notify::add( $t->user_id, 'ticket', 'Support replied to your ticket', wp_trim_words( $message, 18 ), ZP_Notify::user_path( 'tickets', array( 'id' => $t->id ) ) );
 					zp_flash( 'Reply sent.' );
 				}
 				zp_redirect( zp_url( 'reseller', array( 'tab' => 'tickets', 'id' => $t->id ) ) );

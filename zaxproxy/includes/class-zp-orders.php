@@ -252,6 +252,7 @@ class ZP_Orders {
 				if ( 'zp_http' === $res->get_error_code() ) {
 					// Outcome unknown: keep the charge on hold for staff review instead of risking a free order.
 					self::set_status( $order_id, 'review', 'No confirmation from provider: ' . $res->get_error_message() );
+					ZP_Notify::admins( 'alert', 'Order #' . $order_id . ' needs review', 'The provider did not confirm this order. Check it and complete or refund it.', ZP_Notify::admin_path( 'orders' ) );
 					return $order_id;
 				}
 				self::refund( $order_id, $res->get_error_message() );
@@ -264,6 +265,7 @@ class ZP_Orders {
 				array( 'status' => 'processing', 'upstream_order' => isset( $res['orderNumber'] ) ? (string) $res['orderNumber'] : '', 'updated_at' => zp_now() ),
 				array( 'id' => $order_id )
 			);
+			self::notify_sale( $order_id, $user_id, $reseller, $quote['total'], $quote['platform'], $desc );
 			self::sync_type( $spec['type'] );
 			return $order_id;
 		} finally {
@@ -330,7 +332,30 @@ class ZP_Orders {
 			return true;
 		}
 		update_user_meta( $reseller->user_id, 'zp_reseller_blocked', array( 'time' => zp_now(), 'amount' => $platform_price ) );
+		self::notify_blocked( $reseller, $platform_price );
 		return false;
+	}
+
+	/** Tell the store owner a customer is trying to buy but the store wallet cannot cover it (at most every 10 minutes). */
+	private static function notify_blocked( $reseller, $platform_price ) {
+		$key = 'zp_nblock_' . (int) $reseller->user_id;
+		if ( get_transient( $key ) ) {
+			return;
+		}
+		set_transient( $key, 1, 10 * MINUTE_IN_SECONDS );
+		ZP_Notify::add( $reseller->user_id, 'alert', 'A customer is trying to buy from you', sprintf( 'Their order needs %s but your wallet has %s. Add funds now so the sale can go through.', zp_money( $platform_price ), zp_money( ZP_Wallet::balance( $reseller->user_id ) ) ), ZP_Notify::user_path( 'wallet' ) );
+	}
+
+	/** A paid order: tell the store owner (with their profit) and the platform staff. */
+	private static function notify_sale( $order_id, $user_id, $reseller, $paid, $platform_price, $desc ) {
+		$who = ZP_Notify::name( $user_id );
+		if ( $reseller ) {
+			$profit = max( 0, (float) $paid - (float) $platform_price );
+			ZP_Notify::add( $reseller->user_id, 'sale', 'New sale: ' . zp_money( $paid ), sprintf( '%s just bought %s. Your profit: %s.', $who, $desc, zp_money( $profit ) ), ZP_Notify::user_path( 'reseller', array( 'tab' => 'orders' ) ) );
+			ZP_Notify::admins( 'sale', 'Store sale: ' . zp_money( $platform_price ), sprintf( '%s sold %s (order #%d).', $reseller->brand, $desc, $order_id ), ZP_Notify::admin_path( 'orders' ) , $reseller->user_id );
+			return;
+		}
+		ZP_Notify::admins( 'sale', 'New order: ' . zp_money( $paid ), sprintf( '%s bought %s (order #%d).', $who, $desc, $order_id ), ZP_Notify::admin_path( 'orders' ) );
 	}
 
 	/** Charge the store owner the platform price for a customer order. */
@@ -338,6 +363,7 @@ class ZP_Orders {
 		global $wpdb;
 		if ( ! ZP_Wallet::debit( $reseller->user_id, $platform_price, 'store_sale', 'order-' . $order_id, 'Customer order #' . $order_id . ': ' . $desc ) ) {
 			update_user_meta( $reseller->user_id, 'zp_reseller_blocked', array( 'time' => zp_now(), 'amount' => $platform_price ) );
+			self::notify_blocked( $reseller, $platform_price );
 			return false;
 		}
 		$wpdb->update( zp_table( 'orders' ), array( 'reseller_cost' => $platform_price ), array( 'id' => $order_id ) );
@@ -469,6 +495,7 @@ class ZP_Orders {
 				return self::public_error( $res );
 			}
 			self::set_status( $order_id, 'completed' );
+			self::notify_sale( $order_id, $user_id, $reseller, $q['total'], $q['platform'], $desc );
 			self::sync_type( $t['type'] );
 			return $order_id;
 		} finally {
@@ -525,6 +552,7 @@ class ZP_Orders {
 			}
 			if ( $need <= 0 ) {
 				self::set_status( $o->id, 'completed', '' );
+				ZP_Notify::add( $o->user_id, 'order', 'Your proxies are ready', sprintf( 'Order #%d is complete: %d × %s proxy.', $o->id, $o->qty, zp_type_label( $o->proxy_type ) ), ZP_Notify::user_path( 'proxies' ) );
 			}
 		}
 		return count( $remote );
@@ -532,6 +560,7 @@ class ZP_Orders {
 
 	public static function cron_sync() {
 		ZP_Resellers::bill_due();
+		ZP_Notify::prune();
 		if ( '' === trim( (string) zp_get( 'api_key' ) ) ) {
 			return;
 		}

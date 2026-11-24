@@ -38,7 +38,7 @@ class ZP_Router {
 		$ds = zp_domain_store();
 		if ( $ds ) {
 			// A reseller's own domain: the store lives at the root and nothing of the platform shows.
-			if ( in_array( $base, array( 'zp-manifest', 'zp-sw', 'zp-offline', ZP_USER_BASE ), true ) ) {
+			if ( in_array( $base, array( 'zp-manifest', 'zp-sw', 'zp-offline', 'zp-notify', ZP_USER_BASE ), true ) ) {
 				$GLOBALS['zp_reseller_ctx'] = $ds;
 			} elseif ( '' === $base || in_array( $base, self::GUEST_PAGES, true ) || 'privacy' === $base || 'refund' === $base ) {
 				self::store( $ds->slug, $base );
@@ -54,6 +54,9 @@ class ZP_Router {
 				break;
 			case 'zp-sw':
 				self::service_worker();
+				break;
+			case 'zp-notify':
+				ZP_Notify::endpoint();
 				break;
 			case 'zp-offline':
 				self::no_cache();
@@ -419,6 +422,7 @@ if ( $zp_color ) : // a store's own brand colour replaces the platform palette e
 			$cfg['base']  = $admin ? zp_admin_url() : zp_route_url( ZP_USER_BASE );
 			$cfg['pages'] = $admin ? self::ADMIN_PAGES : self::USER_PAGES;
 			$cfg['home']  = 'dashboard';
+			$cfg['notify'] = array( 'url' => zp_route_url( 'zp-notify' ), 'nonce' => wp_create_nonce( 'zp_notify' ), 'key' => ZP_Notify::public_key() );
 		}
 		if ( $ajax ) {
 			$cfg['ajax']  = zp_url( 'ajax' );

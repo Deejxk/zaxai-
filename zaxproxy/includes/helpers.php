@@ -370,6 +370,7 @@ function zp_icon( $name, $size = 20 ) {
 			'moon'     => '<path d="M20.5 14.500A8.5 8.5 0 0 1 9.5 3.500a8.5 8.5 0 1 0 11 11Z"/>',
 			'copy'     => '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
 			'download' => '<path d="M12 3v12m0 0-4.5-4.500M12 15l4.5-4.5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>',
+			'bell'     => '<path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/>',
 			'refresh'  => '<path d="M20 11A8 8 0 0 0 6 6.300L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14 4.700l2-1.7"/><path d="M20 20v-4h-4"/>',
 			'clock'    => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
 			'check'    => '<path d="m5 12.5 4.5 4.500L19 7.5"/>',

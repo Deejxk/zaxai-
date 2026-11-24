@@ -603,4 +603,150 @@
       return load(location.href).then(function (v) { if (mine === token) render(v, true); });
     };
   })();
+
+  /* ---------- Notifications: bell, sound, phone alerts ---------- */
+  (function () {
+    var N = ZP.notify, bell = document.getElementById('zp-bell');
+    if (!N || !bell) return;
+    var panel = document.getElementById('zp-bell-panel'), list = document.getElementById('zp-bell-list'), dot = document.getElementById('zp-bell-dot');
+    var pushBox = document.getElementById('zp-bell-push'), pushText = document.getElementById('zp-bell-push-text'), foot = document.getElementById('zp-bell-foot');
+    var lastKey = 'zp-nlast:' + ZP.uid, items = [], unread = 0, timer = null;
+    var ICON = {
+      sale: '<path d="M4 7h16l-1.5 11a2 2 0 0 1-2 1.7h-9a2 2 0 0 1-2-1.700z"/><path d="M8.500 7a3.500 3.500 0 0 1 7 0"/>',
+      deposit: '<rect x="3" y="6" width="18" height="13" rx="2.500"/><path d="M3 10.500h18M7 15h3"/>',
+      wallet: '<rect x="3" y="6" width="18" height="13" rx="2.500"/><path d="M16 12.500h2"/>',
+      order: '<path d="m5 12.500 4.500 4.500L19 7.500"/>',
+      ticket: '<path d="M4 5h16v11H9l-5 4z"/>',
+      store: '<path d="M4 9.500 5.500 4h13L20 9.500"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>',
+      user: '<circle cx="12" cy="8" r="3.600"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+      alert: '<path d="M12 4 2.500 20h19z"/><path d="M12 10v4.500M12 17.300v.2"/>'
+    };
+    function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+    function getLast() { try { return parseInt(localStorage.getItem(lastKey) || '0', 10) || 0; } catch (e) { return 0; } }
+    function setLast(v) { try { localStorage.setItem(lastKey, String(v)); } catch (e) {} }
+
+    function draw() {
+      dot.hidden = unread < 1; dot.textContent = unread > 9 ? '9+' : String(unread);
+      bell.classList.toggle('has-unread', unread > 0);
+      try { if (navigator.setAppBadge) { if (unread > 0) navigator.setAppBadge(unread); else navigator.clearAppBadge(); } } catch (e) {}
+      if (!items.length) { list.innerHTML = '<div class="zp-bell__empty"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.600" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.500 7.500 2.500 7.500h-17S6 15 6 9"/><path d="M10 20a2.200 2.200 0 0 0 4 0"/></svg><strong>You are all caught up</strong><span>New activity will show up here.</span></div>'; return; }
+      list.innerHTML = items.map(function (n) {
+        var tag = n.url ? 'a' : 'div';
+        return '<' + tag + (n.url ? ' href="' + esc(n.url) + '"' : '') + ' class="zp-note zp-note--' + esc(n.type) + (n.read ? '' : ' is-new') + '">' +
+          '<span class="zp-note__ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round">' + (ICON[n.type] || ICON.alert) + '</svg></span>' +
+          '<span class="zp-note__main"><strong>' + esc(n.title) + '</strong>' + (n.body ? '<span>' + esc(n.body) + '</span>' : '') + '<em>' + esc(n.time) + '</em></span></' + tag + '>';
+      }).join('');
+    }
+
+    /* A short two-note chime, plus a buzz on phones. */
+    var actx = null;
+    function ring() {
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+        actx = actx || new AC(); if (actx.state === 'suspended') actx.resume();
+        [[880, 0], [1174.700, 0.16], [1568, 0.32]].forEach(function (x) {
+          var o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime + x[1];
+          o.type = 'sine'; o.frequency.value = x[0];
+          g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.28, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+          o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.5);
+        });
+      } catch (e) {}
+      try { if (navigator.vibrate) navigator.vibrate([180, 90, 180]); } catch (e) {}
+    }
+
+    function apply(d, quiet) {
+      if (!d || !d.ok) return;
+      items = d.items || []; unread = d.unread || 0;
+      var top = items.length ? items[0].id : 0, last = getLast();
+      if (top > last) {
+        var fresh = items.filter(function (n) { return n.id > last && !n.read; });
+        if (fresh.length && !quiet && last > 0) {
+          ring(); toast(fresh[0].title);
+          if (window.zpRefresh && panel.hidden) { try { window.zpRefresh().catch(function () {}); } catch (e) {} }
+        }
+        setLast(top);
+      }
+      if (!panel.hidden && unread) { unread = 0; post({ do: 'read' }); }
+      draw();
+    }
+    function fetchNow(quiet) {
+      return fetch(N.url, { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { apply(d, quiet); }).catch(function () {});
+    }
+    function post(data) {
+      var fd = new FormData(); fd.append('_zpnonce', N.nonce); Object.keys(data).forEach(function (k) { fd.append(k, data[k]); });
+      return fetch(N.url, { method: 'POST', credentials: 'same-origin', body: fd }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    }
+    function schedule() { clearInterval(timer); timer = setInterval(function () { if (!document.hidden) fetchNow(false); }, 20000); }
+
+    function open() {
+      $$('.zp-menu__panel').forEach(function (p) { p.hidden = true; });
+      panel.hidden = false; bell.setAttribute('aria-expanded', 'true');
+      fetchNow(true).then(function () { if (unread) { post({ do: 'read' }); unread = 0; dot.hidden = true; bell.classList.remove('has-unread'); try { if (navigator.clearAppBadge) navigator.clearAppBadge(); } catch (e) {} } });
+      pushState();
+    }
+    function close() { if (panel.hidden) return; panel.hidden = true; bell.setAttribute('aria-expanded', 'false'); items.forEach(function (n) { n.read = 1; }); draw(); }
+    bell.addEventListener('click', function (e) { e.stopPropagation(); if (panel.hidden) open(); else close(); });
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('#zp-bell-close')) { close(); return; }
+      if (!panel.hidden && !e.target.closest('#zp-bell-panel') && !e.target.closest('#zp-bell')) close();
+      if (e.target.closest('#zp-bell-panel a.zp-note')) close();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+
+    /* ----- Phone alerts ----- */
+    var canPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && window.isSecureContext && N.key;
+    var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    function keyBytes(b64) { var pad = '='.repeat((4 - b64.length % 4) % 4), raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/')), out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out; }
+    function b64(buf) { var b = new Uint8Array(buf), s = ''; for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+    function reg() { return navigator.serviceWorker.ready; }
+    function send(sub, hello) { return post({ do: 'subscribe', endpoint: sub.endpoint, p256dh: b64(sub.getKey('p256dh')), auth: b64(sub.getKey('auth')), hello: hello ? '1' : '' }); }
+    function pushState() {
+      var btn = document.getElementById('zp-bell-enable');
+      if (!canPush) {
+        foot.hidden = true;
+        if (isIOS && !standalone) { pushBox.hidden = false; btn.hidden = true; pushText.textContent = 'On iPhone: tap the Share button, choose "Add to Home Screen", then open the app from your home screen and turn on alerts here.'; }
+        else pushBox.hidden = true;
+        return;
+      }
+      if (Notification.permission === 'denied') { pushBox.hidden = false; foot.hidden = true; btn.hidden = true; pushText.textContent = 'Alerts are blocked for this site. Allow notifications in your browser or phone settings, then come back here.'; return; }
+      reg().then(function (r) { return r.pushManager.getSubscription(); }).then(function (sub) {
+        var on = !!sub && Notification.permission === 'granted';
+        pushBox.hidden = on; foot.hidden = !on; btn.hidden = false;
+      }).catch(function () { pushBox.hidden = true; foot.hidden = true; });
+    }
+    function enable() {
+      var btn = document.getElementById('zp-bell-enable'); btn.disabled = true;
+      ring();
+      Notification.requestPermission().then(function (perm) {
+        if (perm !== 'granted') throw new Error('denied');
+        return reg();
+      }).then(function (r) {
+        return r.pushManager.getSubscription().then(function (sub) { return sub || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(N.key) }); });
+      }).then(function (sub) { return send(sub, true); }).then(function (d) {
+        btn.disabled = false; if (!d || !d.ok) throw new Error('save');
+        toast('Phone alerts are on'); apply(d, true); pushState();
+      }).catch(function (err) { btn.disabled = false; toast(err && err.message === 'denied' ? 'Notifications were not allowed' : 'Could not turn on alerts on this device'); pushState(); });
+    }
+    function disable() {
+      reg().then(function (r) { return r.pushManager.getSubscription(); }).then(function (sub) {
+        if (!sub) return; var ep = sub.endpoint; return sub.unsubscribe().then(function () { return post({ do: 'unsubscribe', endpoint: ep }); });
+      }).then(function () { toast('Phone alerts turned off'); pushState(); }).catch(function () { pushState(); });
+    }
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('#zp-bell-enable')) enable();
+      if (e.target.closest('#zp-bell-disable')) disable();
+    });
+    // Keep this device registered (the browser can rotate its push address).
+    if (canPush && Notification.permission === 'granted') {
+      reg().then(function (r) { return r.pushManager.getSubscription(); }).then(function (sub) { if (sub) send(sub, false); }).catch(function () {});
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', function (e) { if (e.data && e.data.zp === 'push') fetchNow(false); });
+    }
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) fetchNow(false); });
+    // First visit on this device: remember where we are without ringing for old items.
+    fetchNow(getLast() === 0).then(function () { if (getLast() === 0) setLast(items.length ? items[0].id : 1); });
+    schedule();
+  })();
 })();

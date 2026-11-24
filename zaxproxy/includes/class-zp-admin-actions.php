@@ -127,6 +127,10 @@ class ZP_Admin_Actions {
 
 			case 'order_refund':
 				$ok = ZP_Orders::refund( (int) zp_post( 'id' ), 'Refunded by ' . wp_get_current_user()->user_login );
+				$ro = $ok ? ZP_Orders::get( (int) zp_post( 'id' ) ) : null;
+				if ( $ro ) {
+					ZP_Notify::add( $ro->user_id, 'wallet', 'Order #' . $ro->id . ' refunded', zp_money( $ro->amount ) . ' was returned to your wallet.', ZP_Notify::user_path( 'wallet' ) );
+				}
 				zp_flash( $ok ? 'Order refunded to the customer wallet.' : 'This order was already refunded.', $ok ? 'success' : 'error' );
 				break;
 
@@ -153,6 +157,7 @@ class ZP_Admin_Actions {
 				$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : ''; // phpcs:ignore
 				if ( $t && '' !== trim( $message ) ) {
 					ZP_Tickets::add_message( $t->id, get_current_user_id(), $message, true );
+					ZP_Notify::add( $t->user_id, 'ticket', 'Support replied to your ticket', wp_trim_words( $message, 18 ), ZP_Notify::user_path( 'tickets', array( 'id' => $t->id ) ) );
 					$owner = get_userdata( $t->user_id );
 					if ( $owner ) {
 						wp_mail( $owner->user_email, '[' . zp_get( 'brand' ) . '] Reply to ticket #' . $t->id, $message . "\n\n" . zp_url( 'tickets', array( 'id' => $t->id ) ) );

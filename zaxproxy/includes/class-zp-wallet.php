@@ -94,6 +94,14 @@ class ZP_Wallet {
 				'updated_at'  => zp_now(),
 			)
 		);
+		if ( $wpdb->insert_id && 'manual' === $gateway ) {
+			$who = ZP_Notify::name( $user_id );
+			if ( $reseller_id ) {
+				ZP_Notify::add( $reseller_id, 'deposit', 'A customer wants to fund their wallet', sprintf( '%s says they sent %s. Confirm the payment to credit them so they can buy.', $who, zp_money( $amount ) ), ZP_Notify::user_path( 'reseller', array( 'tab' => 'deposits' ) ) );
+			} else {
+				ZP_Notify::admins( 'deposit', 'New deposit to confirm', sprintf( '%s says they sent %s by bank transfer.', $who, zp_money( $amount ) ), ZP_Notify::admin_path( 'deposits' ) );
+			}
+		}
 		return $wpdb->insert_id ? $ref : false;
 	}
 
@@ -123,12 +131,13 @@ class ZP_Wallet {
 		}
 		$d = self::deposit( $id );
 		self::credit( $d->user_id, $d->amount, 'deposit', $d->reference, 'Wallet top-up via ' . self::gateway_label( $d->gateway ) );
+		ZP_Notify::add( $d->user_id, 'wallet', 'Wallet credited: ' . zp_money( $d->amount ), 'Your payment was confirmed. You can buy proxies now.', ZP_Notify::user_path( 'wallet' ) );
 		return true;
 	}
 
 	public static function reject_deposit( $id, $admin_note = '' ) {
 		global $wpdb;
-		return (bool) $wpdb->query(
+		$done = (bool) $wpdb->query(
 			$wpdb->prepare(
 				'UPDATE ' . zp_table( 'deposits' ) . " SET status = 'rejected', admin_note = %s, updated_at = %s WHERE id = %d AND status = 'pending'",
 				$admin_note,
@@ -136,6 +145,11 @@ class ZP_Wallet {
 				$id
 			)
 		);
+		$d = $done ? self::deposit( $id ) : null;
+		if ( $d && 'manual' === $d->gateway ) {
+			ZP_Notify::add( $d->user_id, 'alert', 'Deposit not confirmed', sprintf( 'Your %s deposit was not approved. Contact support if you made the payment.', zp_money( $d->amount ) ), ZP_Notify::user_path( 'wallet' ) );
+		}
+		return $done;
 	}
 
 	public static function gateway_label( $gateway ) {

@@ -37,3 +37,37 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+/* Phone alerts: show the message, ring, and open the right page when tapped. */
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }
+  const title = data.title || 'New notification';
+  const url = new URL(data.url || '', self.registration.scope).href;
+  event.waitUntil(Promise.all([
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: ASSETS + 'icons/icon-192.png',
+      badge: ASSETS + 'icons/badge-96.png',
+      tag: 'zp-' + (data.id || Date.now()),
+      renotify: true,
+      vibrate: [220, 110, 220, 110, 320],
+      timestamp: Date.now(),
+      data: { url }
+    }),
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => list.forEach((c) => c.postMessage({ zp: 'push' })))
+  ]));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || self.registration.scope;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if (c.url.startsWith(self.registration.scope) && 'focus' in c) { return c.focus().then((w) => ('navigate' in w ? w.navigate(url) : w)).catch(() => self.clients.openWindow(url)); }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
