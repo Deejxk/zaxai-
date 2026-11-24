@@ -194,3 +194,9 @@
   .zp-pbig{padding:22px}
 }
 @media (max-width:560px){.zp-psteps--4{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- Header never moves (public site and reseller stores) ---------- */
+.zp-public .zp-phead{position:fixed;top:0;left:0;right:0;z-index:60}
+.zp-public main{padding-top:68px}
+@media (max-width:880px){.zp-public main{padding-top:calc(60px + env(safe-area-inset-top))}}
+.zp-plegal__nav{top:92px}

@@ -293,10 +293,55 @@ class ZP_Resellers {
 		return true;
 	}
 
-	/** Staff: the domain is registered and pointed at the site. */
-	public static function connect_domain( $user_id ) {
+	/**
+	 * Staff: connect a store's domain. With a Hostinger token saved, the domain is first added
+	 * to the hosting account as a parked domain; the store then answers on it at once.
+	 *
+	 * @param string|null $domain a domain to attach now (admin typed it), or null to connect the store's pending request
+	 * @return array|WP_Error [ 'domain' => string, 'hosted' => bool ] hosted = added to hosting automatically
+	 */
+	public static function connect_domain( $user_id, $domain = null ) {
 		global $wpdb;
-		$wpdb->update( zp_table( 'resellers' ), array( 'domain_status' => 'active' ), array( 'user_id' => (int) $user_id, 'domain_status' => 'pending' ) );
+		$r = self::get( $user_id );
+		if ( ! $r || ! $r->paid_until ) {
+			return new WP_Error( 'zp_input', 'Choose a store that has been activated.' );
+		}
+		if ( null !== $domain ) {
+			$domain = self::clean_domain( $domain );
+			if ( is_wp_error( $domain ) ) {
+				return $domain;
+			}
+			$used = $wpdb->get_var( $wpdb->prepare( 'SELECT user_id FROM ' . zp_table( 'resellers' ) . " WHERE domain = %s AND domain_status IN ('pending','active') AND user_id <> %d", $domain, $user_id ) );
+			if ( $used || $domain === ZP_Hosting::main_host() ) {
+				return new WP_Error( 'zp_input', 'That domain is already connected to another store.' );
+			}
+		} else {
+			$domain = $r->domain;
+			if ( ! $domain || 'pending' !== $r->domain_status ) {
+				return new WP_Error( 'zp_input', 'This store has no domain waiting to be connected.' );
+			}
+		}
+		$hosted = false;
+		if ( ZP_Hosting::configured() ) {
+			$park = ZP_Hosting::park( $domain );
+			if ( is_wp_error( $park ) ) {
+				return new WP_Error( 'zp_host', 'The domain could not be added to your hosting: ' . $park->get_error_message() );
+			}
+			$hosted = true;
+		}
+		$wpdb->update( zp_table( 'resellers' ), array( 'domain' => $domain, 'domain_status' => 'active' ), array( 'user_id' => (int) $user_id ) );
+		$GLOBALS['zp_resellers_dirty'] = true;
+		$owner = get_userdata( $user_id );
+		if ( $owner ) {
+			wp_mail( $owner->user_email, '[' . zp_get( 'brand' ) . '] Your domain ' . $domain . ' is connected', "Good news: your store is now live on your own domain.\n\nhttps://{$domain}/\n\nShare this link with your customers. It can take a little while for a new domain to work everywhere." );
+		}
+		return array( 'domain' => $domain, 'hosted' => $hosted );
+	}
+
+	/** Staff: detach a domain from a store. */
+	public static function disconnect_domain( $user_id ) {
+		global $wpdb;
+		$wpdb->update( zp_table( 'resellers' ), array( 'domain' => '', 'domain_status' => '' ), array( 'user_id' => (int) $user_id ) );
 		$GLOBALS['zp_resellers_dirty'] = true;
 	}
 

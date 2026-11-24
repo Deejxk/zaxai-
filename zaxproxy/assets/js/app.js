@@ -501,6 +501,7 @@
       if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var a = e.target.closest('a[href]');
       if (!isPanel(a)) return;
+      if (a.hash && norm(a.href) === norm(location.href)) return; // an anchor on this page: let the browser scroll
       e.preventDefault();
       if (norm(a.href) === norm(location.href)) { window.scrollTo({ top: 0, behavior: 'smooth' }); refresh(location.href, ++token, get(location.href)); return; }
       go(a.href, true);

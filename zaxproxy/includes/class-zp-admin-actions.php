@@ -58,8 +58,20 @@ class ZP_Admin_Actions {
 				break;
 
 			case 'reseller_domain_connect':
-				ZP_Resellers::connect_domain( (int) zp_post( 'user_id' ) );
-				zp_flash( 'Domain marked as connected. The store now opens on its own address.' );
+			case 'reseller_domain_link':
+				$res = ZP_Resellers::connect_domain( (int) zp_post( 'user_id' ), 'reseller_domain_link' === $do ? zp_post( 'domain' ) : null );
+				if ( is_wp_error( $res ) ) {
+					zp_flash( $res->get_error_message(), 'error' );
+				} elseif ( $res['hosted'] ) {
+					zp_flash( $res['domain'] . ' was added to your hosting and connected to the store. It is live now; the secure padlock (SSL) can take a few minutes to appear.' );
+				} else {
+					zp_flash( $res['domain'] . ' is connected to the store here. No Hostinger token is saved, so also add it as a parked domain on this website in hPanel.', 'info' );
+				}
+				break;
+
+			case 'reseller_domain_disconnect':
+				ZP_Resellers::disconnect_domain( (int) zp_post( 'user_id' ) );
+				zp_flash( 'Domain disconnected from the store.' );
 				break;
 
 			case 'reseller_domain_reject':
@@ -177,7 +189,7 @@ class ZP_Admin_Actions {
 			'support_email'       => sanitize_email( zp_post( 'support_email' ) ),
 		);
 		// Secrets are write-only: an empty field keeps the stored value.
-		foreach ( array( 'api_key', 'paystack_secret' ) as $secret ) {
+		foreach ( array( 'api_key', 'paystack_secret', 'hostinger_token' ) as $secret ) {
 			$val = trim( zp_post( $secret ) );
 			if ( '' !== $val ) {
 				$new[ $secret ] = $val;

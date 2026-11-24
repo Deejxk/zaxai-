@@ -8,6 +8,12 @@ $me   = ZP_Resellers::get( $user->ID );
 $host = wp_parse_url( home_url(), PHP_URL_HOST );
 
 /* ---------- Not a reseller yet: pitch + sign-up ---------- */
+// The documentation can be read before unlocking.
+if ( 'guide' === sanitize_key( zp_query( 'tab' ) ) && ( ! $me || ! $me->paid_until ) ) {
+	include ZP_DIR . 'templates/user/reseller-guide.php';
+	return;
+}
+
 if ( ! $me || ! $me->paid_until ) :
 	$fee      = (float) zp_get( 'reseller_fee', 45000 );
 	$monthly  = (float) zp_get( 'reseller_monthly', 15000 );
@@ -40,7 +46,7 @@ if ( ! $me || ! $me->paid_until ) :
 			<span class="zp-eyebrow"><?php echo zp_icon( 'lock', 14 ); // phpcs:ignore ?> Reseller program · locked</span>
 			<h2>Run your own proxy business under your own brand.</h2>
 			<p>Buy at the reseller price, sell at your price, keep the difference. Unlock your reseller account for <?php echo esc_html( zp_money( $fee ) ); ?> and get your own store, your own customers and your own dashboard.</p>
-			<div class="zp-row"><a class="zp-btn zp-btn--light" href="#zp-rs-unlock"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Unlock for <?php echo esc_html( zp_money( $fee ) ); ?></a></div>
+			<div class="zp-row"><a class="zp-btn zp-btn--light" href="#zp-rs-unlock"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Unlock for <?php echo esc_html( zp_money( $fee ) ); ?></a><a class="zp-btn zp-btn--glass" href="<?php echo esc_url( zp_url( 'reseller', array( 'tab' => 'guide' ) ) ); ?>"><?php echo zp_icon( 'help', 18 ); // phpcs:ignore ?>Read the full guide</a></div>
 		</div>
 		<div class="zp-hero__art"><?php echo zp_illustration( 'network' ); // phpcs:ignore ?></div>
 	</section>
@@ -95,7 +101,7 @@ if ( ! $me || ! $me->paid_until ) :
 	</div>
 
 	<section class="zp-card zp-anim" style="--d:7">
-		<div class="zp-card__head"><h3>Fees and rules</h3></div>
+		<div class="zp-card__head"><h3>Fees and rules</h3><a href="<?php echo esc_url( zp_url( 'reseller', array( 'tab' => 'guide' ) ) ); ?>">Full documentation</a></div>
 		<ul class="zp-rules">
 			<li><strong>Activation:</strong> <?php echo esc_html( zp_money( $fee ) ); ?>, paid once from your wallet. It covers your first 30 days.</li>
 			<li><strong>Monthly fee:</strong> <?php echo esc_html( zp_money( $monthly ) ); ?> is taken from your wallet automatically every 30 days to keep the account active.</li>
@@ -140,7 +146,7 @@ endif;
 
 /* ---------- Reseller dashboard ---------- */
 $tab     = sanitize_key( zp_query( 'tab', 'overview' ) );
-$tabs    = array( 'overview' => 'Overview', 'customers' => 'Customers', 'deposits' => 'Deposits', 'orders' => 'Orders', 'tickets' => 'Tickets', 'settings' => 'Store settings' );
+$tabs    = array( 'overview' => 'Overview', 'customers' => 'Customers', 'deposits' => 'Deposits', 'orders' => 'Orders', 'tickets' => 'Tickets', 'settings' => 'Store settings', 'guide' => 'Documentation' );
 $tab     = isset( $tabs[ $tab ] ) ? $tab : 'overview';
 $stats   = ZP_Resellers::stats( $user->ID );
 $store_url = ZP_Resellers::store_url( $me ); // not $url: the shell layout owns that name
@@ -173,7 +179,9 @@ $paid_ts = strtotime( $me->paid_until . ' UTC' );
 	<?php endforeach; ?>
 </nav>
 
-<?php if ( 'overview' === $tab ) : ?>
+<?php if ( 'guide' === $tab ) : ?>
+	<?php include ZP_DIR . 'templates/user/reseller-guide.php'; ?>
+<?php elseif ( 'overview' === $tab ) : ?>
 	<section class="zp-storelink zp-anim" style="--d:1">
 		<div>
 			<span class="zp-eyebrow">Your store</span>

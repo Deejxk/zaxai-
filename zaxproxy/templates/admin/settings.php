@@ -60,6 +60,12 @@ $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 	</div>
 
 	<section class="zp-card zp-anim" style="--d:4">
+		<div class="zp-card__head"><h3><?php echo zp_icon( 'globe', 18 ); // phpcs:ignore ?> Hosting connection (branded domains)</h3><?php echo zp_badge( $s['hostinger_token'] ? 'active' : 'closed' ); // phpcs:ignore ?></div>
+		<p class="zp-muted" style="margin-bottom:14px">With a Hostinger API token saved, a reseller's domain is added to this website's hosting automatically when you connect it under Resellers. Without it you add the parked domain in hPanel yourself.</p>
+		<label class="zp-field"><span>Hostinger API token</span><div class="zp-input"><?php echo zp_icon( 'lock', 18 ); // phpcs:ignore ?><input type="password" name="hostinger_token" autocomplete="off" placeholder="<?php echo $s['hostinger_token'] ? 'Saved. Enter a new token to replace it.' : 'Paste your Hostinger API token'; ?>"></div><small>Create one in hPanel under Account → API. It is stored on this site and never shown again.<?php echo $s['hostinger_username'] ? ' Hosting account: ' . esc_html( $s['hostinger_username'] ) . '.' : ''; ?></small></label>
+	</section>
+
+	<section class="zp-card zp-anim" style="--d:5">
 		<div class="zp-card__head"><h3>General</h3></div>
 		<div class="zp-fieldrow" style="margin-top:0">
 			<label class="zp-field"><span>Brand name</span><div class="zp-input"><input type="text" name="brand" value="<?php echo esc_attr( $s['brand'] ); ?>" maxlength="40" required></div></label>

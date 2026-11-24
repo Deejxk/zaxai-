@@ -23,6 +23,8 @@ function zp_defaults() {
 		'reseller_fee'        => 45000,
 		'reseller_monthly'    => 15000,
 		'reseller_domain_fee' => 12000,
+		'hostinger_token'     => '',
+		'hostinger_username'  => '',
 		'min_deposit'         => 1000,
 		'max_deposit'         => 5000000,
 		'manual_enabled'      => 1,

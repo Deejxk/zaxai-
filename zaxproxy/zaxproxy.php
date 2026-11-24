@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ZaxProxy
  * Description: Standalone proxy store: customers buy, manage and extend IPv4 / IPv6 / ISP / mobile proxies (proxy-ipv4.com API) from a dedicated user panel, with a separate admin panel outside wp-admin.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Requires PHP: 7.4
  * Requires at least: 5.8
  * Author: ZaxProxy
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ZP_VERSION', '1.4.0' );
+define( 'ZP_VERSION', '1.5.0' );
 define( 'ZP_FILE', __FILE__ );
 define( 'ZP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ZP_USER_BASE', 'panel' );
@@ -27,6 +27,7 @@ require_once ZP_DIR . 'includes/class-zp-wallet.php';
 require_once ZP_DIR . 'includes/class-zp-orders.php';
 require_once ZP_DIR . 'includes/class-zp-tickets.php';
 require_once ZP_DIR . 'includes/class-zp-resellers.php';
+require_once ZP_DIR . 'includes/class-zp-hosting.php';
 require_once ZP_DIR . 'includes/class-zp-gateways.php';
 require_once ZP_DIR . 'includes/class-zp-user-actions.php';
 require_once ZP_DIR . 'includes/class-zp-admin-actions.php';

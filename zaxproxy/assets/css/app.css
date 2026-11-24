@@ -643,7 +643,6 @@ label.zp-prefs{cursor:pointer}
   .zp-tab__ico{width:26px;height:26px}
   .zp-tab--fab .zp-tab__ico{width:50px;height:50px}
   .zp-tab__label{white-space:nowrap}
-  html{overflow-x:hidden}
 }
 /* ---------- Reseller dashboard ---------- */
 .zp-subtabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -703,3 +702,62 @@ label.zp-prefs{cursor:pointer}
 .zp-logopick div{display:flex;flex-direction:column;gap:6px;min-width:0}
 .zp-logopick input[type=file]{font-size:14px;max-width:100%;color:var(--zp-text-2)}
 .zp-field>span a{font-weight:500;margin-left:6px;font-size:12.5px}
+/* ---------- Reseller documentation ---------- */
+.zp-doc{display:grid;grid-template-columns:250px minmax(0,1fr);gap:22px;align-items:start}
+.zp-doc__toc{position:sticky;top:calc(var(--zp-top-h) + 18px);display:flex;flex-direction:column;gap:2px;padding:14px;border-radius:var(--zp-radius);background:var(--zp-surface);border:1px solid var(--zp-border);max-height:calc(100dvh - var(--zp-top-h) - 40px);overflow-y:auto}
+.zp-doc__toc strong{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--zp-text-3);padding:2px 8px 8px}
+.zp-doc__toc a{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:10px;color:var(--zp-text-2);font-size:13.5px;font-weight:500;line-height:1.35}
+.zp-doc__toc a:hover{background:var(--zp-surface-2);color:var(--zp-text);text-decoration:none}
+.zp-doc__toc a span{flex:none;width:20px;height:20px;border-radius:7px;background:var(--zp-soft);color:var(--zp-soft-ink);font-size:11px;font-weight:700;display:grid;place-items:center}
+.zp-doc__body{display:flex;flex-direction:column;gap:18px;min-width:0}
+.zp-doc__hero h2{font-size:clamp(22px,2.6vw,30px);font-weight:800;margin:8px 0 10px}
+.zp-doc__hero p{color:var(--zp-text-2);max-width:720px;margin-bottom:14px}
+.zp-doc__hero .zp-eyebrow{color:var(--zp-soft-ink)}
+.zp-doc__sec{scroll-margin-top:calc(var(--zp-top-h) + 16px);display:flex;flex-direction:column;gap:12px}
+.zp-doc__sec h3{display:flex;align-items:center;gap:12px;font-size:19px;font-weight:700}
+.zp-doc__sec h3 b{width:32px;height:32px;flex:none;border-radius:10px;background:var(--zp-grad);color:#fff;font-size:14px;display:grid;place-items:center}
+.zp-doc__sec p,.zp-doc__sec li{color:var(--zp-text-2);font-size:15px;line-height:1.65}
+.zp-doc__sec p{max-width:78ch}
+.zp-doc__sec strong{color:var(--zp-text)}
+.zp-doc__sec ul,.zp-doc__sec ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:7px;max-width:78ch}
+.zp-doc__sec .zp-tablewrap{margin:0;padding:0}
+.zp-doc__sec .zp-faq p{padding-bottom:14px}
+.zp-callout--warn{border-color:color-mix(in srgb,var(--zp-warn) 45%,transparent);background:var(--zp-warn-bg);color:var(--zp-text)}
+.zp-formula{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:13px;background:var(--zp-surface-2);border:1px solid var(--zp-border);font-weight:600;font-size:14.5px}
+.zp-formula span{padding:5px 11px;border-radius:9px;background:var(--zp-surface);border:1px solid var(--zp-border)}
+.zp-formula span:first-child{background:var(--zp-soft);color:var(--zp-soft-ink);border-color:transparent}
+.zp-formula b{color:var(--zp-text-3)}
+.zp-doc__dl{margin:0;display:flex;flex-direction:column}
+.zp-doc__dl dt{display:flex;align-items:center;gap:9px;font-weight:700;padding-top:13px;border-top:1px solid var(--zp-border)}
+.zp-doc__dl dt:first-child{border-top:0;padding-top:0}
+.zp-doc__dl dt .zp-ico{color:var(--zp-soft-ink)}
+.zp-doc__dl dd{margin:4px 0 13px 27px;color:var(--zp-text-2);font-size:15px;line-height:1.6}
+@media (max-width:1100px){
+  .zp-doc{grid-template-columns:minmax(0,1fr)}
+  .zp-doc__toc{position:static;max-height:none;flex-direction:row;overflow-x:auto;gap:8px;padding:10px;scrollbar-width:none}
+  .zp-doc__toc::-webkit-scrollbar{display:none}
+  .zp-doc__toc strong{display:none}
+  .zp-doc__toc a{flex:none;white-space:nowrap;align-items:center;border:1px solid var(--zp-border)}
+}
+@media (max-width:640px){.zp-doc__sec h3{font-size:17px}.zp-doc__dl dd{margin-left:0}}
+/* ---------- Header never moves ----------
+   The top bar is fixed to the screen on every panel page, phone and desktop. Horizontal
+   overflow is clipped (not "hidden") so sticky elements inside the page keep working. */
+body.zp-body{overflow-x:clip}
+@supports not (overflow-x:clip){body.zp-body{overflow-x:hidden}}
+.zp-shell .zp-top{position:fixed;top:0;left:var(--zp-side-w);right:0;z-index:60}
+.zp-shell .zp-main{padding-top:var(--zp-top-h)}
+.zp-subtabs{position:sticky;top:calc(var(--zp-top-h) + 0px);z-index:20;margin:-10px -6px 0;padding:10px 6px;background:var(--zp-glass);backdrop-filter:saturate(160%) blur(14px);-webkit-backdrop-filter:saturate(160%) blur(14px);border-radius:0 0 14px 14px}
+.zp-phead{position:sticky;top:0}
+@media (max-width:999px){
+  html{overflow-x:clip}
+  .zp-shell .zp-top{left:0}
+  .zp-shell .zp-main{padding-top:calc(60px + env(safe-area-inset-top))}
+  .zp-subtabs{top:calc(60px + env(safe-area-inset-top))}
+  .zp-doc__toc{position:static}
+}
+/* sign-in / sign-up screens: the top bar stays put on phones */
+@media (max-width:999px){
+  .zp-auth__bar{position:fixed;top:0;left:0;right:0;z-index:60;padding:calc(10px + env(safe-area-inset-top)) 20px 10px;background:var(--zp-glass);backdrop-filter:saturate(160%) blur(16px);-webkit-backdrop-filter:saturate(160%) blur(16px);border-bottom:1px solid var(--zp-border)}
+  .zp-auth__form{padding-top:calc(78px + env(safe-area-inset-top))}
+}
