@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class ZP_Router {
 
-	const USER_PAGES  = array( 'dashboard', 'buy', 'proxies', 'orders', 'wallet', 'tickets', 'profile', 'help' );
+	const USER_PAGES  = array( 'dashboard', 'buy', 'proxies', 'orders', 'wallet', 'tickets', 'reseller', 'profile', 'help' );
 	const GUEST_PAGES = array( 'login', 'register', 'forgot', 'reset' );
 	const PUBLIC_PAGES = array(
 		''               => 'home',
@@ -24,13 +24,13 @@ class ZP_Router {
 		'acceptable-use' => 'acceptable-use',
 		'cookies'        => 'cookies',
 	);
-	const ADMIN_PAGES = array( 'dashboard', 'pricing', 'orders', 'proxies', 'users', 'deposits', 'transactions', 'tickets', 'settings' );
+	const ADMIN_PAGES = array( 'dashboard', 'pricing', 'orders', 'proxies', 'users', 'resellers', 'deposits', 'transactions', 'tickets', 'settings' );
 
 	public static function dispatch() {
 		if ( 'cli' === PHP_SAPI || is_admin() || wp_doing_ajax() || wp_doing_cron() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || ( defined( 'WP_CLI' ) && WP_CLI ) || ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) ) {
 			return;
 		}
-		list( $base, $page ) = self::parse();
+		list( $base, $page, $sub ) = self::parse();
 
 		switch ( $base ) {
 			case 'zp-manifest':
@@ -51,6 +51,9 @@ class ZP_Router {
 				exit;
 			case ZP_USER_BASE:
 				self::user( $page );
+				break;
+			case 's':
+				self::store( $page, $sub );
 				break;
 			case ZP_ADMIN_BASE:
 				self::admin( $page );
@@ -76,7 +79,7 @@ class ZP_Router {
 	/** @return array{0:string,1:string} [base, page] */
 	private static function parse() {
 		if ( isset( $_GET['zp'] ) ) { // phpcs:ignore
-			return array( sanitize_key( $_GET['zp'] ), sanitize_key( isset( $_GET['zpp'] ) ? $_GET['zpp'] : '' ) ); // phpcs:ignore
+			return array( sanitize_key( $_GET['zp'] ), sanitize_key( isset( $_GET['zpp'] ) ? $_GET['zpp'] : '' ), '' ); // phpcs:ignore
 		}
 		$uri  = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore
 		$path = (string) wp_parse_url( $uri, PHP_URL_PATH );
@@ -88,9 +91,9 @@ class ZP_Router {
 		$bits = explode( '/', $path );
 		$base = strtolower( $bits[0] );
 		if ( ! preg_match( '/^[a-z0-9.\-]*$/', $base ) ) {
-			return array( '-', '' );
+			return array( '-', '', '' );
 		}
-		return array( $base, isset( $bits[1] ) ? sanitize_key( $bits[1] ) : '' );
+		return array( $base, isset( $bits[1] ) ? sanitize_title( $bits[1] ) : '', isset( $bits[2] ) ? sanitize_key( $bits[2] ) : '' );
 	}
 
 	public static function no_cache() {
@@ -134,11 +137,20 @@ class ZP_Router {
 		self::no_cache();
 		$page = $page ? $page : 'dashboard';
 
+		// Customers of a reseller get the reseller's brand and payment details throughout the panel.
+		if ( is_user_logged_in() ) {
+			$store = ZP_Resellers::of_user( get_current_user_id() );
+			if ( $store ) {
+				$GLOBALS['zp_reseller_ctx'] = $store;
+			}
+		}
+
 		if ( 'logout' === $page ) {
+			$to = zp_url( 'login' );
 			if ( is_user_logged_in() && wp_verify_nonce( zp_query( '_zpnonce' ), 'zp_logout' ) ) {
 				wp_logout();
 			}
-			zp_redirect( zp_url( 'login' ) );
+			zp_redirect( $to );
 		}
 
 		if ( in_array( $page, self::GUEST_PAGES, true ) ) {
@@ -166,7 +178,7 @@ class ZP_Router {
 		if ( 'export' === $page ) {
 			ZP_User_Actions::export();
 		}
-		if ( ! in_array( $page, self::USER_PAGES, true ) ) {
+		if ( ! in_array( $page, self::USER_PAGES, true ) || ( 'reseller' === $page && zp_reseller_ctx() ) ) {
 			zp_redirect( zp_url( 'dashboard' ) );
 		}
 		if ( 'POST' === self::method() ) {
@@ -183,6 +195,34 @@ class ZP_Router {
 		$view    = $page;
 		$balance = ZP_Wallet::balance( $user->ID );
 		include ZP_DIR . 'templates/layout-user.php';
+		exit;
+	}
+
+	/* ---------- Reseller stores: /s/{slug}/ ---------- */
+
+	private static function store( $slug, $page ) {
+		$store = ZP_Resellers::by_slug( $slug );
+		if ( ! $store || 'active' !== $store->status ) {
+			return; // unknown or suspended store: let WordPress answer with its normal 404
+		}
+		self::no_cache();
+		$GLOBALS['zp_reseller_ctx'] = $store;
+
+		if ( '' === $page ) {
+			include ZP_DIR . 'templates/store.php';
+			exit;
+		}
+		if ( ! in_array( $page, self::GUEST_PAGES, true ) ) {
+			zp_redirect( ZP_Resellers::store_url( $store ) );
+		}
+		if ( is_user_logged_in() ) {
+			zp_redirect( zp_route_url( ZP_USER_BASE, 'dashboard' ) );
+		}
+		if ( 'POST' === self::method() ) {
+			ZP_User_Actions::handle_guest( $page );
+		}
+		$view = $page;
+		include ZP_DIR . 'templates/layout-auth.php';
 		exit;
 	}
 

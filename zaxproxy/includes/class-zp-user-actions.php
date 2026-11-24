@@ -94,6 +94,9 @@ class ZP_User_Actions {
 			zp_flash( 'Could not create your account. Please try again.', 'error' );
 			zp_redirect( zp_url( 'register' ) );
 		}
+		if ( zp_reseller_ctx() ) {
+			update_user_meta( $uid, 'zp_reseller_id', (int) zp_reseller_ctx()->user_id );
+		}
 		wp_set_current_user( $uid );
 		wp_set_auth_cookie( $uid, true, is_ssl() );
 		zp_flash( 'Welcome to ' . zp_get( 'brand' ) . '! Add funds to buy your first proxy.' );
@@ -221,6 +224,18 @@ class ZP_User_Actions {
 				zp_redirect( zp_url( 'tickets', array( 'id' => $t->id ) ) );
 				break;
 
+			case 'reseller_save':
+			case 'reseller_deposit_approve':
+			case 'reseller_deposit_reject':
+			case 'reseller_adjust':
+			case 'reseller_ticket_reply':
+			case 'reseller_ticket_close':
+				if ( zp_reseller_ctx() ) {
+					zp_redirect( zp_url( 'dashboard' ) );
+				}
+				ZP_Resellers::handle( $do, $user );
+				break;
+
 			case 'profile':
 				$name  = zp_post( 'name' );
 				$email = sanitize_email( zp_post( 'email' ) );
@@ -290,7 +305,8 @@ class ZP_User_Actions {
 			zp_flash( 'You already have several payments awaiting confirmation.', 'error' );
 			zp_redirect( zp_url( 'wallet' ) );
 		}
-		$ref = ZP_Wallet::create_deposit( $user->ID, 'manual', $amount, $note, $amount, strtoupper( (string) zp_get( 'currency_code', 'NGN' ) ) );
+		$reseller = ZP_Resellers::of_user( $user->ID );
+		$ref      = ZP_Wallet::create_deposit( $user->ID, 'manual', $amount, $note, $amount, strtoupper( (string) zp_get( 'currency_code', 'NGN' ) ), $reseller ? $reseller->user_id : 0 );
 		zp_flash( zp_telegram_url() ? 'Deposit recorded. Send your payment receipt on Telegram so we can credit your wallet.' : 'Deposit recorded. Your wallet will be credited once the payment is confirmed.' );
 		zp_redirect( zp_url( 'wallet', array( 'sent' => $ref ) ) . '#zp-receipts' );
 	}
@@ -309,9 +325,9 @@ class ZP_User_Actions {
 			$res = ZP_Orders::options( sanitize_key( zp_query( 'type' ) ) );
 		} elseif ( 'quote' === $act ) {
 			$spec = ZP_Orders::sanitize_spec( wp_unslash( $_POST ) ); // phpcs:ignore
-			$res  = is_wp_error( $spec ) ? $spec : ZP_Orders::quote( $spec );
+			$res  = is_wp_error( $spec ) ? $spec : ZP_Orders::quote( $spec, $user->ID );
 			if ( ! is_wp_error( $res ) ) {
-				unset( $res['cost'] );
+				unset( $res['cost'], $res['platform'], $res['reseller'] );
 				$res['balance'] = ZP_Wallet::balance( $user->ID );
 			}
 		} elseif ( 'extend_quote' === $act ) {

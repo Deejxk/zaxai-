@@ -75,7 +75,7 @@ class ZP_Wallet {
 
 	/* ---------- Deposits ---------- */
 
-	public static function create_deposit( $user_id, $gateway, $amount, $note = '', $gw_amount = 0, $gw_currency = 'NGN' ) {
+	public static function create_deposit( $user_id, $gateway, $amount, $note = '', $gw_amount = 0, $gw_currency = 'NGN', $reseller_id = 0 ) {
 		global $wpdb;
 		$ref = 'ZP' . strtoupper( wp_generate_password( 14, false ) );
 		$wpdb->insert(
@@ -89,6 +89,7 @@ class ZP_Wallet {
 				'reference'   => $ref,
 				'status'      => 'pending',
 				'note'        => $note,
+				'reseller_id' => (int) $reseller_id,
 				'created_at'  => zp_now(),
 				'updated_at'  => zp_now(),
 			)

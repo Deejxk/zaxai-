@@ -135,7 +135,11 @@ class ZP_Orders {
 		return $p;
 	}
 
-	public static function quote( array $spec ) {
+	/**
+	 * Price an order for a buyer. `platform` is what the platform charges; `total` is what this
+	 * buyer pays (higher when they buy through a reseller's store).
+	 */
+	public static function quote( array $spec, $user_id = 0 ) {
 		$res = ZP_API::order_price( self::upstream_params( $spec ) );
 		if ( is_wp_error( $res ) ) {
 			return $res;
@@ -144,8 +148,10 @@ class ZP_Orders {
 		if ( $cost <= 0 ) {
 			return new WP_Error( 'zp_api', 'The provider did not return a price for this configuration.' );
 		}
-		$total = self::markup( $cost, $spec['type'] );
-		return array( 'cost' => $cost, 'total' => $total, 'unit' => round( $total / $spec['qty'], 2 ) );
+		$platform = self::markup( $cost, $spec['type'] );
+		$reseller = ZP_Resellers::of_user( $user_id );
+		$total    = $reseller ? ZP_Resellers::price( $platform, $reseller ) : $platform;
+		return array( 'cost' => $cost, 'platform' => $platform, 'total' => $total, 'unit' => round( $total / $spec['qty'], 2 ), 'reseller' => $reseller );
 	}
 
 	/* ---------- Locking ---------- */
@@ -171,12 +177,16 @@ class ZP_Orders {
 			return new WP_Error( 'zp_busy', 'The store is busy processing another order. Please try again in a few seconds.' );
 		}
 		try {
-			$quote = self::quote( $spec );
+			$quote    = self::quote( $spec, $user_id );
+			$reseller = is_wp_error( $quote ) ? null : $quote['reseller'];
 			if ( is_wp_error( $quote ) ) {
 				return self::public_error( $quote );
 			}
 			if ( ZP_Wallet::balance( $user_id ) < $quote['total'] ) {
 				return new WP_Error( 'zp_funds', 'Your wallet balance is too low for this order. Please add funds.' );
+			}
+			if ( $reseller && ! self::reseller_can_pay( $reseller, $quote['platform'] ) ) {
+				return new WP_Error( 'zp_unavailable', 'Ordering is temporarily unavailable. Please contact support.' );
 			}
 			$existing = ZP_API::proxies( $spec['type'] );
 			if ( is_wp_error( $existing ) ) {
@@ -203,6 +213,7 @@ class ZP_Orders {
 					'cost'            => $quote['cost'],
 					'fx_rate'         => zp_fx(),
 					'amount'          => $quote['total'],
+					'reseller_id'     => $reseller ? $reseller->user_id : 0,
 					'status'          => 'pending',
 					'pre_ids'         => wp_json_encode( $pre_ids ),
 					'created_at'      => zp_now(),
@@ -217,6 +228,10 @@ class ZP_Orders {
 			if ( ! ZP_Wallet::debit( $user_id, $quote['total'], 'purchase', 'order-' . $order_id, $desc ) ) {
 				self::set_status( $order_id, 'failed', 'Insufficient balance' );
 				return new WP_Error( 'zp_funds', 'Your wallet balance is too low for this order. Please add funds.' );
+			}
+			if ( $reseller && ! self::charge_reseller( $order_id, $reseller, $quote['platform'], $desc ) ) {
+				self::refund( $order_id, 'Store wallet could not cover the order' );
+				return new WP_Error( 'zp_unavailable', 'Ordering is temporarily unavailable. Please contact support.' );
 			}
 
 			$body             = self::upstream_params( $spec );
@@ -294,6 +309,34 @@ class ZP_Orders {
 		}
 		$o = self::get( $order_id );
 		ZP_Wallet::credit( $o->user_id, $o->amount, 'refund', 'order-' . $order_id, 'Refund for order #' . $order_id );
+		if ( $o->reseller_id && $o->reseller_cost > 0 ) {
+			ZP_Wallet::credit( $o->reseller_id, $o->reseller_cost, 'refund', 'order-' . $order_id, 'Refund for customer order #' . $order_id );
+		}
+		return true;
+	}
+
+	/* ---------- Reseller settlement ---------- */
+
+	/** Can the store owner's platform wallet cover this order? Records a notice for them when it cannot. */
+	private static function reseller_can_pay( $reseller, $platform_price ) {
+		if ( 'active' !== $reseller->status ) {
+			return false;
+		}
+		if ( ZP_Wallet::balance( $reseller->user_id ) >= $platform_price ) {
+			return true;
+		}
+		update_user_meta( $reseller->user_id, 'zp_reseller_blocked', array( 'time' => zp_now(), 'amount' => $platform_price ) );
+		return false;
+	}
+
+	/** Charge the store owner the platform price for a customer order. */
+	private static function charge_reseller( $order_id, $reseller, $platform_price, $desc ) {
+		global $wpdb;
+		if ( ! ZP_Wallet::debit( $reseller->user_id, $platform_price, 'store_sale', 'order-' . $order_id, 'Customer order #' . $order_id . ': ' . $desc ) ) {
+			update_user_meta( $reseller->user_id, 'zp_reseller_blocked', array( 'time' => zp_now(), 'amount' => $platform_price ) );
+			return false;
+		}
+		$wpdb->update( zp_table( 'orders' ), array( 'reseller_cost' => $platform_price ), array( 'id' => $order_id ) );
 		return true;
 	}
 
@@ -357,7 +400,9 @@ class ZP_Orders {
 		if ( $cost <= 0 ) {
 			return new WP_Error( 'zp_api', 'The provider did not return a renewal price.' );
 		}
-		return array( 'cost' => $cost, 'total' => self::markup( $cost, $t['type'] ), 'count' => count( $t['rows'] ), 'targets' => $t );
+		$platform = self::markup( $cost, $t['type'] );
+		$reseller = ZP_Resellers::of_user( $user_id );
+		return array( 'cost' => $cost, 'platform' => $platform, 'total' => $reseller ? ZP_Resellers::price( $platform, $reseller ) : $platform, 'count' => count( $t['rows'] ), 'targets' => $t, 'reseller' => $reseller );
 	}
 
 	public static function extend( $user_id, array $proxy_ids, $days ) {
@@ -371,7 +416,14 @@ class ZP_Orders {
 			if ( is_wp_error( $q ) ) {
 				return $q;
 			}
-			$t = $q['targets'];
+			$t        = $q['targets'];
+			$reseller = $q['reseller'];
+			if ( ZP_Wallet::balance( $user_id ) < $q['total'] ) {
+				return new WP_Error( 'zp_funds', 'Your wallet balance is too low for this renewal. Please add funds.' );
+			}
+			if ( $reseller && ! self::reseller_can_pay( $reseller, $q['platform'] ) ) {
+				return new WP_Error( 'zp_unavailable', 'Renewals are temporarily unavailable. Please contact support.' );
+			}
 			$wpdb->insert(
 				zp_table( 'orders' ),
 				array(
@@ -384,6 +436,7 @@ class ZP_Orders {
 					'cost'       => $q['cost'],
 					'fx_rate'    => zp_fx(),
 					'amount'     => $q['total'],
+					'reseller_id' => $reseller ? $reseller->user_id : 0,
 					'status'     => 'pending',
 					'pre_ids'    => wp_json_encode( $t['ids'] ),
 					'created_at' => zp_now(),
@@ -397,6 +450,10 @@ class ZP_Orders {
 					self::set_status( $order_id, 'failed', 'Insufficient balance' );
 				}
 				return new WP_Error( 'zp_funds', 'Your wallet balance is too low for this renewal. Please add funds.' );
+			}
+			if ( $reseller && ! self::charge_reseller( $order_id, $reseller, $q['platform'], $desc ) ) {
+				self::refund( $order_id, 'Store wallet could not cover the renewal' );
+				return new WP_Error( 'zp_unavailable', 'Renewals are temporarily unavailable. Please contact support.' );
 			}
 			$res = ZP_API::extend( $t['type'], $days, $t['ids'] );
 			if ( is_wp_error( $res ) ) {

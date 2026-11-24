@@ -4,8 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 /** @var string $view @var WP_User $user */
 global $wpdb;
-$pending_deposits = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'deposits' ) . " WHERE status = 'pending' AND gateway = 'manual'" );
-$open_tickets     = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'tickets' ) . " WHERE status = 'open'" );
+$pending_deposits = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'deposits' ) . " WHERE status = 'pending' AND gateway = 'manual' AND reseller_id = 0" );
+$open_tickets     = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'tickets' ) . " WHERE status = 'open' AND reseller_id = 0" );
 $review_orders    = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'orders' ) . " WHERE status = 'review'" );
 
 $nav = array(
@@ -14,6 +14,7 @@ $nav = array(
 	'orders'       => array( 'Orders', 'receipt', $review_orders ),
 	'proxies'      => array( 'Proxies', 'globe' ),
 	'users'        => array( 'Customers', 'users' ),
+	'resellers'    => array( 'Resellers', 'home' ),
 	'deposits'     => array( 'Deposits', 'card', $pending_deposits ),
 	'transactions' => array( 'Transactions', 'swap' ),
 	'tickets'      => array( 'Tickets', 'ticket', $open_tickets ),

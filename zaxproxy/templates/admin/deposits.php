@@ -6,7 +6,8 @@ global $wpdb;
 $status = sanitize_key( zp_query( 'status' ) );
 $per    = 25;
 $pg     = zp_page_num();
-$where  = $status ? $wpdb->prepare( 'WHERE status = %s', $status ) : '';
+// Deposits inside reseller stores are store credit handled by the reseller, not platform money.
+$where  = $status ? $wpdb->prepare( 'WHERE reseller_id = 0 AND status = %s', $status ) : 'WHERE reseller_id = 0';
 $total  = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'deposits' ) . " $where" ); // phpcs:ignore
 $rows   = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'deposits' ) . " $where ORDER BY (status = 'pending' AND gateway = 'manual') DESC, id DESC LIMIT %d OFFSET %d", $per, ( $pg - 1 ) * $per ) ); // phpcs:ignore
 ?>

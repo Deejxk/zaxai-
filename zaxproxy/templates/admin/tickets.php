@@ -35,7 +35,7 @@ if ( $tid ) :
 	<?php
 	return;
 endif;
-$rows = $wpdb->get_results( 'SELECT t.*, u.user_email FROM ' . zp_table( 'tickets' ) . " t LEFT JOIN {$wpdb->users} u ON u.ID = t.user_id ORDER BY (t.status = 'open') DESC, t.updated_at DESC LIMIT 200" );
+$rows = $wpdb->get_results( 'SELECT t.*, u.user_email FROM ' . zp_table( 'tickets' ) . " t LEFT JOIN {$wpdb->users} u ON u.ID = t.user_id WHERE t.reseller_id = 0 ORDER BY (t.status = 'open') DESC, t.updated_at DESC LIMIT 200" );
 ?>
 <section class="zp-card zp-anim">
 	<?php if ( ! $rows ) : ?>

@@ -10,6 +10,7 @@ $titles = array(
 	'orders'    => 'Orders',
 	'wallet'    => 'Wallet',
 	'tickets'   => 'Support',
+	'reseller'  => 'Reseller',
 	'profile'   => 'Account',
 	'help'      => 'Help center',
 );
@@ -20,6 +21,7 @@ $nav = array(
 	'orders'    => array( 'Orders', 'receipt' ),
 	'wallet'    => array( 'Wallet', 'wallet' ),
 	'tickets'   => array( 'Support', 'ticket' ),
+	'reseller'  => array( 'Reseller', 'users' ),
 	'help'      => array( 'Help center', 'help' ),
 	'profile'   => array( 'Account', 'user' ),
 );
@@ -29,6 +31,9 @@ $tabs = array(
 	'buy'       => array( 'Buy', 'plus' ),
 	'wallet'    => array( 'Wallet', 'wallet' ),
 );
+if ( zp_reseller_ctx() ) {
+	unset( $nav['reseller'] ); // customers of a reseller's store cannot open stores of their own
+}
 $shell = array(
 	'admin'    => false,
 	'title'    => $titles[ $view ],

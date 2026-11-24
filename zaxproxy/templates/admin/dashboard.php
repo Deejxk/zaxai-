@@ -5,9 +5,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 global $wpdb;
 $o        = zp_table( 'orders' );
 $paid     = "refunded = 0 AND status IN ('completed','processing','review')";
-$revenue  = (float) $wpdb->get_var( "SELECT COALESCE(SUM(amount),0) FROM $o WHERE $paid" ); // phpcs:ignore
+$rev      = '(CASE WHEN reseller_id > 0 THEN reseller_cost ELSE amount END)'; // store orders earn the platform what the reseller was charged
+$revenue  = (float) $wpdb->get_var( "SELECT COALESCE(SUM($rev),0) FROM $o WHERE $paid" ); // phpcs:ignore
 $cost     = (float) $wpdb->get_var( "SELECT COALESCE(SUM(cost * fx_rate),0) FROM $o WHERE $paid" ); // phpcs:ignore
-$month    = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM(amount),0) FROM $o WHERE $paid AND created_at >= %s", gmdate( 'Y-m-01 00:00:00' ) ) ); // phpcs:ignore
+$month    = (float) $wpdb->get_var( $wpdb->prepare( "SELECT COALESCE(SUM($rev),0) FROM $o WHERE $paid AND created_at >= %s", gmdate( 'Y-m-01 00:00:00' ) ) ); // phpcs:ignore
 $users    = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . $wpdb->users );
 $active   = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . zp_table( 'proxies' ) . ' WHERE date_end > %s', zp_now() ) );
 $wallets  = (float) $wpdb->get_var( 'SELECT COALESCE(SUM(balance),0) FROM ' . zp_table( 'wallets' ) );
@@ -19,7 +20,7 @@ $days     = array();
 for ( $i = 29; $i >= 0; $i-- ) {
 	$days[ gmdate( 'Y-m-d', time() - $i * DAY_IN_SECONDS ) ] = 0;
 }
-foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT DATE(created_at) d, SUM(amount) s FROM $o WHERE $paid AND created_at >= %s GROUP BY DATE(created_at)", gmdate( 'Y-m-d 00:00:00', time() - 29 * DAY_IN_SECONDS ) ) ) as $r ) { // phpcs:ignore
+foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT DATE(created_at) d, SUM($rev) s FROM $o WHERE $paid AND created_at >= %s GROUP BY DATE(created_at)", gmdate( 'Y-m-d 00:00:00', time() - 29 * DAY_IN_SECONDS ) ) ) as $r ) { // phpcs:ignore
 	if ( isset( $days[ $r->d ] ) ) {
 		$days[ $r->d ] = (float) $r->s;
 	}
@@ -76,7 +77,7 @@ $max = max( 1, max( $days ) );
 				<td data-label="Order"><strong>#<?php echo (int) $r->id; ?></strong><span class="zp-sub"><?php echo esc_html( zp_date( $r->created_at ) ); ?></span></td>
 				<td data-label="Customer"><?php echo $u ? '<a href="' . esc_url( zp_admin_url( 'users', array( 'id' => $u->ID ) ) ) . '">' . esc_html( $u->user_email ) . '</a>' : '—'; ?></td>
 				<td data-label="Details"><?php echo esc_html( ( 'extend' === $r->kind ? 'Renew ' : '' ) . $r->qty . ' × ' . zp_type_label( $r->proxy_type ) . ' · ' . $r->country . ' · ' . $r->days . 'd' ); ?></td>
-				<td data-label="Charged" class="zp-right"><strong><?php echo esc_html( zp_money( $r->amount ) ); ?></strong></td>
+				<td data-label="Charged" class="zp-right"><strong><?php echo esc_html( zp_money( $r->reseller_id ? $r->reseller_cost : $r->amount ) ); ?></strong><?php echo $r->reseller_id ? '<span class="zp-sub">via store</span>' : ''; ?></td>
 				<td data-label="Cost" class="zp-right"><?php echo esc_html( zp_usd( $r->cost ) ); ?></td>
 				<td data-label="Status"><?php echo zp_badge( $r->status ); // phpcs:ignore ?></td>
 			</tr>

@@ -34,7 +34,7 @@ $rows   = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'orde
 				<td data-label="Customer"><?php echo $u ? '<a href="' . esc_url( zp_admin_url( 'users', array( 'id' => $u->ID ) ) ) . '">' . esc_html( $u->user_email ) . '</a>' : '—'; ?></td>
 				<td data-label="Details"><?php echo esc_html( ( 'extend' === $r->kind ? 'Renew ' : '' ) . $r->qty . ' × ' . zp_type_label( $r->proxy_type ) . ' · ' . $r->country . ' · ' . $r->days . 'd' ); ?>
 					<span class="zp-sub"><?php echo esc_html( trim( ( $r->upstream_order ? 'Ref ' . $r->upstream_order . ' ' : '' ) . ( $r->error ? '· ' . $r->error : '' ) ) ); ?></span></td>
-				<td data-label="Charged / cost" class="zp-right"><strong><?php echo esc_html( zp_money( $r->amount ) ); ?></strong><span class="zp-sub">Cost <?php echo esc_html( zp_usd( $r->cost ) ); ?></span></td>
+				<td data-label="Charged / cost" class="zp-right"><strong><?php echo esc_html( zp_money( $r->reseller_id ? $r->reseller_cost : $r->amount ) ); ?></strong><?php echo $r->reseller_id ? '<span class="zp-sub">Store sale ' . esc_html( zp_money( $r->amount ) ) . '</span>' : ''; ?><span class="zp-sub">Cost <?php echo esc_html( zp_usd( $r->cost ) ); ?></span></td>
 				<td data-label="Status"><?php echo zp_badge( $r->status ); // phpcs:ignore ?><?php echo $r->refunded ? ' ' . zp_badge( 'refunded' ) : ''; // phpcs:ignore ?></td>
 				<td data-label="Actions"><div class="zp-inline">
 					<?php if ( in_array( $r->status, array( 'review', 'processing' ), true ) ) : ?>

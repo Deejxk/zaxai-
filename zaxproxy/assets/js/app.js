@@ -353,6 +353,14 @@
     refresh();
   })();
 
+  /* ---------- Reseller sign-up: suggest a store link from the brand ---------- */
+  var rsBrand = $('#zp-rs-brand'), rsSlug = $('#zp-rs-slug');
+  if (rsBrand && rsSlug) {
+    var rsTouched = false;
+    rsSlug.addEventListener('input', function () { rsTouched = true; rsSlug.value = rsSlug.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
+    rsBrand.addEventListener('input', function () { if (!rsTouched) rsSlug.value = rsBrand.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30); });
+  }
+
   /* ---------- Wallet ---------- */
   var dep = $('#zp-deposit');
   if (dep) {

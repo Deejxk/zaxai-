@@ -43,7 +43,31 @@ function zp_settings() {
 	return $cache;
 }
 
+/** The reseller whose branded store is being served, or null on the platform itself. */
+function zp_reseller_ctx() {
+	return isset( $GLOBALS['zp_reseller_ctx'] ) ? $GLOBALS['zp_reseller_ctx'] : null;
+}
+
 function zp_get( $key, $default = '' ) {
+	$r = zp_reseller_ctx();
+	if ( $r ) {
+		// Inside a reseller's store the brand and payment details are the reseller's own.
+		if ( in_array( $key, array( 'brand', 'bank_name', 'bank_account_name', 'bank_account_number', 'telegram' ), true ) ) {
+			return (string) $r->$key;
+		}
+		if ( 'paystack_enabled' === $key ) {
+			return 0;
+		}
+		if ( 'manual_enabled' === $key ) {
+			return 1;
+		}
+		if ( 'manual_title' === $key ) {
+			return 'Bank transfer';
+		}
+		if ( 'manual_instructions' === $key ) {
+			return 'Transfer the exact amount, then send your receipt so your wallet can be credited.';
+		}
+	}
 	$s = zp_settings();
 	return isset( $s[ $key ] ) ? $s[ $key ] : $default;
 }
@@ -71,6 +95,10 @@ function zp_route_url( $base, $page = '', $args = array() ) {
 }
 
 function zp_url( $page = 'dashboard', $args = array() ) {
+	$r = zp_reseller_ctx();
+	if ( $r && in_array( $page, array( 'login', 'register', 'forgot', 'reset' ), true ) ) {
+		return zp_route_url( 's', $r->slug . '/' . $page, $args );
+	}
 	return zp_route_url( ZP_USER_BASE, $page, $args );
 }
 
@@ -359,11 +387,18 @@ function zp_icon( $name, $size = 20 ) {
 
 function zp_logo( $size = 30 ) {
 	static $svg = null;
+	static $n   = 0;
+	$r = zp_reseller_ctx();
+	if ( $r ) {
+		// Reseller stores show a monogram of their own brand instead of the platform mark.
+		++$n;
+		$letter = esc_html( strtoupper( mb_substr( $r->brand, 0, 1 ) ) );
+		return '<svg xmlns="http://www.w3.org/2000/svg" class="zp-logo-mark" width="' . (int) $size . '" height="' . (int) $size . '" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="zpMono' . $n . '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5efc"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="17" fill="url(#zpMono' . $n . ')"/><text x="32" y="43" text-anchor="middle" font-family="Sora,Inter,Arial,sans-serif" font-size="30" font-weight="800" fill="#fff">' . $letter . '</text></svg>';
+	}
 	if ( null === $svg ) {
 		$svg = (string) file_get_contents( ZP_DIR . 'assets/logo-mark.svg' ); // phpcs:ignore
 	}
 	// Each copy gets its own gradient id: a gradient defined inside a hidden element (the splash) cannot paint visible copies.
-	static $n = 0;
 	++$n;
 	return str_replace( array( 'width="64" height="64"', 'gZPL' ), array( 'width="' . (int) $size . '" height="' . (int) $size . '"', 'zpLogo' . $n ), $svg );
 }

@@ -645,3 +645,15 @@ label.zp-prefs{cursor:pointer}
   .zp-tab__label{white-space:nowrap}
   html{overflow-x:hidden}
 }
+/* ---------- Reseller dashboard ---------- */
+.zp-subtabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.zp-subtabs::-webkit-scrollbar{display:none}
+.zp-subtabs .zp-pill{flex:none;gap:7px;height:38px}
+.zp-subtabs .zp-pill b{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--zp-brand);color:#fff;font-size:11.5px;display:grid;place-items:center}
+.zp-subtabs .zp-pill.is-active b{background:rgba(255,255,255,.28)}
+.zp-storelink{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:24px 26px;border-radius:22px;background:var(--zp-grad);background-size:180% 180%;animation:zp-rise .55s var(--zp-ease) both,zp-gradient 14s ease infinite;color:#fff;box-shadow:0 30px 60px -34px rgba(79,125,251,.9)}
+.zp-storelink h2{font-size:26px;font-weight:800;margin:2px 0 4px}
+.zp-storelink a.zp-mono{color:#fff;opacity:.9;font-size:14.5px;overflow-wrap:anywhere}
+.zp-prefix{font-weight:500;font-size:14px;color:var(--zp-text-3);white-space:nowrap}
+.zp-card.zp-is-admin{display:block}
+@media (max-width:640px){.zp-storelink{padding:20px}.zp-storelink .zp-btn{flex:1}.zp-prefix{font-size:12.5px}}

@@ -53,6 +53,11 @@ class ZP_Admin_Actions {
 				zp_flash( 'Pricing saved. New prices apply to every new order.' );
 				break;
 
+			case 'reseller_status':
+				ZP_Resellers::set_status( (int) zp_post( 'user_id' ), zp_post( 'status' ) );
+				zp_flash( 'suspended' === zp_post( 'status' ) ? 'Store suspended. Its customers can no longer sign up or buy.' : 'Store reactivated.' );
+				break;
+
 			case 'test_api':
 				$res = ZP_API::balance();
 				if ( is_wp_error( $res ) ) {

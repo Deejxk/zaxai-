@@ -7,11 +7,21 @@ class ZP_Tickets {
 
 	public static function create( $user_id, $subject, $message ) {
 		global $wpdb;
+		$reseller = ZP_Resellers::of_user( $user_id );
 		$wpdb->insert(
 			zp_table( 'tickets' ),
-			array( 'user_id' => $user_id, 'subject' => $subject, 'status' => 'open', 'created_at' => zp_now(), 'updated_at' => zp_now() )
+			array( 'user_id' => $user_id, 'subject' => $subject, 'status' => 'open', 'reseller_id' => $reseller ? $reseller->user_id : 0, 'created_at' => zp_now(), 'updated_at' => zp_now() )
 		);
 		$id = (int) $wpdb->insert_id;
+		if ( $id && $reseller ) {
+			// Tickets from a reseller's customers are answered by the reseller, not by platform staff.
+			self::add_message( $id, $user_id, $message, false );
+			$owner = get_userdata( $reseller->user_id );
+			if ( $owner ) {
+				wp_mail( $owner->user_email, '[' . $reseller->brand . '] New ticket #' . $id . ': ' . $subject, $message . "\n\n" . zp_route_url( ZP_USER_BASE, 'reseller', array( 'tab' => 'tickets', 'id' => $id ) ) );
+			}
+			return $id;
+		}
 		if ( $id ) {
 			self::add_message( $id, $user_id, $message, false );
 			$to = zp_get( 'support_email' );

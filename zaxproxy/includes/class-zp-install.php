@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class ZP_Install {
 
-	const DB_VERSION = '2';
+	const DB_VERSION = '3';
 
 	public static function activate() {
 		self::tables();
@@ -78,6 +78,7 @@ class ZP_Install {
 			status varchar(20) NOT NULL DEFAULT 'pending',
 			note text NULL,
 			admin_note text NULL,
+			reseller_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (id),
@@ -107,6 +108,8 @@ class ZP_Install {
 			amount decimal(14,2) NOT NULL DEFAULT 0.00,
 			status varchar(20) NOT NULL DEFAULT 'pending',
 			refunded tinyint(1) NOT NULL DEFAULT 0,
+			reseller_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			reseller_cost decimal(14,2) NOT NULL DEFAULT 0.00,
 			upstream_order varchar(100) NOT NULL DEFAULT '',
 			pre_ids longtext NULL,
 			error text NULL,
@@ -153,11 +156,30 @@ class ZP_Install {
 			user_id bigint(20) unsigned NOT NULL,
 			subject varchar(190) NOT NULL,
 			status varchar(20) NOT NULL DEFAULT 'open',
+			reseller_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (id),
 			KEY user_id (user_id),
 			KEY status (status)
+		) $c;"
+		);
+
+		dbDelta(
+			'CREATE TABLE ' . zp_table( 'resellers' ) . " (
+			user_id bigint(20) unsigned NOT NULL,
+			slug varchar(40) NOT NULL,
+			brand varchar(60) NOT NULL,
+			markup decimal(7,2) NOT NULL DEFAULT 0.00,
+			bank_name varchar(80) NOT NULL DEFAULT '',
+			bank_account_name varchar(120) NOT NULL DEFAULT '',
+			bank_account_number varchar(40) NOT NULL DEFAULT '',
+			telegram varchar(80) NOT NULL DEFAULT '',
+			status varchar(20) NOT NULL DEFAULT 'active',
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			PRIMARY KEY  (user_id),
+			UNIQUE KEY slug (slug)
 		) $c;"
 		);
 
