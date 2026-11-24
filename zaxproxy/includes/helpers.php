@@ -527,3 +527,55 @@ function zp_filter_days( array $provider_days ) {
 	$allowed       = zp_allowed_days();
 	return array_values( array_intersect( $provider_days, $allowed ) );
 }
+
+/** Full FAQ, grouped by topic, for the public FAQ page. */
+function zp_faq_groups() {
+	$brand = zp_get( 'brand' );
+	$cur   = zp_get( 'currency_code' );
+	return array(
+		'Getting started'      => array(
+			'What is a proxy?'                               => 'A proxy is a server with its own IP address that sits between you and the internet. Websites see the proxy\'s IP address instead of yours. People use proxies to manage several accounts, see content from other countries, collect public data and protect their privacy.',
+			'What does ' . $brand . ' sell?'                 => 'We rent private IPv4, IPv6, ISP and mobile proxies for 30, 60 or 90 days. Each proxy is issued to one customer only and is delivered to your dashboard with its IP, port and login details.',
+			'Which proxy type should I choose?'              => 'IPv4 is the everyday choice and works everywhere. IPv6 is the cheapest per IP and suits large volumes on IPv6-ready sites. ISP proxies look like ordinary home connections and suit accounts that need extra trust. Mobile proxies come from 4G carriers and are trusted most by apps and social platforms.',
+			'Do I need technical knowledge?'                 => 'No. You copy the IP, port, username and password from your dashboard into your browser, phone or tool. Our Help center explains the steps.',
+			'Are the proxies private?'                       => 'Yes. Each proxy is issued to a single customer for the whole rental period.',
+		),
+		'Orders and delivery'  => array(
+			'How fast are proxies delivered?'                => 'Most orders are delivered to your dashboard within a few minutes of payment. During busy periods setup can take longer; the order shows as Processing until your proxies appear.',
+			'What rental periods are available?'             => 'You can rent for 30, 60 or 90 days.',
+			'Can I extend a proxy before it expires?'        => 'Yes. Open My proxies, select the proxies and choose Extend. The new period is added to the current expiry date, so you keep the same IP. IPv6 batches are renewed as a whole order.',
+			'What happens when a proxy expires?'             => 'It stops working and the IP is released. Extend before the expiry date if you want to keep the same address.',
+			'Can I choose the country?'                      => 'Yes. You pick the exact country when you order. The list depends on the proxy type.',
+			'How many proxies can I buy at once?'            => 'From 1 to 1,000 in a single order. IPv6 is sold in batches of 10 or more.',
+		),
+		'Payments and wallet'  => array(
+			'How do I pay?'                                  => 'You add funds to your wallet in ' . $cur . ' by bank transfer, then pay for orders from your balance. After you transfer, send your receipt on Telegram and we credit your wallet once the payment is confirmed.',
+			'How long does a top-up take?'                   => 'Your wallet is credited as soon as our team confirms the transfer. This is usually quick during working hours.',
+			'Is there a minimum top-up?'                     => 'Yes, the minimum is ' . zp_money( zp_get( 'min_deposit' ) ) . '.',
+			'Are there any hidden fees?'                     => 'No. The price you see before you confirm is the price taken from your wallet.',
+			'What is your refund policy?'                    => 'If an order cannot be delivered, the full amount returns to your wallet automatically. If a proxy does not work at all, contact support within 24 hours of delivery for a replacement or refund. See the Refund Policy for full details.',
+		),
+		'Using your proxies'   => array(
+			'Which protocols are supported?'                 => 'IPv4, ISP and mobile proxies work over both HTTP(S) and SOCKS5 using separate ports. For IPv6 you choose the protocol when ordering.',
+			'How do I authenticate?'                         => 'Choose username and password, or whitelist your own IPv4 address when ordering so no credentials are needed.',
+			'How do I export my proxies?'                    => 'In My proxies you can copy or download your list as ip:port:user:pass, user:pass@ip:port, a full URL, or ip:port.',
+			'How do mobile proxies rotate?'                  => 'Depending on the plan, the IP changes on a timer or on demand using the rotate button on the proxy card.',
+			'A website is blocking my proxy. What can I do?' => 'Some websites block certain IP ranges; this is outside our control. Try a different proxy type or country, and contact support if you need advice on which works best for your target.',
+			'What am I not allowed to do?'                   => 'Anything illegal, including fraud, spam, attacks on networks, or accessing systems without permission. See the Acceptable Use Policy for details.',
+		),
+		'Reseller program'     => array(
+			'What is the reseller program?'                  => 'It lets you run your own proxy store under your own brand. You buy at the reseller price, set your own prices and keep the difference, while we deliver the proxies to your customers.',
+			'How much does it cost?'                         => 'Activation is ' . zp_money( zp_get( 'reseller_fee', 45000 ) ) . ' once, which includes the first 30 days. After that it is ' . zp_money( zp_get( 'reseller_monthly', 15000 ) ) . ' per month, taken from your wallet automatically.',
+			'How do I get paid by my customers?'             => 'Your customers pay directly into your own bank account and send you the receipt. You approve the payment in your reseller dashboard and their wallet is credited.',
+			'Why must I keep my wallet funded?'              => 'Each time one of your customers buys, the reseller price of that order comes out of your wallet. If your wallet is empty, their order is refused.',
+			'Can I use my own domain name?'                  => 'Yes. You can add your own .cloud domain for ' . zp_money( zp_get( 'reseller_domain_fee', 12000 ) ) . '. We register it and connect it to your store.',
+			'What happens if I miss the monthly fee?'        => 'Your store pauses and you return to regular prices until you renew. Your customers and their proxies are kept.',
+		),
+		'Account and security' => array(
+			'How do I reset my password?'                    => 'Choose Forgot password on the sign-in page and we will email you a reset link.',
+			'Can I install the app on my phone?'             => 'Yes. On Android, tap the install icon in the dashboard header. On iPhone, tap Share in Safari and choose Add to Home Screen.',
+			'Is my data safe?'                               => 'We use encrypted connections and hashed passwords, collect only what we need, and never sell your data. See the Privacy Policy.',
+			'How do I contact support?'                      => 'Open a ticket from your dashboard, message us on Telegram, or use the Contact page.',
+		),
+	);
+}
