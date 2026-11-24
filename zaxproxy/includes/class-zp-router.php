@@ -301,35 +301,21 @@ class ZP_Router {
 		$brand = zp_get( 'brand' );
 		?>
 <div class="zp-splash" aria-hidden="true">
-	<div class="zp-splash__bg"></div>
-	<svg class="zp-splash__net" viewBox="0 0 400 400" fill="none" preserveAspectRatio="xMidYMid slice">
-		<g stroke="#fff" stroke-opacity=".5" stroke-width="1.2" stroke-dasharray="4 8" class="zp-a-dash">
-			<path d="M200 200 60 70"/><path d="M200 200 345 85"/><path d="M200 200 40 300"/><path d="M200 200 350 320"/><path d="M200 200 200 20"/><path d="M200 200 205 385"/>
-		</g>
-		<circle cx="200" cy="200" r="150" stroke="#fff" stroke-opacity=".16" stroke-dasharray="2 10" class="zp-splash__ring"/>
-		<circle cx="200" cy="200" r="104" stroke="#fff" stroke-opacity=".26" class="zp-splash__ring zp-splash__ring--rev" stroke-dasharray="60 18"/>
-		<g fill="#fff">
-			<circle cx="60" cy="70" r="7" class="zp-splash__node" style="--n:1"/><circle cx="345" cy="85" r="9" class="zp-splash__node" style="--n:2"/>
-			<circle cx="40" cy="300" r="8" class="zp-splash__node" style="--n:3"/><circle cx="350" cy="320" r="7" class="zp-splash__node" style="--n:4"/>
-			<circle cx="200" cy="20" r="6" class="zp-splash__node" style="--n:5"/><circle cx="205" cy="385" r="6" class="zp-splash__node" style="--n:6"/>
-		</g>
-		<g fill="#a5f3fc">
-			<circle r="4.5" class="zp-splash__pkt" style="offset-path:path('M60 70 200 200')"/>
-			<circle r="4.5" class="zp-splash__pkt" style="offset-path:path('M200 200 345 85');animation-delay:.5s"/>
-			<circle r="4.5" class="zp-splash__pkt" style="offset-path:path('M40 300 200 200');animation-delay:1s"/>
-			<circle r="4.5" class="zp-splash__pkt" style="offset-path:path('M200 200 350 320');animation-delay:1.5s"/>
-		</g>
-	</svg>
+	<div class="zp-splash__orb zp-splash__orb--a"></div>
+	<div class="zp-splash__orb zp-splash__orb--b"></div>
+	<div class="zp-splash__grid"></div>
 	<div class="zp-splash__core">
 		<div class="zp-splash__logo">
-			<span class="zp-splash__pulse"></span><span class="zp-splash__pulse zp-splash__pulse--2"></span>
-			<div class="zp-splash__tile"><?php echo zp_logo( 84 ); // phpcs:ignore ?></div>
+			<span class="zp-splash__ring"></span><span class="zp-splash__ring zp-splash__ring--2"></span><span class="zp-splash__ring zp-splash__ring--3"></span>
+			<span class="zp-splash__halo"></span>
+			<?php echo zp_logo( 104 ); // phpcs:ignore ?>
 		</div>
-		<div class="zp-splash__name"><?php echo esc_html( $brand ); ?></div>
+		<div class="zp-splash__name"><?php echo zp_wordmark(); // phpcs:ignore ?></div>
 		<div class="zp-splash__tag">Private proxies, ready in minutes</div>
 		<div class="zp-splash__bar"><i></i></div>
 		<div class="zp-splash__status"><span>Securing connection</span><span>Loading locations</span><span>Almost ready</span></div>
 	</div>
+	<div class="zp-splash__foot"><span><?php echo zp_icon( 'shield', 14 ); // phpcs:ignore ?>Private</span><span><?php echo zp_icon( 'zap', 14 ); // phpcs:ignore ?>Fast</span><span><?php echo zp_icon( 'globe', 14 ); // phpcs:ignore ?>Global</span></div>
 </div>
 		<?php
 	}
