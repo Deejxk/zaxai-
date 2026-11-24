@@ -34,14 +34,20 @@ $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 
 	<div class="zp-grid2">
 		<section class="zp-card zp-anim" style="--d:2">
-			<div class="zp-card__head"><h3>Wallet &amp; manual payments</h3></div>
+			<div class="zp-card__head"><h3>Bank transfer deposits</h3></div>
 			<div class="zp-fieldrow" style="margin-top:0">
 				<label class="zp-field"><span>Minimum top-up (<?php echo esc_html( $s['currency_code'] ); ?>)</span><div class="zp-input"><input type="number" name="min_deposit" value="<?php echo esc_attr( $s['min_deposit'] ); ?>" min="0.5" step="0.5"></div></label>
 				<label class="zp-field"><span>Maximum top-up (<?php echo esc_html( $s['currency_code'] ); ?>)</span><div class="zp-input"><input type="number" name="max_deposit" value="<?php echo esc_attr( $s['max_deposit'] ); ?>" min="1" step="1"></div></label>
 			</div>
-			<?php $toggle( 'manual_enabled', 'Manual payments', 'Customers submit a payment reference and you approve it under Deposits.' ); ?>
+			<?php $toggle( 'manual_enabled', 'Bank transfer', 'Customers pay into your bank account, send the receipt on Telegram, and you approve it under Deposits.' ); ?>
+			<div class="zp-fieldrow">
+				<label class="zp-field"><span>Bank name</span><div class="zp-input"><input type="text" name="bank_name" value="<?php echo esc_attr( $s['bank_name'] ); ?>" maxlength="80" placeholder="e.g. Access Bank"></div></label>
+				<label class="zp-field"><span>Account number</span><div class="zp-input"><input type="text" name="bank_account_number" value="<?php echo esc_attr( $s['bank_account_number'] ); ?>" maxlength="30" inputmode="numeric" placeholder="0123456789"></div></label>
+			</div>
+			<label class="zp-field"><span>Account name</span><div class="zp-input"><input type="text" name="bank_account_name" value="<?php echo esc_attr( $s['bank_account_name'] ); ?>" maxlength="120" placeholder="Name shown to customers"></div></label>
+			<label class="zp-field"><span>Telegram username for receipts</span><div class="zp-input"><?php echo zp_icon( 'send', 18 ); // phpcs:ignore ?><input type="text" name="telegram" value="<?php echo esc_attr( $s['telegram'] ); ?>" maxlength="80" placeholder="@yourusername or https://t.me/yourusername"></div><small>After a transfer, customers get a button that opens a Telegram chat with you, with the amount and deposit reference already typed in.</small></label>
 			<label class="zp-field"><span>Method name</span><div class="zp-input"><input type="text" name="manual_title" value="<?php echo esc_attr( $s['manual_title'] ); ?>"></div></label>
-			<label class="zp-field"><span>Payment instructions shown to customers</span><textarea name="manual_instructions" rows="5" class="zp-textarea" placeholder="Bank name, account number, crypto address…"><?php echo esc_textarea( $s['manual_instructions'] ); ?></textarea></label>
+			<label class="zp-field"><span>Extra note shown under the bank details</span><textarea name="manual_instructions" rows="3" class="zp-textarea"><?php echo esc_textarea( $s['manual_instructions'] ); ?></textarea></label>
 		</section>
 
 		<section class="zp-card zp-anim" style="--d:3">

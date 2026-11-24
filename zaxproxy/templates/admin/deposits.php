@@ -20,7 +20,7 @@ $rows   = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'depo
 		<?php echo zp_empty( 'empty-orders', 'No deposits', 'Wallet top-ups will be listed here.' ); // phpcs:ignore ?>
 	<?php else : ?>
 	<div class="zp-tablewrap"><table class="zp-table">
-		<thead><tr><th>Deposit</th><th>Customer</th><th>Method</th><th>Customer note</th><th class="zp-right">Amount</th><th>Status</th><th>Actions</th></tr></thead>
+		<thead><tr><th>Deposit</th><th>Customer</th><th>Method</th><th>Sender name</th><th class="zp-right">Amount</th><th>Status</th><th>Actions</th></tr></thead>
 		<tbody>
 		<?php
 		foreach ( $rows as $d ) :
@@ -30,7 +30,7 @@ $rows   = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'depo
 				<td data-label="Deposit"><strong class="zp-mono"><?php echo esc_html( $d->reference ); ?></strong><span class="zp-sub"><?php echo esc_html( zp_date( $d->created_at ) ); ?></span></td>
 				<td data-label="Customer"><?php echo $u ? '<a href="' . esc_url( zp_admin_url( 'users', array( 'id' => $u->ID ) ) ) . '">' . esc_html( $u->user_email ) . '</a>' : '—'; ?></td>
 				<td data-label="Method"><?php echo esc_html( ZP_Wallet::gateway_label( $d->gateway ) ); ?></td>
-				<td data-label="Customer note"><?php echo esc_html( $d->note ); ?><?php echo $d->admin_note ? '<span class="zp-sub">' . esc_html( $d->admin_note ) . '</span>' : ''; ?></td>
+				<td data-label="Sender name"><?php echo esc_html( $d->note ); ?><?php echo $d->admin_note ? '<span class="zp-sub">' . esc_html( $d->admin_note ) . '</span>' : ''; ?></td>
 				<td data-label="Amount" class="zp-right"><strong><?php echo esc_html( zp_money( $d->amount ) ); ?></strong></td>
 				<td data-label="Status"><?php echo zp_badge( $d->status ); // phpcs:ignore ?></td>
 				<td data-label="Actions"><?php if ( 'pending' === $d->status ) : ?><div class="zp-inline">

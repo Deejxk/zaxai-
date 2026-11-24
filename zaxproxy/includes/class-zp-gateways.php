@@ -16,7 +16,7 @@ class ZP_Gateways {
 			$g['paystack'] = array( 'label' => 'Card / Bank (Paystack)', 'desc' => 'Instant. Pay with card, bank transfer or USSD.' );
 		}
 		if ( zp_get( 'manual_enabled' ) ) {
-			$g['manual'] = array( 'label' => zp_get( 'manual_title' ), 'desc' => 'Credited after our team confirms your payment.' );
+			$g['manual'] = array( 'label' => zp_get( 'manual_title' ), 'desc' => 'Pay into our bank account. Credited once we confirm your receipt.' );
 		}
 		return $g;
 	}

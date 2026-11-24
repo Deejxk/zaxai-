@@ -602,3 +602,22 @@ label.zp-prefs{cursor:pointer}
 @keyframes zp-splash-status-last{0%{opacity:0;transform:translateY(6px)}25%,100%{opacity:.9;transform:none}}
 @media (prefers-reduced-motion:reduce){.zp-splashing .zp-splash{animation:zp-splash-out .01ms linear 5s forwards!important}}
 .zp-splash__net{-webkit-mask-image:radial-gradient(circle,transparent 0 17%,#000 34%);mask-image:radial-gradient(circle,transparent 0 17%,#000 34%)}
+.zp-switch{color:var(--zp-soft-ink);background:var(--zp-soft);border-color:transparent}
+.zp-switch:hover{color:var(--zp-soft-ink);border-color:var(--zp-brand)}
+@media (max-width:420px){.zp-top{gap:8px;padding-left:12px;padding-right:12px}.zp-top__actions{gap:6px}.zp-is-admin .zp-chip--admin span{display:none}}
+/* ---------- Bank transfer deposit ---------- */
+.zp-bank{border:1px solid color-mix(in srgb,var(--zp-brand) 35%,transparent);background:var(--zp-soft);border-radius:16px;padding:14px 16px}
+.zp-bank__head{display:flex;align-items:center;gap:8px;color:var(--zp-soft-ink);margin-bottom:10px}
+.zp-bank dl{margin:0;display:flex;flex-direction:column}
+.zp-bank dl>div{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 0;border-top:1px dashed color-mix(in srgb,var(--zp-brand) 28%,transparent)}
+.zp-bank dt{font-size:13px;color:var(--zp-text-2)}
+.zp-bank dd{margin:0;display:flex;align-items:center;gap:10px;font-weight:600;text-align:right;min-width:0}
+.zp-bank__num .zp-mono{font-size:20px;font-weight:700;letter-spacing:.04em}
+.zp-btn--telegram{background:#229ed9;color:#fff;box-shadow:0 10px 24px -12px rgba(34,158,217,.95)}
+.zp-btn--telegram:hover{background:#1c8fc6}
+.zp-receipt{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:16px;margin-bottom:14px;border-radius:16px;background:var(--zp-surface-2);border:1px solid var(--zp-border-2);animation:zp-pop .5s var(--zp-ease) both}
+.zp-receipt__art{width:92px;flex:none}
+.zp-receipt__text{flex:1;min-width:220px;display:flex;flex-direction:column;gap:4px}
+.zp-receipt__text span{color:var(--zp-text-2);font-size:14.5px}
+.zp-list__side--row{flex-direction:row;align-items:center;gap:10px}
+@media (max-width:640px){.zp-receipt .zp-btn{width:100%}.zp-receipt__art{display:none}.zp-list__side--row .zp-btn span{display:none}.zp-list__side--row .zp-btn{padding:0 10px}}

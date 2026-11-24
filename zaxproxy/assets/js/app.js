@@ -53,6 +53,8 @@
     var opener = e.target.closest('[data-zp-sheet]');
     if (opener) { openSheet(opener.getAttribute('data-zp-sheet')); }
     if (e.target.closest('[data-zp-close]')) { var s = e.target.closest('.zp-sheet'); if (s) s.hidden = true; }
+    var cp = e.target.closest('[data-zp-copy]');
+    if (cp) { copy(cp.getAttribute('data-zp-copy'), cp.getAttribute('data-zp-copied')); }
     var reveal = e.target.closest('[data-zp-reveal]');
     if (reveal) { var inp = reveal.parentNode.querySelector('input'); inp.type = inp.type === 'password' ? 'text' : 'password'; }
   });
@@ -348,11 +350,15 @@
     var sync = function () {
       var gw = (dep.querySelector('input[name="gateway"]:checked') || {}).value;
       if (manual) manual.hidden = gw !== 'manual';
+      var bankAmt = $('#zp-bank-amount'); if (bankAmt) bankAmt.textContent = money(parseFloat(amount.value || 0));
+      var noteInput = dep.elements.note; if (noteInput) noteInput.required = gw === 'manual';
+      var dbtn = $('#zp-deposit-btn span'); if (dbtn) dbtn.textContent = dbtn.parentNode.getAttribute(gw === 'manual' ? 'data-manual' : 'data-default');
       $$('[data-amount]', dep).forEach(function (b) { b.classList.toggle('is-active', parseFloat(b.dataset.amount) === parseFloat(amount.value)); });
     };
     $$('[data-amount]', dep).forEach(function (b) { b.addEventListener('click', function () { amount.value = b.dataset.amount; sync(); }); });
     $$('input[name="gateway"]', dep).forEach(function (r) { r.addEventListener('change', sync); });
     amount.addEventListener('input', sync);
+    var copyAmt = $('#zp-copy-amount'); if (copyAmt) copyAmt.addEventListener('click', function () { copy(String(parseFloat(amount.value || 0)), 'Amount copied'); });
     sync();
   }
 

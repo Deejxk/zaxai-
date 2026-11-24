@@ -148,7 +148,11 @@ class ZP_Admin_Actions {
 			'min_deposit'         => max( 0.5, (float) zp_post( 'min_deposit' ) ),
 			'max_deposit'         => max( 1, (float) zp_post( 'max_deposit' ) ),
 			'manual_enabled'      => zp_post( 'manual_enabled' ) ? 1 : 0,
-			'manual_title'        => zp_post( 'manual_title', 'Manual payment' ),
+			'manual_title'        => zp_post( 'manual_title', 'Bank transfer' ),
+			'bank_name'           => zp_post( 'bank_name' ),
+			'bank_account_name'   => zp_post( 'bank_account_name' ),
+			'bank_account_number' => preg_replace( '/[^0-9A-Za-z \-]/', '', zp_post( 'bank_account_number' ) ),
+			'telegram'            => zp_post( 'telegram' ),
 			'manual_instructions' => isset( $_POST['manual_instructions'] ) ? sanitize_textarea_field( wp_unslash( $_POST['manual_instructions'] ) ) : '', // phpcs:ignore
 			'paystack_enabled'    => zp_post( 'paystack_enabled' ) ? 1 : 0,
 			'support_email'       => sanitize_email( zp_post( 'support_email' ) ),

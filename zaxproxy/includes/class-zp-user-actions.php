@@ -281,7 +281,7 @@ class ZP_User_Actions {
 		}
 		$note = isset( $_POST['note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['note'] ) ) : ''; // phpcs:ignore
 		if ( mb_strlen( $note ) < 3 ) {
-			zp_flash( 'Add your payment reference so we can match your transfer.', 'error' );
+			zp_flash( 'Enter the name on the bank account you paid from so we can match your transfer.', 'error' );
 			zp_redirect( zp_url( 'wallet' ) );
 		}
 		global $wpdb;
@@ -290,9 +290,9 @@ class ZP_User_Actions {
 			zp_flash( 'You already have several payments awaiting confirmation.', 'error' );
 			zp_redirect( zp_url( 'wallet' ) );
 		}
-		ZP_Wallet::create_deposit( $user->ID, 'manual', $amount, $note, $amount, strtoupper( (string) zp_get( 'currency_code', 'NGN' ) ) );
-		zp_flash( 'Payment submitted. Your wallet will be credited once it is confirmed.' );
-		zp_redirect( zp_url( 'wallet' ) );
+		$ref = ZP_Wallet::create_deposit( $user->ID, 'manual', $amount, $note, $amount, strtoupper( (string) zp_get( 'currency_code', 'NGN' ) ) );
+		zp_flash( zp_telegram_url() ? 'Deposit recorded. Send your payment receipt on Telegram so we can credit your wallet.' : 'Deposit recorded. Your wallet will be credited once the payment is confirmed.' );
+		zp_redirect( zp_url( 'wallet', array( 'sent' => $ref ) ) . '#zp-receipts' );
 	}
 
 	/* ---------- AJAX (JSON) ---------- */

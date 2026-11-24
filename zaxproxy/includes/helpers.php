@@ -22,8 +22,12 @@ function zp_defaults() {
 		'min_deposit'         => 1000,
 		'max_deposit'         => 5000000,
 		'manual_enabled'      => 1,
-		'manual_title'        => 'Bank transfer / Crypto',
-		'manual_instructions' => "Send your payment using the details provided by support, then submit the amount and your payment reference below.\nYour wallet is credited as soon as the payment is confirmed.",
+		'manual_title'        => 'Bank transfer',
+		'manual_instructions' => 'Transfer the exact amount, then send your receipt on Telegram. Your wallet is credited as soon as we confirm the payment.',
+		'bank_name'           => '',
+		'bank_account_name'   => '',
+		'bank_account_number' => '',
+		'telegram'            => '',
 		'paystack_enabled'    => 0,
 		'paystack_secret'     => '',
 		'support_email'       => get_option( 'admin_email' ),
@@ -345,6 +349,7 @@ function zp_icon( $name, $size = 20 ) {
 			'mail'     => '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/>',
 			'lock'     => '<rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.500V7a4 4 0 0 1 8 0v3.5"/>',
 			'receipt'  => '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6"/>',
+			'send'     => '<path d="M21.5 3 2.8 10.3c-.8.3-.8 1.4 0 1.7l4.7 1.7 1.8 5.6c.2.7 1.1.9 1.6.4l2.7-2.6 4.6 3.4c.6.4 1.4.1 1.6-.6L22.7 4c.2-.8-.5-1.3-1.2-1Z"/><path d="m7.5 13.7 10-6.7-7.2 7.7"/>',
 			'swap'     => '<path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>',
 		);
 	}
@@ -417,4 +422,27 @@ function zp_public_prices() {
 	}
 	set_transient( 'zp_public_prices', $out, $out ? 2 * HOUR_IN_SECONDS : 5 * MINUTE_IN_SECONDS );
 	return $out;
+}
+
+/** Telegram chat link for the support handle saved in settings, optionally with a prefilled message. */
+function zp_telegram_url( $text = '' ) {
+	$handle = trim( (string) zp_get( 'telegram' ) );
+	$handle = preg_replace( '#^(https?://)?(t\.me|telegram\.me)/#i', '', $handle );
+	$handle = preg_replace( '/[^A-Za-z0-9_+]/', '', ltrim( $handle, '@' ) );
+	if ( '' === $handle ) {
+		return '';
+	}
+	$url = 'https://t.me/' . $handle;
+	return $text ? $url . '?text=' . rawurlencode( $text ) : $url;
+}
+
+function zp_receipt_message( $deposit, $user ) {
+	return sprintf(
+		"Hello %s, I just made a bank transfer to fund my wallet.\n\nAmount: %s\nDeposit reference: %s\nAccount email: %s\nSender name: %s\n\nPlease find my payment receipt attached.",
+		zp_get( 'brand' ),
+		zp_money( $deposit->amount ),
+		$deposit->reference,
+		$user->user_email,
+		$deposit->note
+	);
 }
