@@ -73,6 +73,51 @@
   });
   function openSheet(id) { var s = document.getElementById(id); if (s) s.hidden = false; }
 
+  /* Swipe a bottom sheet down with a finger to close it, like a native app. */
+  (function () {
+    var drag = null;
+    document.addEventListener('touchstart', function (e) {
+      var panel = e.target.closest && e.target.closest('.zp-sheet__panel');
+      if (!panel || e.touches.length !== 1 || window.innerWidth > 700) { drag = null; return; }
+      // Inside a scrolled list the finger scrolls the content first.
+      if (panel.scrollTop > 0 && !e.target.closest('.zp-sheet__grip')) { drag = null; return; }
+      drag = { panel: panel, sheet: panel.closest('.zp-sheet'), y: e.touches[0].clientY, t: Date.now(), dy: 0, on: false };
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!drag) return;
+      var dy = e.touches[0].clientY - drag.y;
+      if (!drag.on) {
+        if (dy < -6) { drag = null; return; }
+        if (dy < 8) return;
+        drag.on = true; drag.panel.style.transition = 'none'; drag.panel.style.animation = 'none';
+      }
+      drag.dy = Math.max(0, dy);
+      if (e.cancelable) e.preventDefault();
+      drag.panel.style.transform = 'translateY(' + drag.dy + 'px)';
+      var bd = drag.sheet.querySelector('.zp-sheet__backdrop');
+      if (bd) bd.style.opacity = String(Math.max(0.15, 1 - drag.dy / (drag.panel.offsetHeight || 300)));
+    }, { passive: false });
+    function end() {
+      if (!drag) return;
+      var d = drag; drag = null;
+      if (!d.on) return;
+      var bd = d.sheet.querySelector('.zp-sheet__backdrop');
+      var fast = d.dy / Math.max(1, Date.now() - d.t) > 0.5 && d.dy > 30;
+      var close = fast || d.dy > Math.min(140, d.panel.offsetHeight * 0.3);
+      d.panel.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1)';
+      if (bd) bd.style.transition = 'opacity .22s ease';
+      d.panel.style.transform = close ? 'translateY(105%)' : 'translateY(0)';
+      if (bd) bd.style.opacity = close ? '0' : '1';
+      setTimeout(function () {
+        if (close) d.sheet.hidden = true;
+        d.panel.style.transition = ''; d.panel.style.transform = ''; d.panel.style.animation = close ? '' : 'none';
+        if (bd) { bd.style.transition = ''; bd.style.opacity = ''; }
+        if (close) d.panel.style.animation = '';
+      }, 230);
+    }
+    document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
+  })();
+
   /* ---------- AJAX helper ---------- */
   function api(act, params, body) {
     var url = ZP.ajax + (ZP.ajax.indexOf('?') > -1 ? '&' : '?') + 'act=' + act + '&nonce=' + encodeURIComponent(ZP.nonce);

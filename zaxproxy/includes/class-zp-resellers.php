@@ -160,7 +160,7 @@ class ZP_Resellers {
 			'aurora'  => array( 'name' => 'Aurora', 'desc' => 'Dark with a glowing gradient. Modern tech look.', 'accent' => '' ),
 			'minimal' => array( 'name' => 'Minimal', 'desc' => 'Clean white with an order card. Simple and trustworthy.', 'accent' => '#1d4ed8' ),
 			'emerald' => array( 'name' => 'Emerald', 'desc' => 'Deep green with lime accents. Bold fintech feel.', 'accent' => '#10b981' ),
-			'sunset'  => array( 'name' => 'Sunset', 'desc' => 'Warm, friendly and colourful. Easy for beginners.', 'accent' => '#f9572a' ),
+			'sunset'  => array( 'name' => 'Sunset', 'desc' => 'Warm, friendly and colourful. Easy for beginners.', 'accent' => '#d9480f' ),
 			'carbon'  => array( 'name' => 'Carbon', 'desc' => 'Black with neon lime. Technical, for developers.', 'accent' => '#65a30d' ),
 		);
 	}
@@ -175,17 +175,44 @@ class ZP_Resellers {
 		return $r && ! empty( $r->color ) && preg_match( '/^#[0-9a-f]{6}$/', $r->color ) ? $r->color : '';
 	}
 
-	/** Colour used on sign-in pages and the customer dashboard: the picked colour, else the design's accent. */
+	/**
+	 * Colour used on sign-in pages and the customer dashboard: the picked colour, else the design's accent.
+	 * Buttons there always carry white text and sit on dark or light pages, so a colour that is too
+	 * pale or too dark is nudged until white text reads clearly and the button stands out.
+	 */
 	public static function color( $r ) {
 		if ( ! $r ) {
 			return '';
 		}
 		$own = self::custom_color( $r );
-		if ( $own ) {
-			return $own;
+		if ( ! $own ) {
+			$themes = self::themes();
+			$own    = $themes[ self::theme( $r ) ]['accent'];
+			if ( ! $own ) {
+				return '';
+			}
 		}
-		$themes = self::themes();
-		return $themes[ self::theme( $r ) ]['accent'];
+		$c = zp_fit_contrast( $own, '#090b12', 2.4 );  // not lost on the dark background
+		return zp_fit_contrast( $c, '#ffffff', 4.3 );  // white button text stays readable
+	}
+
+	/** Colour values for a storefront design, adjusted so text is readable whatever colour was picked. */
+	public static function store_palette( $r, $theme ) {
+		$own = self::custom_color( $r );
+		if ( ! $own ) {
+			return null; // the design's own colours are already balanced
+		}
+		$bgs  = array( 'aurora' => '#080a13', 'minimal' => '#ffffff', 'emerald' => '#061613', 'sunset' => '#fff8f3', 'carbon' => '#0a0a0a' );
+		$bg   = isset( $bgs[ $theme ] ) ? $bgs[ $theme ] : '#080a13';
+		$fill = zp_fit_contrast( $own, $bg, 2.2 );            // buttons and tiles stand out from the page
+		$ink  = zp_ink_on( $fill );                           // black or white text on them
+		$end  = zp_mix( $fill, '#ffffff' === $ink ? '#000000' : '#ffffff', 0.16 ); // gentle gradient that keeps the text readable
+		return array(
+			'accent' => $fill,
+			'end'    => $end,
+			'ink'    => $ink,
+			'text'   => zp_fit_contrast( $own, $bg, 4.2 ),     // the colour when it is used for words and icons
+		);
 	}
 
 	/**

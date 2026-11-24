@@ -1,7 +1,7 @@
 /* ZaxProxy — standalone panel styles */
 :root{
   --zp-brand:#6d5efc;--zp-brand-2:#22d3ee;--zp-brand-ink:#fff;
-  --zp-grad:linear-gradient(135deg,#6d5efc 0%,#4f7dfb 55%,#22d3ee 100%);
+  --zp-grad:linear-gradient(135deg,#6d5efc 0%,#4f63f0 55%,#2563eb 100%);
   --zp-radius:18px;--zp-radius-sm:12px;
   --zp-font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --zp-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -23,9 +23,9 @@
   color-scheme:light;
   --zp-bg:#f4f5fa;--zp-bg-2:#eceef6;--zp-surface:#ffffff;--zp-surface-2:#f5f6fb;--zp-surface-3:#eceef6;
   --zp-border:#e4e7f0;--zp-border-2:#d2d7e5;
-  --zp-text:#10131f;--zp-text-2:#535b72;--zp-text-3:#8b93a8;
+  --zp-text:#10131f;--zp-text-2:#4b5368;--zp-text-3:#636b81;
   --zp-soft:rgba(109,94,252,.1);--zp-soft-ink:#5546e8;
-  --zp-ok:#059669;--zp-ok-bg:rgba(5,150,105,.1);--zp-warn:#b45309;--zp-warn-bg:rgba(217,119,6,.12);
+  --zp-ok:#047857;--zp-ok-bg:rgba(5,150,105,.1);--zp-warn:#b45309;--zp-warn-bg:rgba(217,119,6,.12);
   --zp-bad:#dc2626;--zp-bad-bg:rgba(220,38,38,.09);--zp-mute-bg:rgba(100,116,139,.12);
   --zp-shadow:0 1px 2px rgba(16,19,31,.04),0 14px 32px -22px rgba(16,19,31,.28);
   --zp-glass:rgba(244,245,250,.78);
@@ -112,7 +112,7 @@ button{cursor:pointer}
 .zp-btn--soft{background:var(--zp-soft);color:var(--zp-soft-ink)}
 .zp-btn--ghost{background:transparent;border-color:var(--zp-border-2);color:var(--zp-text)}
 .zp-btn--light{background:#fff;color:#1b1f33}
-.zp-btn--glass{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.3);backdrop-filter:blur(6px)}
+.zp-btn--glass{background:rgba(10,12,30,.26);color:#fff;border-color:rgba(255,255,255,.3);backdrop-filter:blur(6px)}
 .zp-btn--danger{background:var(--zp-bad-bg);color:var(--zp-bad)}
 .zp-btn--sm{height:36px;padding:0 12px;font-size:13.5px;border-radius:10px}
 .zp-btn--lg{height:50px;font-size:16px;border-radius:14px}
@@ -789,3 +789,12 @@ body.zp-body{overflow-x:clip}
 #zp-refresh.is-spinning .zp-ico{animation:zp-spin .7s linear infinite}
 @media (max-width:420px){.zp-top__title{font-size:16px}.zp-top .zp-chip{padding:0 10px;height:36px}.zp-top .zp-iconbtn,.zp-top .zp-avatar{width:36px;height:36px}}
 @media (max-width:360px){.zp-top__title{display:none}}
+
+/* ---------- text contrast ---------- */
+.zp-wordmark b{background:linear-gradient(135deg,#8f84ff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-theme="light"] .zp-wordmark b{background:linear-gradient(135deg,#5546e8,#0e7fb8);-webkit-background-clip:text;background-clip:text}
+.zp-brand--light .zp-wordmark b{background:none;color:#fff;-webkit-text-fill-color:#fff}
+.zp-btn--primary,.zp-pills button.is-active,.zp-pill.is-active,.zp-step b,.zp-avatar,.zp-count,.zp-rsteps b,.zp-doc__sec h3 b,.zp-msg--me .zp-msg__bubble{color:#fff}
+.zp-hero .zp-eyebrow,.zp-preseller .zp-eyebrow{opacity:1;color:#fff}
+.zp-sheet__panel{overscroll-behavior:contain;touch-action:pan-y}
+.zp-sheet__grip{position:relative}.zp-sheet__grip::after{content:"";position:absolute;inset:-14px -60px}

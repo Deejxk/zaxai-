@@ -83,8 +83,19 @@ $buttons  = '<div class="zs-cta-row"><a class="zs-btn zs-btn--primary zs-btn--lg
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/store.css' ) ); ?>">
-<?php if ( $color ) : // the store's own brand colour replaces the design's accent ?>
-<style>body.zs{--accent:<?php echo esc_html( $color ); ?>;--accent2:color-mix(in srgb,<?php echo esc_html( $color ); ?> 62%,#fff);--ink:#fff;--grad:linear-gradient(135deg,<?php echo esc_html( $color ); ?>,color-mix(in srgb,<?php echo esc_html( $color ); ?> 62%,#fff))}body.zs--minimal .zs-btn--primary,body.zs--minimal .zs-seg3 span.on,body.zs--minimal .zs-step b,body.zs--minimal .zs-plan .badge,body.zs--minimal .zs-tabbar a.fab span{background:<?php echo esc_html( $color ); ?>;border-color:<?php echo esc_html( $color ); ?>}</style>
+<?php
+$pal = ZP_Resellers::store_palette( $store, $theme );
+if ( $pal ) : // the store's own brand colour replaces the design's accent, with text colours chosen to stay readable
+	?>
+<style>body.zs{--accent:<?php echo esc_html( $pal['accent'] ); ?>;--accent2:<?php echo esc_html( $pal['end'] ); ?>;--accent-t:<?php echo esc_html( $pal['text'] ); ?>;--ink:<?php echo esc_html( $pal['ink'] ); ?>;--grad:linear-gradient(135deg,<?php echo esc_html( $pal['accent'] ); ?>,<?php echo esc_html( $pal['end'] ); ?>)}
+body.zs .zs-hl{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:<?php echo esc_html( $pal['text'] ); ?>;-webkit-text-fill-color:currentColor}
+body.zs .zs-btn--primary,body.zs .zs-plan .badge,body.zs .zs-step b,body.zs .zs-brand i,body.zs .zs-tabbar a.fab span,body.zs .zs-seg3 span.on,body.zs .zs-core{background:var(--grad);border-color:transparent;color:<?php echo esc_html( $pal['ink'] ); ?>}
+body.zs .zs-cta .zs-wrap>div,body.zs--sunset .zs-panel,body.zs--sunset .zs-panel p.lead,body.zs--sunset .zs-panel .zs-tag{color:<?php echo esc_html( $pal['ink'] ); ?>}
+body.zs--sunset .zs-panel .zs-btn--ghost{color:<?php echo esc_html( $pal['ink'] ); ?>;border-color:<?php echo esc_html( $pal['ink'] ); ?>}
+body.zs--sunset .zs-panel .zs-tag{background:transparent;border-color:currentColor}
+body.zs--sunset .zs-panel .zs-tag b{background:<?php echo esc_html( $pal['ink'] ); ?>}
+body.zs--sunset .zs-panel .zs-btn--primary{background:<?php echo esc_html( '#ffffff' === $pal['ink'] ? '#ffffff' : '#14161d' ); ?>;color:<?php echo esc_html( '#ffffff' === $pal['ink'] ? '#14161d' : '#ffffff' ); ?>}
+body.zs--carbon .zs-strip strong{color:<?php echo esc_html( $pal['text'] ); ?>}</style>
 <?php endif; ?>
 </head>
 <body class="zs zs--<?php echo esc_attr( $theme ); ?>" id="top">

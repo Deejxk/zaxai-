@@ -10,6 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class ZP_Router {
 
+	/** Set for a reseller's store pages: they open straight away, with no launch animation. */
+	public static $no_splash = false;
+
 	const USER_PAGES  = array( 'dashboard', 'buy', 'proxies', 'orders', 'wallet', 'tickets', 'reseller', 'profile', 'help' );
 	const GUEST_PAGES = array( 'login', 'register', 'forgot', 'reset' );
 	const PUBLIC_PAGES = array(
@@ -226,6 +229,7 @@ class ZP_Router {
 		}
 		self::no_cache();
 		$GLOBALS['zp_reseller_ctx'] = $store;
+		self::$no_splash            = true;
 
 		if ( '' === $page ) {
 			include ZP_DIR . 'templates/store.php';
@@ -363,13 +367,16 @@ class ZP_Router {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script>(function(){try{var t=localStorage.getItem('zp-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
-<script>(function(){try{if(!sessionStorage.getItem('zp-splash')){sessionStorage.setItem('zp-splash','1');document.documentElement.className+=' zp-splashing';setTimeout(function(){document.documentElement.className=document.documentElement.className.replace(' zp-splashing','');},5700);}}catch(e){}})();</script>
+<?php if ( ! empty( $GLOBALS['zp_reseller_ctx'] ) ) { self::$no_splash = true; } ?>
+<?php if ( self::$no_splash ) : ?><script>try{sessionStorage.setItem('zp-splash','1')}catch(e){}</script><?php endif; ?>
+<?php if ( ! self::$no_splash ) : ?><script>(function(){try{if(!sessionStorage.getItem('zp-splash')){sessionStorage.setItem('zp-splash','1');document.documentElement.className+=' zp-splashing';setTimeout(function(){document.documentElement.className=document.documentElement.className.replace(' zp-splashing','');},5700);}}catch(e){}})();</script><?php endif; ?>
 <link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/app.css' ) ); ?>">
 <?php
 $zp_color = ZP_Resellers::color( zp_reseller_ctx() );
 if ( $zp_color ) : // a store's own brand colour replaces the platform palette everywhere on its pages
 	?>
-<style>html[data-theme]{--zp-brand:<?php echo esc_html( $zp_color ); ?>;--zp-brand-2:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 62%,#fff);--zp-grad:linear-gradient(135deg,<?php echo esc_html( $zp_color ); ?> 0%,color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 62%,#fff) 100%);--zp-soft:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 16%,transparent)}html[data-theme="dark"]{--zp-soft-ink:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 50%,#fff)}html[data-theme="light"]{--zp-soft-ink:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 78%,#000)}.zp-btn--primary,.zp-hero,.zp-balance,.zp-storelink,.zp-phero__orb,.zp-pcta,.zp-preseller,.zp-auth__art{box-shadow:0 20px 44px -26px <?php echo esc_html( $zp_color ); ?>!important}.zp-wordmark b,.zp-splash__name .zp-wordmark b,.zp-phero h1 em{background:var(--zp-grad);-webkit-background-clip:text;background-clip:text}.zp-splash__orb--a{background:radial-gradient(circle,<?php echo esc_html( $zp_color ); ?> 0%,transparent 68%)}.zp-splash__orb--b{background:radial-gradient(circle,color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 62%,#fff) 0%,transparent 68%)}.zp-phero__glow{background:radial-gradient(520px 320px at 18% 20%,color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 30%,transparent),transparent 65%)}</style>
+<?php $zp_dark = zp_mix( $zp_color, '#000000', 0.14 ); // gradient end: a little darker, so white text stays readable across the button ?>
+<style>html[data-theme]{--zp-brand:<?php echo esc_html( $zp_color ); ?>;--zp-brand-2:<?php echo esc_html( $zp_dark ); ?>;--zp-grad:linear-gradient(135deg,<?php echo esc_html( $zp_color ); ?> 0%,<?php echo esc_html( $zp_dark ); ?> 100%);--zp-soft:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 16%,transparent)}html[data-theme="dark"]{--zp-soft-ink:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 45%,#fff)}html[data-theme="light"]{--zp-soft-ink:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 72%,#000)}.zp-btn--primary,.zp-hero,.zp-balance,.zp-storelink,.zp-phero__orb,.zp-pcta,.zp-preseller,.zp-auth__art{box-shadow:0 20px 44px -26px <?php echo esc_html( $zp_color ); ?>!important}.zp-wordmark b,.zp-phero h1 em{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--zp-soft-ink);-webkit-text-fill-color:currentColor}.zp-brand--light .zp-wordmark b{color:#fff}.zp-splash__name .zp-wordmark b{color:color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 45%,#fff)}.zp-splash__orb--a{background:radial-gradient(circle,<?php echo esc_html( $zp_color ); ?> 0%,transparent 68%)}.zp-splash__orb--b{background:radial-gradient(circle,<?php echo esc_html( $zp_dark ); ?> 0%,transparent 68%)}.zp-phero__glow{background:radial-gradient(520px 320px at 18% 20%,color-mix(in srgb,<?php echo esc_html( $zp_color ); ?> 30%,transparent),transparent 65%)}</style>
 <?php endif; ?>
 		<?php
 	}
@@ -379,6 +386,9 @@ if ( $zp_color ) : // a store's own brand colour replaces the platform palette e
 	 * (first page opened in a tab or after launching the installed app).
 	 */
 	public static function splash() {
+		if ( self::$no_splash ) {
+			return;
+		}
 		$brand = zp_get( 'brand' );
 		?>
 <div class="zp-splash" aria-hidden="true">

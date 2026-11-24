@@ -587,3 +587,49 @@ function zp_faq_groups() {
 		),
 	);
 }
+
+/* ---------- Colour maths (keeps custom brand colours readable) ---------- */
+
+function zp_hex_rgb( $hex ) {
+	$hex = ltrim( (string) $hex, '#' );
+	return array( hexdec( substr( $hex, 0, 2 ) ), hexdec( substr( $hex, 2, 2 ) ), hexdec( substr( $hex, 4, 2 ) ) );
+}
+
+/** WCAG relative luminance, 0 (black) to 1 (white). */
+function zp_luminance( $hex ) {
+	$out = array();
+	foreach ( zp_hex_rgb( $hex ) as $c ) {
+		$c     = $c / 255;
+		$out[] = $c <= 0.03928 ? $c / 12.92 : pow( ( $c + 0.055 ) / 1.055, 2.4 );
+	}
+	return 0.2126 * $out[0] + 0.7152 * $out[1] + 0.0722 * $out[2];
+}
+
+/** WCAG contrast ratio between two colours, 1 (none) to 21. */
+function zp_contrast( $a, $b ) {
+	$la = zp_luminance( $a );
+	$lb = zp_luminance( $b );
+	return ( max( $la, $lb ) + 0.05 ) / ( min( $la, $lb ) + 0.05 );
+}
+
+/** Blend $hex towards $target by $t (0 to 1). */
+function zp_mix( $hex, $target, $t ) {
+	$a = zp_hex_rgb( $hex );
+	$b = zp_hex_rgb( $target );
+	return sprintf( '#%02x%02x%02x', round( $a[0] + ( $b[0] - $a[0] ) * $t ), round( $a[1] + ( $b[1] - $a[1] ) * $t ), round( $a[2] + ( $b[2] - $a[2] ) * $t ) );
+}
+
+/** Nudge $hex towards white or black until it stands out from $against by at least $min. */
+function zp_fit_contrast( $hex, $against, $min ) {
+	$toward = zp_luminance( $against ) < 0.4 ? '#ffffff' : '#000000';
+	$out    = $hex;
+	for ( $i = 1; $i <= 20 && zp_contrast( $out, $against ) < $min; $i++ ) {
+		$out = zp_mix( $hex, $toward, $i * 0.05 );
+	}
+	return $out;
+}
+
+/** Black or white, whichever reads better on $hex. */
+function zp_ink_on( $hex ) {
+	return zp_contrast( $hex, '#ffffff' ) >= zp_contrast( $hex, '#0b0d14' ) ? '#ffffff' : '#0b0d14';
+}

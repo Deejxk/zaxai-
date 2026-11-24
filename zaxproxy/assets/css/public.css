@@ -166,7 +166,7 @@
 .zp-pmock__foot strong{font-size:22px;font-weight:800}
 .zp-preseller{position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:center;gap:30px;flex-wrap:wrap;padding:44px;border-radius:28px;background:var(--zp-grad);background-size:180% 180%;animation:zp-gradient 14s ease infinite;color:#fff;box-shadow:0 40px 80px -46px rgba(79,125,251,.95)}
 .zp-preseller>div:first-child{flex:1;min-width:280px;max-width:640px}
-.zp-preseller .zp-eyebrow{color:rgba(255,255,255,.85)}
+.zp-preseller .zp-eyebrow{color:#fff;opacity:1}
 .zp-preseller p{opacity:.92;margin-bottom:16px}
 .zp-preseller .zp-plist{margin-bottom:0}
 .zp-preseller__side{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
@@ -200,3 +200,8 @@
 .zp-public main{padding-top:68px}
 @media (max-width:880px){.zp-public main{padding-top:calc(60px + env(safe-area-inset-top))}}
 .zp-plegal__nav{top:92px}
+
+.zp-phero h1 em{background:linear-gradient(135deg,#8f84ff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-theme="light"] .zp-phero h1 em{background:linear-gradient(135deg,#5546e8,#0e7fb8);-webkit-background-clip:text;background-clip:text}
+.zp-pstrip strong{background:linear-gradient(135deg,#8f84ff,#22d3ee);-webkit-background-clip:text;background-clip:text}
+[data-theme="light"] .zp-pstrip strong{background:linear-gradient(135deg,#5546e8,#0e7fb8);-webkit-background-clip:text;background-clip:text}
