@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class ZP_Install {
 
-	const DB_VERSION = '6';
+	const DB_VERSION = '7';
 
 	public static function activate() {
 		self::tables();
@@ -180,6 +180,7 @@ class ZP_Install {
 			domain varchar(120) NOT NULL DEFAULT '',
 			domain_status varchar(20) NOT NULL DEFAULT '',
 			domain_fee decimal(14,2) NOT NULL DEFAULT 0.00,
+			theme varchar(20) NOT NULL DEFAULT 'aurora',
 			color varchar(7) NOT NULL DEFAULT '',
 			logo_url varchar(255) NOT NULL DEFAULT '',
 			headline varchar(160) NOT NULL DEFAULT '',

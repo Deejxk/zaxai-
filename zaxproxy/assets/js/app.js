@@ -54,6 +54,14 @@
     if (e.target.closest('[data-zp-close]')) { var s = e.target.closest('.zp-sheet'); if (s) s.hidden = true; }
     if (e.target.closest('#zp-theme,[data-zp-theme-toggle]')) { toggleTheme(); }
     if (e.target.closest('#zp-install,[data-zp-install]')) { installApp(); }
+    var rf = e.target.closest('#zp-refresh');
+    if (rf && !rf.classList.contains('is-spinning')) {
+      rf.classList.add('is-spinning');
+      var started = Date.now();
+      var done = function (ok) { setTimeout(function () { rf.classList.remove('is-spinning'); if (ok) toast('Updated'); }, Math.max(0, 600 - (Date.now() - started))); };
+      if (window.zpRefresh) { window.zpRefresh().then(function () { done(true); }, function () { location.reload(); }); }
+      else { location.reload(); }
+    }
     if (e.target.closest('[data-zp-top]')) { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
     var cp = e.target.closest('[data-zp-copy]');
     if (cp) { copy(cp.getAttribute('data-zp-copy'), cp.getAttribute('data-zp-copied')); }
@@ -544,5 +552,10 @@
     };
     if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200);
     document.addEventListener('visibilitychange', function () { if (!document.hidden && !dirty) refresh(location.href, token, get(location.href)); });
+    // The refresh icon: fetch this page again and swap it in, without a full reload.
+    window.zpRefresh = function () {
+      var mine = ++token;
+      return load(location.href).then(function (v) { if (mine === token) render(v, true); });
+    };
   })();
 })();

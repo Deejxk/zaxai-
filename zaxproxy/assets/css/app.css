@@ -766,3 +766,26 @@ body.zp-body{overflow-x:clip}
 .zp-domhint.is-bad{color:var(--zp-bad)}
 .zp-docbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .zp-docbar .zp-muted{font-size:13.5px}
+/* ---------- Store design picker ---------- */
+.zp-themes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.zp-themecard{position:relative;display:flex;flex-direction:column;gap:8px;padding:8px;border-radius:16px;border:1.5px solid var(--zp-border);background:var(--zp-surface-2);cursor:pointer;transition:border-color .2s,transform .25s var(--zp-ease),box-shadow .25s}
+.zp-themecard:hover{transform:translateY(-3px);border-color:var(--zp-border-2)}
+.zp-themecard input{position:absolute;opacity:0}
+.zp-themecard__img{position:relative;display:block;border-radius:10px;overflow:hidden;border:1px solid var(--zp-border);line-height:0}
+.zp-themecard__img img{width:100%;height:auto;display:block}
+.zp-themecard__img i{position:absolute;right:8px;top:8px;width:24px;height:24px;border-radius:50%;background:var(--zp-brand);color:#fff;display:grid;place-items:center;opacity:0;transform:scale(.6);transition:all .25s var(--zp-ease)}
+.zp-themecard__text{display:flex;flex-direction:column;gap:2px;padding:0 4px}
+.zp-themecard__text em{font-style:normal;font-size:12.5px;color:var(--zp-text-2);line-height:1.35}
+.zp-themecard a{font-size:12.5px;font-weight:600;padding:0 4px 4px}
+.zp-themecard:has(input:checked){border-color:var(--zp-brand);box-shadow:0 0 0 3px var(--zp-soft)}
+.zp-themecard:has(input:checked) .zp-themecard__img i{opacity:1;transform:none}
+.zp-themecard:has(input:focus-visible){outline:2px solid var(--zp-brand);outline-offset:2px}
+@media (max-width:1180px){.zp-themes{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.zp-themes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* refresh icon in the top header */
+#zp-refresh .zp-ico{transition:transform .3s var(--zp-ease)}
+#zp-refresh:hover .zp-ico{transform:rotate(-40deg)}
+#zp-refresh.is-spinning{color:var(--zp-soft-ink);pointer-events:none}
+#zp-refresh.is-spinning .zp-ico{animation:zp-spin .7s linear infinite}
+@media (max-width:420px){.zp-top__title{font-size:16px}.zp-top .zp-chip{padding:0 10px;height:36px}.zp-top .zp-iconbtn,.zp-top .zp-avatar{width:36px;height:36px}}
+@media (max-width:360px){.zp-top__title{display:none}}

@@ -446,6 +446,21 @@ $paid_ts = strtotime( $me->paid_until . ' UTC' );
 		</div>
 		<section class="zp-card zp-anim" style="--d:2">
 			<div class="zp-card__head"><h3><?php echo zp_icon( 'eye', 18 ); // phpcs:ignore ?> Store design</h3><a href="<?php echo esc_url( $store_url ); ?>" target="_blank" rel="noopener">Preview store</a></div>
+			<label class="zp-field"><span>Store design</span></label>
+			<div class="zp-themes">
+				<?php
+				$cur_theme = ZP_Resellers::theme( $me );
+				foreach ( ZP_Resellers::themes() as $slug => $t ) :
+					?>
+					<label class="zp-themecard">
+						<input type="radio" name="theme" value="<?php echo esc_attr( $slug ); ?>" <?php checked( $cur_theme, $slug ); ?>>
+						<span class="zp-themecard__img"><img src="<?php echo esc_url( zp_asset( 'stores/' . $slug . '.jpg' ) ); ?>" alt="<?php echo esc_attr( $t['name'] . ' design' ); ?>" loading="lazy" width="1440" height="900"><i><?php echo zp_icon( 'check', 14 ); // phpcs:ignore ?></i></span>
+						<span class="zp-themecard__text"><strong><?php echo esc_html( $t['name'] ); ?></strong><em><?php echo esc_html( $t['desc'] ); ?></em></span>
+						<a href="<?php echo esc_url( add_query_arg( 'theme', $slug, $store_url ) ); ?>" target="_blank" rel="noopener">Preview on my store</a>
+					</label>
+				<?php endforeach; ?>
+			</div>
+			<p class="zp-summary__note" style="margin:10px 0 18px">Every design has a fixed top header and a footer menu on phones. Choose one and press Save store settings.</p>
 			<div class="zp-grid2">
 				<div class="zp-form">
 					<label class="zp-field"><span>Brand colour</span>
@@ -454,7 +469,7 @@ $paid_ts = strtotime( $me->paid_until . ' UTC' );
 							<div class="zp-input"><input type="text" name="color" id="zp-rs-colortext" value="<?php echo esc_attr( $me->color ); ?>" maxlength="7" placeholder="#6d5efc" pattern="#[0-9a-fA-F]{6}" autocapitalize="none"></div>
 						</div>
 						<div class="zp-swatches" aria-label="Suggested colours"><?php foreach ( array( '#6d5efc', '#2563eb', '#0ea5a0', '#10b981', '#f97316', '#e11d48', '#d946ef', '#111827' ) as $sw ) : ?><button type="button" data-color="<?php echo esc_attr( $sw ); ?>" style="background:<?php echo esc_attr( $sw ); ?>" aria-label="<?php echo esc_attr( $sw ); ?>"></button><?php endforeach; ?></div>
-						<small>Used for buttons, highlights and your logo tile on your store and in your customers' dashboard. Leave empty for the default.</small>
+						<small>Replaces the design's own colour on your store, sign-in pages and your customers' dashboard. Leave empty to keep the design's colours.</small>
 					</label>
 					<label class="zp-field"><span>Logo</span>
 						<div class="zp-logopick">

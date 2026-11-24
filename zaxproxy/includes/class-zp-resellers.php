@@ -154,9 +154,38 @@ class ZP_Resellers {
 
 	/* ---------- Store design ---------- */
 
-	/** Brand colour of a store, or '' for the default look. */
-	public static function color( $r ) {
+	/** The five storefront designs a reseller can choose from. `accent` also tints the customer dashboard. */
+	public static function themes() {
+		return array(
+			'aurora'  => array( 'name' => 'Aurora', 'desc' => 'Dark with a glowing gradient. Modern tech look.', 'accent' => '' ),
+			'minimal' => array( 'name' => 'Minimal', 'desc' => 'Clean white with an order card. Simple and trustworthy.', 'accent' => '#1d4ed8' ),
+			'emerald' => array( 'name' => 'Emerald', 'desc' => 'Deep green with lime accents. Bold fintech feel.', 'accent' => '#10b981' ),
+			'sunset'  => array( 'name' => 'Sunset', 'desc' => 'Warm, friendly and colourful. Easy for beginners.', 'accent' => '#f9572a' ),
+			'carbon'  => array( 'name' => 'Carbon', 'desc' => 'Black with neon lime. Technical, for developers.', 'accent' => '#65a30d' ),
+		);
+	}
+
+	public static function theme( $r ) {
+		$themes = self::themes();
+		return $r && ! empty( $r->theme ) && isset( $themes[ $r->theme ] ) ? $r->theme : 'aurora';
+	}
+
+	/** The store's own colour if one was picked, otherwise '' (the chosen design's colours apply). */
+	public static function custom_color( $r ) {
 		return $r && ! empty( $r->color ) && preg_match( '/^#[0-9a-f]{6}$/', $r->color ) ? $r->color : '';
+	}
+
+	/** Colour used on sign-in pages and the customer dashboard: the picked colour, else the design's accent. */
+	public static function color( $r ) {
+		if ( ! $r ) {
+			return '';
+		}
+		$own = self::custom_color( $r );
+		if ( $own ) {
+			return $own;
+		}
+		$themes = self::themes();
+		return $themes[ self::theme( $r ) ]['accent'];
 	}
 
 	/**
@@ -421,6 +450,10 @@ class ZP_Resellers {
 		if ( isset( $in['color'] ) ) {
 			$color         = strtolower( trim( (string) $in['color'] ) );
 			$data['color'] = preg_match( '/^#[0-9a-f]{6}$/', $color ) ? $color : '';
+		}
+		if ( isset( $in['theme'] ) ) {
+			$theme         = sanitize_key( $in['theme'] );
+			$data['theme'] = isset( self::themes()[ $theme ] ) ? $theme : 'aurora';
 		}
 		if ( isset( $in['headline'] ) ) {
 			$data['headline'] = mb_substr( sanitize_text_field( $in['headline'] ), 0, 160 );

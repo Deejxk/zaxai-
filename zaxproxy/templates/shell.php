@@ -51,6 +51,7 @@ $logout  = add_query_arg( '_zpnonce', wp_create_nonce( 'zp_logout' ), zp_url( 'l
 				<?php if ( current_user_can( 'manage_options' ) ) : ?>
 					<a class="zp-iconbtn zp-switch" href="<?php echo esc_url( $shell['admin'] ? zp_url( 'dashboard' ) : zp_admin_url() ); ?>" title="<?php echo $shell['admin'] ? 'Switch to user panel' : 'Switch to admin panel'; ?>" aria-label="<?php echo $shell['admin'] ? 'Switch to user panel' : 'Switch to admin panel'; ?>"><?php echo zp_icon( $shell['admin'] ? 'user' : 'shield' ); // phpcs:ignore ?></a>
 				<?php endif; ?>
+				<button class="zp-iconbtn" id="zp-refresh" type="button" title="Refresh" aria-label="Refresh this page"><?php echo zp_icon( 'refresh' ); // phpcs:ignore ?></button>
 				<button class="zp-iconbtn" id="zp-install" type="button" hidden title="Install app" aria-label="Install app"><?php echo zp_icon( 'download' ); // phpcs:ignore ?></button>
 				<button class="zp-iconbtn zp-theme" id="zp-theme" type="button" title="Toggle dark / light mode" aria-label="Toggle dark / light mode">
 					<span class="zp-theme__sun"><?php echo zp_icon( 'sun' ); // phpcs:ignore ?></span><span class="zp-theme__moon"><?php echo zp_icon( 'moon' ); // phpcs:ignore ?></span>
