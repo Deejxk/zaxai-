@@ -323,7 +323,7 @@ class ZP_Router {
 	<div class="zp-splash__core">
 		<div class="zp-splash__logo">
 			<span class="zp-splash__pulse"></span><span class="zp-splash__pulse zp-splash__pulse--2"></span>
-			<?php echo zp_logo( 120 ); // phpcs:ignore ?>
+			<div class="zp-splash__tile"><?php echo zp_logo( 84 ); // phpcs:ignore ?></div>
 		</div>
 		<div class="zp-splash__name"><?php echo esc_html( $brand ); ?></div>
 		<div class="zp-splash__tag">Private proxies, ready in minutes</div>

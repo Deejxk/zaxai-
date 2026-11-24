@@ -629,3 +629,9 @@ label.zp-prefs{cursor:pointer}
 .zp-splash__logo .zp-logo-mark{position:relative;border-radius:32px;box-shadow:0 0 0 5px rgba(255,255,255,.9)}
 .zp-splash__pulse{border-radius:32px}
 .zp-splash__name{font-family:"Sora",var(--zp-font)}
+/* shield logo: no tile behind it, so shadow follows the shape */
+.zp-logo-mark{border-radius:0;box-shadow:none;overflow:visible;filter:drop-shadow(0 6px 10px rgba(79,125,251,.45))}
+.zp-brand:hover .zp-logo-mark,.zp-top__logo:hover .zp-logo-mark{animation:zp-bump .5s var(--zp-ease)}
+.zp-splash__tile{position:relative;width:120px;height:120px;border-radius:34px;background:#fff;display:grid;place-items:center}
+.zp-splash__logo .zp-logo-mark{border-radius:0;box-shadow:none;filter:none}
+.zp-splash__pulse{border-radius:34px}
