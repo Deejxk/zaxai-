@@ -19,7 +19,7 @@ $logout  = add_query_arg( '_zpnonce', wp_create_nonce( 'zp_logout' ), zp_url( 'l
 <?php ZP_Router::splash(); ?>
 <div class="zp-shell">
 	<aside class="zp-side">
-		<a class="zp-brand" href="<?php echo esc_url( $home ); ?>"><?php echo zp_logo(); // phpcs:ignore ?><span><?php echo esc_html( $brand ); ?></span><?php echo $shell['admin'] ? '<em>Admin</em>' : ''; ?></a>
+		<a class="zp-brand" href="<?php echo esc_url( $home ); ?>"><?php echo zp_logo(); // phpcs:ignore ?><?php echo zp_wordmark(); // phpcs:ignore ?><?php echo $shell['admin'] ? '<em>Admin</em>' : ''; ?></a>
 		<nav class="zp-nav" aria-label="Main">
 			<?php foreach ( $shell['nav'] as $slug => $item ) : ?>
 				<a class="zp-nav__item<?php echo $slug === $view ? ' is-active' : ''; ?>" href="<?php echo esc_url( $url( 'dashboard' === $slug && $shell['admin'] ? '' : $slug ) ); ?>">

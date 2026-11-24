@@ -30,7 +30,7 @@ $current  = array_search( $view, ZP_Router::PUBLIC_PAGES, true );
 <?php ZP_Router::splash(); ?>
 <header class="zp-phead">
 	<div class="zp-wrap zp-phead__in">
-		<a class="zp-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo zp_logo( 32 ); // phpcs:ignore ?><span><?php echo esc_html( $brand ); ?></span></a>
+		<a class="zp-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo zp_logo( 32 ); // phpcs:ignore ?><?php echo zp_wordmark(); // phpcs:ignore ?></a>
 		<nav class="zp-pnav" aria-label="Main">
 			<?php foreach ( $menu as $slug => $label ) : ?>
 				<a class="<?php echo $slug === $current ? 'is-active' : ''; ?>" href="<?php echo esc_url( '' === $slug ? home_url( '/' ) : zp_route_url( $slug ) ); ?>"><?php echo esc_html( $label ); ?></a>
@@ -76,7 +76,7 @@ $current  = array_search( $view, ZP_Router::PUBLIC_PAGES, true );
 <footer class="zp-pfoot">
 	<div class="zp-wrap zp-pfoot__grid">
 		<div class="zp-pfoot__brand">
-			<a class="zp-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo zp_logo( 30 ); // phpcs:ignore ?><span><?php echo esc_html( $brand ); ?></span></a>
+			<a class="zp-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo zp_logo( 30 ); // phpcs:ignore ?><?php echo zp_wordmark(); // phpcs:ignore ?></a>
 			<p>Private proxies for teams and individuals. Fast delivery, fair pricing, real support.</p>
 		</div>
 		<div><h4>Product</h4>

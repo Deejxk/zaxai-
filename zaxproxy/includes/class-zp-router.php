@@ -286,7 +286,7 @@ class ZP_Router {
 <link rel="icon" type="image/png" sizes="192x192" href="<?php echo esc_url( ZP_URL . 'assets/icons/icon-192.png' ); ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script>(function(){try{var t=localStorage.getItem('zp-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 <script>(function(){try{if(!sessionStorage.getItem('zp-splash')){sessionStorage.setItem('zp-splash','1');document.documentElement.className+=' zp-splashing';setTimeout(function(){document.documentElement.className=document.documentElement.className.replace(' zp-splashing','');},5700);}}catch(e){}})();</script>
 <link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/app.css' ) ); ?>">
@@ -323,7 +323,7 @@ class ZP_Router {
 	<div class="zp-splash__core">
 		<div class="zp-splash__logo">
 			<span class="zp-splash__pulse"></span><span class="zp-splash__pulse zp-splash__pulse--2"></span>
-			<svg viewBox="0 0 120 120" width="120" height="120"><rect width="120" height="120" rx="34" fill="#fff"/><path class="zp-splash__z" d="M38 40h44L40 82h44" fill="none" stroke="url(#zpSplashG)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" pathLength="100"/><defs><linearGradient id="zpSplashG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5efc"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs></svg>
+			<?php echo zp_logo( 120 ); // phpcs:ignore ?>
 		</div>
 		<div class="zp-splash__name"><?php echo esc_html( $brand ); ?></div>
 		<div class="zp-splash__tag">Private proxies, ready in minutes</div>

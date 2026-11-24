@@ -17,7 +17,7 @@ $admin  = 'admin-login' === $view;
 <?php ZP_Router::splash(); ?>
 <div class="zp-auth">
 	<section class="zp-auth__art" aria-hidden="true">
-		<a class="zp-brand zp-brand--light" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo zp_logo( 34 ); // phpcs:ignore ?><span><?php echo esc_html( $brand ); ?></span></a>
+		<a class="zp-brand zp-brand--light" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo zp_logo( 34 ); // phpcs:ignore ?><?php echo zp_wordmark(); // phpcs:ignore ?></a>
 		<div class="zp-auth__illus"><?php echo zp_illustration( 'network' ); // phpcs:ignore ?></div>
 		<div class="zp-auth__pitch">
 			<h2><?php echo $admin ? 'Control room' : 'Private proxies, ready in seconds.'; ?></h2>
@@ -26,7 +26,7 @@ $admin  = 'admin-login' === $view;
 	</section>
 	<section class="zp-auth__form">
 		<div class="zp-auth__bar">
-			<a class="zp-brand zp-auth__mlogo" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo zp_logo( 32 ); // phpcs:ignore ?><span><?php echo esc_html( $brand ); ?></span></a>
+			<a class="zp-brand zp-auth__mlogo" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php echo zp_logo( 32 ); // phpcs:ignore ?><?php echo zp_wordmark(); // phpcs:ignore ?></a>
 			<button class="zp-iconbtn zp-theme" id="zp-theme" type="button" title="Toggle dark / light mode" aria-label="Toggle dark / light mode">
 				<span class="zp-theme__sun"><?php echo zp_icon( 'sun' ); // phpcs:ignore ?></span><span class="zp-theme__moon"><?php echo zp_icon( 'moon' ); // phpcs:ignore ?></span>
 			</button>

@@ -621,3 +621,11 @@ label.zp-prefs{cursor:pointer}
 .zp-receipt__text span{color:var(--zp-text-2);font-size:14.5px}
 .zp-list__side--row{flex-direction:row;align-items:center;gap:10px}
 @media (max-width:640px){.zp-receipt .zp-btn{width:100%}.zp-receipt__art{display:none}.zp-list__side--row .zp-btn span{display:none}.zp-list__side--row .zp-btn{padding:0 10px}}
+/* ---------- Brand mark ---------- */
+.zp-logo-mark{display:block;flex:none;border-radius:27%;box-shadow:0 8px 20px -8px rgba(109,94,252,.75)}
+.zp-wordmark{font-family:"Sora",var(--zp-font);font-weight:800;letter-spacing:-.045em}
+.zp-wordmark b{font-weight:800;background:linear-gradient(135deg,#7a6cff,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent}
+.zp-brand--light .zp-wordmark b{background:none;color:#fff;opacity:.85}
+.zp-splash__logo .zp-logo-mark{position:relative;border-radius:32px;box-shadow:0 0 0 5px rgba(255,255,255,.9)}
+.zp-splash__pulse{border-radius:32px}
+.zp-splash__name{font-family:"Sora",var(--zp-font)}

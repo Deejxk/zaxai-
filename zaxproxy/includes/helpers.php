@@ -358,7 +358,23 @@ function zp_icon( $name, $size = 20 ) {
 }
 
 function zp_logo( $size = 30 ) {
-	return '<svg class="zp-logo-mark" width="' . (int) $size . '" height="' . (int) $size . '" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="zpg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5efc"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#zpg)"/><path d="M10 10.500h12l-9.5 11H22" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+	static $svg = null;
+	if ( null === $svg ) {
+		$svg = (string) file_get_contents( ZP_DIR . 'assets/logo-mark.svg' ); // phpcs:ignore
+	}
+	// Each copy gets its own gradient id: a gradient defined inside a hidden element (the splash) cannot paint visible copies.
+	static $n = 0;
+	++$n;
+	return str_replace( array( 'width="64" height="64"', 'gZPL' ), array( 'width="' . (int) $size . '" height="' . (int) $size . '"', 'zpLogo' . $n ), $svg );
+}
+
+/** Brand wordmark: the trailing "Proxy" picks up the brand gradient. */
+function zp_wordmark() {
+	$brand = (string) zp_get( 'brand' );
+	if ( preg_match( '/^(.+?)(proxy)$/i', $brand, $m ) ) {
+		return '<span class="zp-wordmark">' . esc_html( $m[1] ) . '<b>' . esc_html( $m[2] ) . '</b></span>';
+	}
+	return '<span class="zp-wordmark">' . esc_html( $brand ) . '</span>';
 }
 
 /** Animated illustrations used on landing, auth and empty states. */
