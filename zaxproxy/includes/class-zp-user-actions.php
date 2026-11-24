@@ -49,6 +49,13 @@ class ZP_User_Actions {
 			zp_flash( 'Incorrect email or password.', 'error' );
 			zp_redirect( zp_url( 'login' ) );
 		}
+		$ds = zp_domain_store();
+		if ( $ds && ! ZP_Resellers::is_customer_of( $user->ID, $ds->user_id ) ) {
+			// A store's own domain is only for that store's customers.
+			wp_logout();
+			zp_flash( 'This account does not belong to this store.', 'error' );
+			zp_redirect( zp_url( 'login' ) );
+		}
 		zp_redirect( zp_url( 'dashboard' ) );
 	}
 
@@ -226,6 +233,7 @@ class ZP_User_Actions {
 
 			case 'reseller_save':
 			case 'reseller_renew':
+			case 'reseller_domain':
 			case 'reseller_deposit_approve':
 			case 'reseller_deposit_reject':
 			case 'reseller_adjust':

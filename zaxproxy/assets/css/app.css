@@ -678,3 +678,13 @@ label.zp-prefs{cursor:pointer}
   .zp-table--keep td.zp-right{text-align:right}
   .zp-table--keep td::before{content:none}
 }
+/* ---------- Branded domain ---------- */
+.zp-addon{border:1px dashed var(--zp-border-2);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px;background:var(--zp-surface-2)}
+.zp-addon__head{display:flex;gap:12px;align-items:flex-start}
+.zp-addon__head .zp-type__ico{margin:0;flex:none}
+.zp-addon__head div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.zp-addon__head span{color:var(--zp-text-2);font-size:14px}
+.zp-addon__head em{font-style:normal;font-size:12px;font-weight:600;color:var(--zp-soft-ink);background:var(--zp-soft);padding:3px 8px;border-radius:8px;margin-left:6px;white-space:nowrap}
+.zp-addon .zp-input{background:var(--zp-surface)}
+.zp-domainline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px;border-radius:14px;background:var(--zp-surface-2);border:1px solid var(--zp-border)}
+.zp-domainline .zp-mono{font-size:18px;font-weight:700;flex:1;min-width:0;overflow-wrap:anywhere}

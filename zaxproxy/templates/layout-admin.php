@@ -6,6 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 global $wpdb;
 $pending_deposits = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'deposits' ) . " WHERE status = 'pending' AND gateway = 'manual' AND reseller_id = 0" );
 $open_tickets     = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'tickets' ) . " WHERE status = 'open' AND reseller_id = 0" );
+$wpdb->suppress_errors( true );
+$pending_domains  = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'resellers' ) . " WHERE domain_status = 'pending'" );
+$wpdb->suppress_errors( false );
 $review_orders    = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . zp_table( 'orders' ) . " WHERE status = 'review'" );
 
 $nav = array(
@@ -14,7 +17,7 @@ $nav = array(
 	'orders'       => array( 'Orders', 'receipt', $review_orders ),
 	'proxies'      => array( 'Proxies', 'globe' ),
 	'users'        => array( 'Customers', 'users' ),
-	'resellers'    => array( 'Resellers', 'home' ),
+	'resellers'    => array( 'Resellers', 'home', $pending_domains ),
 	'deposits'     => array( 'Deposits', 'card', $pending_deposits ),
 	'transactions' => array( 'Transactions', 'swap' ),
 	'tickets'      => array( 'Tickets', 'ticket', $open_tickets ),

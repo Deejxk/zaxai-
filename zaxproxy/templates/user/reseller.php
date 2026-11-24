@@ -11,6 +11,7 @@ $host = wp_parse_url( home_url(), PHP_URL_HOST );
 if ( ! $me || ! $me->paid_until ) :
 	$fee      = (float) zp_get( 'reseller_fee', 45000 );
 	$monthly  = (float) zp_get( 'reseller_monthly', 15000 );
+	$domain_fee = (float) zp_get( 'reseller_domain_fee', 12000 );
 	$r_pct    = (float) zp_get( 'reseller_markup', 150 );
 	$prices   = zp_public_prices();
 	$pct      = function ( $n ) {
@@ -100,6 +101,7 @@ if ( ! $me || ! $me->paid_until ) :
 			<li><strong>If the monthly fee cannot be paid:</strong> your store pauses, your customers cannot buy, and you go back to regular prices. Top up and renew, and everything is restored. Your customers and their proxies are kept.</li>
 			<li><strong>Your wallet funds every sale:</strong> customers pay you, and the reseller price of each order comes out of your wallet. An empty wallet means their orders are refused.</li>
 			<li><strong>You handle your customers:</strong> their payments, wallet credits and support tickets come to you.</li>
+			<li><strong>Branded domain (optional):</strong> <?php echo esc_html( zp_money( $domain_fee ) ); ?> extra for your own <span class="zp-mono">.cloud</span> address. We register it and connect it to your store, usually within 24 hours. If the name is not available the <?php echo esc_html( zp_money( $domain_fee ) ); ?> is refunded.</li>
 			<li><strong>Fees are not refundable</strong> once the account is unlocked or renewed.</li>
 		</ul>
 	</section>
@@ -109,14 +111,18 @@ if ( ! $me || ! $me->paid_until ) :
 		<?php if ( $short > 0 ) : ?>
 			<div class="zp-alert zp-alert--info" style="margin-bottom:16px"><?php echo zp_icon( 'wallet', 18 ); // phpcs:ignore ?><span>Your wallet has <?php echo esc_html( zp_money( $balance ) ); ?>. Add <?php echo esc_html( zp_money( $short ) ); ?> more to unlock.</span><a class="zp-btn zp-btn--sm zp-btn--primary" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">Add funds</a></div>
 		<?php endif; ?>
-		<form method="post" class="zp-form" onsubmit="return confirm('Pay <?php echo esc_js( zp_money( $fee ) ); ?> from your wallet to unlock your reseller account?')">
+		<form method="post" class="zp-form" onsubmit="return confirm('Pay from your wallet and unlock your reseller account?')">
 			<?php zp_nonce_field( 'reseller_save' ); ?>
 			<div class="zp-fieldrow" style="margin-top:0">
 				<label class="zp-field"><span>Brand name</span><div class="zp-input"><?php echo zp_icon( 'shield', 18 ); // phpcs:ignore ?><input type="text" name="brand" value="<?php echo esc_attr( $me ? $me->brand : '' ); ?>" maxlength="40" required placeholder="e.g. SwiftProxy" id="zp-rs-brand"></div></label>
 				<label class="zp-field"><span>Store link</span><div class="zp-input"><b class="zp-prefix"><?php echo esc_html( $host ); ?>/s/</b><input type="text" name="slug" value="<?php echo esc_attr( $me ? $me->slug : '' ); ?>" maxlength="30" required pattern="[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]" placeholder="swiftproxy" id="zp-rs-slug" autocapitalize="none"></div><small>Lowercase letters, numbers and dashes.</small></label>
 			</div>
 			<label class="zp-field"><span>Your markup on the reseller price (%)</span><div class="zp-input"><input type="number" name="markup" value="<?php echo esc_attr( $me ? (float) $me->markup : round( $best, 1 ) ); ?>" min="0" max="500" step="0.1" required></div><small><?php echo esc_html( $pct( $best ) ); ?> matches the regular price. Set it higher to earn more, or lower to undercut. You can change it any time.</small></label>
-			<button class="zp-btn zp-btn--primary zp-btn--lg" type="submit"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Pay <?php echo esc_html( zp_money( $fee ) ); ?> and unlock</button>
+			<div class="zp-addon">
+				<div class="zp-addon__head"><span class="zp-type__ico"><?php echo zp_icon( 'globe', 22 ); // phpcs:ignore ?></span><div><strong>Add your own branded domain <em>optional · +<?php echo esc_html( zp_money( $domain_fee ) ); ?></em></strong><span>Give customers an address like <span class="zp-mono">yourbrand.cloud</span> instead of <span class="zp-mono"><?php echo esc_html( $host ); ?>/s/yourbrand</span>. We register and connect it for you.</span></div></div>
+				<label class="zp-field"><span>Domain name</span><div class="zp-input"><input type="text" name="domain" maxlength="40" placeholder="yourbrand" id="zp-rs-domain" autocapitalize="none" pattern="[A-Za-z0-9][A-Za-z0-9\-]{1,38}[A-Za-z0-9]"><b class="zp-prefix">.cloud</b></div><small>Leave empty if you do not want a domain now. You can add one later from Store settings.</small></label>
+			</div>
+			<button class="zp-btn zp-btn--primary zp-btn--lg" type="submit" id="zp-rs-pay" data-fee="<?php echo esc_attr( $fee ); ?>" data-domain="<?php echo esc_attr( $domain_fee ); ?>"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?><span>Pay <?php echo esc_html( zp_money( $fee ) ); ?> and unlock</span></button>
 			<p class="zp-summary__note" style="margin:0">Charged from your wallet now. From day 31, <?php echo esc_html( zp_money( $monthly ) ); ?> per month is charged automatically.</p>
 		</form>
 	</section>
@@ -416,4 +422,26 @@ $paid_ts = strtotime( $me->paid_until . ' UTC' );
 		</div>
 		<div class="zp-savebar"><button class="zp-btn zp-btn--primary zp-btn--lg" type="submit">Save store settings</button></div>
 	</form>
+
+	<?php $domain_fee = (float) zp_get( 'reseller_domain_fee', 12000 ); ?>
+	<section class="zp-card zp-anim" style="--d:3" id="zp-rs-domaincard">
+		<div class="zp-card__head"><h3><?php echo zp_icon( 'globe', 18 ); // phpcs:ignore ?> Branded domain</h3><?php echo $me->domain && 'rejected' !== $me->domain_status ? zp_badge( 'active' === $me->domain_status ? 'active' : 'pending' ) : ''; // phpcs:ignore ?></div>
+		<?php if ( $me->domain && 'active' === $me->domain_status ) : ?>
+			<div class="zp-domainline"><span class="zp-mono"><?php echo esc_html( $me->domain ); ?></span><button type="button" class="zp-btn zp-btn--soft zp-btn--sm" data-zp-copy="<?php echo esc_attr( 'https://' . $me->domain . '/' ); ?>" data-zp-copied="Domain link copied"><?php echo zp_icon( 'copy', 16 ); // phpcs:ignore ?>Copy link</button><a class="zp-btn zp-btn--soft zp-btn--sm" href="<?php echo esc_url( 'https://' . $me->domain . '/' ); ?>" target="_blank" rel="noopener"><?php echo zp_icon( 'eye', 16 ); // phpcs:ignore ?>Open</a></div>
+			<p class="zp-muted" style="margin-top:10px">Your store is live on your own domain. Share this link with your customers: they register, pay and buy there under your brand. Your old link <span class="zp-mono"><?php echo esc_html( $host . '/s/' . $me->slug ); ?></span> keeps working too.</p>
+		<?php elseif ( $me->domain && 'pending' === $me->domain_status ) : ?>
+			<div class="zp-domainline"><span class="zp-spinner"></span><span class="zp-mono"><?php echo esc_html( $me->domain ); ?></span></div>
+			<p class="zp-muted" style="margin-top:10px">Paid. We are registering this domain and connecting it to your store, usually within 24 hours. Until then keep sharing <span class="zp-mono"><?php echo esc_html( $host . '/s/' . $me->slug ); ?></span>. If the name turns out to be unavailable, your <?php echo esc_html( zp_money( $me->domain_fee ) ); ?> is refunded.</p>
+		<?php else : ?>
+			<?php if ( 'rejected' === $me->domain_status ) : ?>
+				<div class="zp-alert zp-alert--error" style="margin-bottom:14px"><?php echo zp_icon( 'x', 18 ); // phpcs:ignore ?><span><span class="zp-mono"><?php echo esc_html( $me->domain ); ?></span> could not be registered and your payment was refunded. Please try another name.</span></div>
+			<?php endif; ?>
+			<p class="zp-muted" style="margin-bottom:14px">Give your store its own address, like <span class="zp-mono">yourbrand.cloud</span>. One payment of <?php echo esc_html( zp_money( $domain_fee ) ); ?> from your wallet; we register it and connect it for you.</p>
+			<form method="post" class="zp-form" onsubmit="return confirm('Pay <?php echo esc_js( zp_money( $domain_fee ) ); ?> from your wallet for this domain?')">
+				<?php zp_nonce_field( 'reseller_domain' ); ?>
+				<label class="zp-field"><span>Domain name</span><div class="zp-input"><?php echo zp_icon( 'globe', 18 ); // phpcs:ignore ?><input type="text" name="domain" maxlength="40" required placeholder="yourbrand" autocapitalize="none" pattern="[A-Za-z0-9][A-Za-z0-9\-]{1,38}[A-Za-z0-9]"><b class="zp-prefix">.cloud</b></div><small>Letters, numbers and dashes. The domain always ends in .cloud.</small></label>
+				<button class="zp-btn zp-btn--primary" type="submit"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Get my domain for <?php echo esc_html( zp_money( $domain_fee ) ); ?></button>
+			</form>
+		<?php endif; ?>
+	</section>
 <?php endif; ?>

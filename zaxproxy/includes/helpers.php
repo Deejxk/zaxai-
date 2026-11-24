@@ -22,6 +22,7 @@ function zp_defaults() {
 		'reseller_markup'     => 150,
 		'reseller_fee'        => 45000,
 		'reseller_monthly'    => 15000,
+		'reseller_domain_fee' => 12000,
 		'min_deposit'         => 1000,
 		'max_deposit'         => 5000000,
 		'manual_enabled'      => 1,
@@ -44,6 +45,11 @@ function zp_settings() {
 		$GLOBALS['zp_settings_dirty'] = false;
 	}
 	return $cache;
+}
+
+/** The store whose own domain this request came in on, or null on the main site. */
+function zp_domain_store() {
+	return isset( $GLOBALS['zp_domain_store'] ) ? $GLOBALS['zp_domain_store'] : null;
 }
 
 /** The reseller whose branded store is being served, or null on the platform itself. */
@@ -100,7 +106,8 @@ function zp_route_url( $base, $page = '', $args = array() ) {
 function zp_url( $page = 'dashboard', $args = array() ) {
 	$r = zp_reseller_ctx();
 	if ( $r && in_array( $page, array( 'login', 'register', 'forgot', 'reset' ), true ) ) {
-		return zp_route_url( 's', $r->slug . '/' . $page, $args );
+		// On the store's own domain these pages sit at the root: brand.cloud/login/
+		return zp_domain_store() ? zp_route_url( $page, '', $args ) : zp_route_url( 's', $r->slug . '/' . $page, $args );
 	}
 	return zp_route_url( ZP_USER_BASE, $page, $args );
 }

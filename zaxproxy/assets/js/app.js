@@ -361,6 +361,17 @@
     rsBrand.addEventListener('input', function () { if (!rsTouched) rsSlug.value = rsBrand.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30); });
   }
 
+  /* ---------- Reseller unlock: show the total when a domain is added ---------- */
+  var rsDomain = $('#zp-rs-domain'), rsPay = $('#zp-rs-pay');
+  if (rsDomain && rsPay) {
+    var rsTotal = function () {
+      rsDomain.value = rsDomain.value.toLowerCase().replace(/\.cloud$/, '').replace(/[^a-z0-9-]/g, '');
+      var total = parseFloat(rsPay.dataset.fee) + (rsDomain.value ? parseFloat(rsPay.dataset.domain) : 0);
+      rsPay.querySelector('span').textContent = 'Pay ' + money(total) + ' and unlock' + (rsDomain.value ? ' with ' + rsDomain.value + '.cloud' : '');
+    };
+    rsDomain.addEventListener('input', rsTotal);
+  }
+
   /* ---------- Wallet ---------- */
   var dep = $('#zp-deposit');
   if (dep) {

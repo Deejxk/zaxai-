@@ -137,7 +137,110 @@ class ZP_Resellers {
 	}
 
 	public static function store_url( $reseller, $page = '' ) {
+		if ( $reseller->domain && 'active' === $reseller->domain_status ) {
+			return 'https://' . $reseller->domain . '/' . ( $page ? $page . '/' : '' );
+		}
+		$ds = zp_domain_store();
+		if ( $ds && (int) $ds->user_id === (int) $reseller->user_id ) {
+			return home_url( '/' . ( $page ? $page . '/' : '' ) );
+		}
 		return zp_route_url( 's', $reseller->slug . ( $page ? '/' . $page : '' ) );
+	}
+
+	/* ---------- Branded .cloud domains ---------- */
+
+	/** Normalise "My-Brand" or "mybrand.cloud" to "mybrand.cloud"; WP_Error when it is not a usable name. */
+	public static function clean_domain( $raw ) {
+		$name = strtolower( trim( (string) $raw ) );
+		$name = preg_replace( '#^https?://#', '', $name );
+		$name = preg_replace( '/^www\./', '', $name );
+		$name = preg_replace( '/\.cloud\/?$/', '', $name );
+		if ( ! preg_match( '/^[a-z0-9]([a-z0-9\-]{1,38}[a-z0-9])$/', $name ) || false !== strpos( $name, '--' ) ) {
+			return new WP_Error( 'zp_input', 'Enter a domain name of 3 to 40 letters, numbers or dashes. It will end in .cloud.' );
+		}
+		return $name . '.cloud';
+	}
+
+	/** The active store that owns the host of the current request, if it is not the main site. */
+	public static function match_request_domain() {
+		global $wpdb;
+		if ( 'cli' === PHP_SAPI || empty( $_SERVER['HTTP_HOST'] ) ) {
+			return null;
+		}
+		$host = preg_replace( '/^www\./', '', strtolower( preg_replace( '/:\d+$/', '', sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) ) ) );
+		if ( ! preg_match( '/^[a-z0-9\-]+\.cloud$/', $host ) ) {
+			return null;
+		}
+		$main = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( get_option( 'home' ), PHP_URL_HOST ) ) );
+		if ( $host === $main ) {
+			return null;
+		}
+		$table = zp_table( 'resellers' );
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			return null;
+		}
+		$wpdb->suppress_errors( true ); // the domain columns do not exist until the upgrade has run
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table WHERE domain = %s AND domain_status = 'active'", $host ) ); // phpcs:ignore
+		$wpdb->suppress_errors( false );
+		return $row ? $row : null;
+	}
+
+	/**
+	 * Request a branded domain: charges the domain fee and queues it for connection by staff.
+	 *
+	 * @return true|WP_Error
+	 */
+	public static function request_domain( $user_id, $raw ) {
+		global $wpdb;
+		$r = self::get( $user_id );
+		if ( ! $r || ! $r->paid_until ) {
+			return new WP_Error( 'zp_input', 'Unlock your reseller account first.' );
+		}
+		if ( $r->domain && in_array( $r->domain_status, array( 'pending', 'active' ), true ) ) {
+			return new WP_Error( 'zp_input', 'You already have a branded domain on this store.' );
+		}
+		$domain = self::clean_domain( $raw );
+		if ( is_wp_error( $domain ) ) {
+			return $domain;
+		}
+		$main = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+		$used = $wpdb->get_var( $wpdb->prepare( 'SELECT user_id FROM ' . zp_table( 'resellers' ) . " WHERE domain = %s AND domain_status IN ('pending','active') AND user_id <> %d", $domain, $user_id ) );
+		if ( $used || $domain === $main ) {
+			return new WP_Error( 'zp_input', 'That domain is already taken. Please choose another name.' );
+		}
+		$fee = (float) zp_get( 'reseller_domain_fee', 12000 );
+		if ( $fee > 0 && ! ZP_Wallet::debit( $user_id, $fee, 'domain_fee', 'store', 'Branded domain: ' . $domain ) ) {
+			return new WP_Error( 'zp_funds', sprintf( 'A branded domain costs %s. Please add funds to your wallet.', zp_money( $fee ) ) );
+		}
+		$wpdb->update( zp_table( 'resellers' ), array( 'domain' => $domain, 'domain_status' => 'pending', 'domain_fee' => $fee ), array( 'user_id' => $user_id ) );
+		$GLOBALS['zp_resellers_dirty'] = true;
+		$to = zp_get( 'support_email' );
+		if ( is_email( $to ) ) {
+			wp_mail( $to, '[' . zp_get( 'brand' ) . '] Branded domain requested: ' . $domain, "Store: {$r->brand}\nDomain: {$domain}\n\nRegister the domain, point it at this website, then mark it connected:\n" . zp_admin_url( 'resellers' ) );
+		}
+		return true;
+	}
+
+	/** Staff: the domain is registered and pointed at the site. */
+	public static function connect_domain( $user_id ) {
+		global $wpdb;
+		$wpdb->update( zp_table( 'resellers' ), array( 'domain_status' => 'active' ), array( 'user_id' => (int) $user_id, 'domain_status' => 'pending' ) );
+		$GLOBALS['zp_resellers_dirty'] = true;
+	}
+
+	/** Staff: the domain cannot be provided. Refunds the fee once. */
+	public static function reject_domain( $user_id ) {
+		global $wpdb;
+		$r = self::get( $user_id );
+		if ( ! $r || 'pending' !== $r->domain_status ) {
+			return false;
+		}
+		$done = $wpdb->query( $wpdb->prepare( 'UPDATE ' . zp_table( 'resellers' ) . " SET domain_status = 'rejected' WHERE user_id = %d AND domain_status = 'pending'", $user_id ) );
+		if ( $done && $r->domain_fee > 0 ) {
+			ZP_Wallet::credit( $user_id, $r->domain_fee, 'refund', 'store', 'Refund: branded domain ' . $r->domain . ' not available' );
+		}
+		$GLOBALS['zp_resellers_dirty'] = true;
+		return (bool) $done;
 	}
 
 	/**
@@ -234,6 +337,15 @@ class ZP_Resellers {
 			$before = self::get( $user->ID );
 			$new    = ! $before || ! $before->paid_until;
 			$fee    = (float) zp_get( 'reseller_fee', 45000 );
+			$domain = $new ? trim( zp_post( 'domain' ) ) : '';
+			if ( '' !== $domain ) {
+				$clean = self::clean_domain( $domain );
+				if ( is_wp_error( $clean ) ) {
+					zp_flash( $clean->get_error_message(), 'error' );
+					zp_redirect( zp_url( 'reseller' ) );
+				}
+				$fee += (float) zp_get( 'reseller_domain_fee', 12000 ); // activation and the domain are paid together
+			}
 			if ( $new && ZP_Wallet::balance( $user->ID ) < $fee ) {
 				zp_flash( sprintf( 'Activation costs %s and your wallet has %s. Add funds, then come back to unlock your reseller account.', zp_money( $fee ), zp_money( ZP_Wallet::balance( $user->ID ) ) ), 'error' );
 				zp_redirect( zp_url( 'wallet' ) );
@@ -242,12 +354,28 @@ class ZP_Resellers {
 			if ( ! is_wp_error( $res ) && $new ) {
 				$res = self::activate( $user->ID );
 			}
+			if ( ! is_wp_error( $res ) && '' !== $domain ) {
+				$dres = self::request_domain( $user->ID, $domain );
+				if ( is_wp_error( $dres ) ) {
+					zp_flash( 'Reseller account unlocked, but the domain was not ordered: ' . $dres->get_error_message(), 'error' );
+					zp_redirect( zp_url( 'reseller', array( 'tab' => 'settings' ) ) );
+				}
+			}
 			if ( is_wp_error( $res ) ) {
 				zp_flash( $res->get_error_message(), 'error' );
 				zp_redirect( $new ? zp_url( 'reseller' ) : $back );
 			}
 			zp_flash( $new ? 'Reseller account unlocked. Your store is live: share your link and start selling.' : 'Store settings saved.' );
 			zp_redirect( $new ? zp_url( 'reseller' ) : $back );
+		}
+		if ( 'reseller_domain' === $do ) {
+			$res = self::request_domain( $user->ID, zp_post( 'domain' ) );
+			if ( is_wp_error( $res ) ) {
+				zp_flash( $res->get_error_message(), 'error' );
+				zp_redirect( 'zp_funds' === $res->get_error_code() ? zp_url( 'wallet' ) : zp_url( 'reseller', array( 'tab' => 'settings' ) ) );
+			}
+			zp_flash( 'Domain ordered. We are setting it up and will connect it to your store, usually within 24 hours.' );
+			zp_redirect( zp_url( 'reseller', array( 'tab' => 'settings' ) ) );
 		}
 		if ( 'reseller_renew' === $do ) {
 			$r = self::get( $user->ID );

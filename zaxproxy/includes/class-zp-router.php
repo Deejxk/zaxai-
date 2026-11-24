@@ -32,6 +32,19 @@ class ZP_Router {
 		}
 		list( $base, $page, $sub ) = self::parse();
 
+		$ds = zp_domain_store();
+		if ( $ds ) {
+			// A reseller's own domain: the store lives at the root and nothing of the platform shows.
+			if ( in_array( $base, array( 'zp-manifest', 'zp-sw', 'zp-offline', ZP_USER_BASE ), true ) ) {
+				$GLOBALS['zp_reseller_ctx'] = $ds;
+			} elseif ( '' === $base || in_array( $base, self::GUEST_PAGES, true ) ) {
+				self::store( $ds->slug, $base );
+				self::store_offline( $ds );
+			} else {
+				zp_redirect( home_url( '/' ) );
+			}
+		}
+
 		switch ( $base ) {
 			case 'zp-manifest':
 				self::manifest();
@@ -145,6 +158,12 @@ class ZP_Router {
 			}
 		}
 
+		$ds = zp_domain_store();
+		if ( $ds && is_user_logged_in() && ! ZP_Resellers::is_customer_of( get_current_user_id(), $ds->user_id ) ) {
+			wp_logout();
+			zp_redirect( zp_url( 'login' ) );
+		}
+
 		if ( 'logout' === $page ) {
 			$to = zp_url( 'login' );
 			if ( is_user_logged_in() && wp_verify_nonce( zp_query( '_zpnonce' ), 'zp_logout' ) ) {
@@ -223,6 +242,17 @@ class ZP_Router {
 		}
 		$view = $page;
 		include ZP_DIR . 'templates/layout-auth.php';
+		exit;
+	}
+
+	/** Shown on a store's own domain while the store is paused, so visitors do not land on an unrelated page. */
+	private static function store_offline( $store ) {
+		self::no_cache();
+		status_header( 503 );
+		$GLOBALS['zp_reseller_ctx'] = $store;
+		echo '<!doctype html><html lang="en"><head>';
+		self::head( 'Temporarily unavailable' );
+		echo '</head><body class="zp-body"><div class="zp-content" style="min-height:100dvh;justify-content:center;align-items:center"><div class="zp-empty"><div class="zp-empty__art">' . zp_illustration( 'empty-proxies' ) . '</div><h3>' . esc_html( $store->brand ) . ' is temporarily unavailable</h3><p>Please check back soon or contact the store owner.</p></div></div></body></html>'; // phpcs:ignore
 		exit;
 	}
 

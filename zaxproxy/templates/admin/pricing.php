@@ -68,6 +68,7 @@ if ( ! $error && $opts['countries'] ) {
 			<div class="zp-fieldrow">
 				<label class="zp-field"><span>Reseller activation fee (<?php echo esc_html( $s['currency_code'] ); ?>)</span><div class="zp-input"><input type="number" name="reseller_fee" value="<?php echo esc_attr( $s['reseller_fee'] ); ?>" min="0" step="1" required></div><small>One-time, includes the first 30 days.</small></label>
 				<label class="zp-field"><span>Reseller monthly fee (<?php echo esc_html( $s['currency_code'] ); ?>)</span><div class="zp-input"><input type="number" name="reseller_monthly" value="<?php echo esc_attr( $s['reseller_monthly'] ); ?>" min="0" step="1" required></div><small>Auto-charged from the wallet every 30 days.</small></label>
+				<label class="zp-field"><span>Branded .cloud domain fee (<?php echo esc_html( $s['currency_code'] ); ?>)</span><div class="zp-input"><input type="number" name="reseller_domain_fee" value="<?php echo esc_attr( $s['reseller_domain_fee'] ); ?>" min="0" step="1" required></div><small>Optional add-on for resellers who want their own domain.</small></label>
 			</div>
 			<div class="zp-callout" style="margin-top:16px">Selling price = provider price (USD) × exchange rate × (1 + markup %), rounded up to the next whole <?php echo esc_html( $s['currency_code'] ); ?>.</div>
 		</section>

@@ -51,9 +51,20 @@ class ZP_Admin_Actions {
 				$new['reseller_markup']  = max( 0, min( 1000, (float) zp_post( 'reseller_markup', 150 ) ) );
 				$new['reseller_fee']     = max( 0, round( (float) zp_post( 'reseller_fee' ), 2 ) );
 				$new['reseller_monthly'] = max( 0, round( (float) zp_post( 'reseller_monthly' ), 2 ) );
+				$new['reseller_domain_fee'] = max( 0, round( (float) zp_post( 'reseller_domain_fee' ), 2 ) );
 				zp_update_settings( $new );
 				delete_transient( 'zp_public_prices' );
 				zp_flash( 'Pricing saved. New prices apply to every new order.' );
+				break;
+
+			case 'reseller_domain_connect':
+				ZP_Resellers::connect_domain( (int) zp_post( 'user_id' ) );
+				zp_flash( 'Domain marked as connected. The store now opens on its own address.' );
+				break;
+
+			case 'reseller_domain_reject':
+				$ok = ZP_Resellers::reject_domain( (int) zp_post( 'user_id' ) );
+				zp_flash( $ok ? 'Domain request rejected and the fee refunded to the reseller.' : 'This request was already handled.', $ok ? 'success' : 'error' );
 				break;
 
 			case 'reseller_status':
