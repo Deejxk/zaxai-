@@ -37,6 +37,12 @@ class ZP_Resellers {
 		return $slug ? $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'resellers' ) . ' WHERE slug = %s', $slug ) ) : null;
 	}
 
+	/** True for an account with an active store: it buys at the reseller rate. */
+	public static function is_reseller( $user_id ) {
+		$r = self::get( $user_id );
+		return $r && 'active' === $r->status;
+	}
+
 	/** The reseller a user buys from, or null for direct platform customers. */
 	public static function of_user( $user_id ) {
 		$rid = (int) get_user_meta( (int) $user_id, 'zp_reseller_id', true );

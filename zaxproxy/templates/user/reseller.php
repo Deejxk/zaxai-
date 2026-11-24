@@ -21,7 +21,7 @@ if ( ! $me ) :
 
 	<div class="zp-grid3">
 		<div class="zp-card zp-guide zp-anim" style="--d:1"><span class="zp-type__ico"><?php echo zp_icon( 'home', 22 ); // phpcs:ignore ?></span><strong>1. Create your store</strong><p>Choose a brand name and a link like <span class="zp-mono"><?php echo esc_html( $host ); ?>/s/yourbrand</span>.</p></div>
-		<div class="zp-card zp-guide zp-anim" style="--d:2"><span class="zp-type__ico"><?php echo zp_icon( 'wallet', 22 ); // phpcs:ignore ?></span><strong>2. Fund your wallet</strong><p>Each customer order is paid from your wallet at our price, so keep it topped up.</p></div>
+		<div class="zp-card zp-guide zp-anim" style="--d:2"><span class="zp-type__ico"><?php echo zp_icon( 'wallet', 22 ); // phpcs:ignore ?></span><strong>2. Fund your wallet</strong><p>As a reseller you buy at a lower rate. Each customer order is paid from your wallet at that rate, so keep it topped up.</p></div>
 		<div class="zp-card zp-guide zp-anim" style="--d:3"><span class="zp-type__ico"><?php echo zp_icon( 'chart', 22 ); // phpcs:ignore ?></span><strong>3. Keep the profit</strong><p>You set your markup. Customers pay you directly and the difference is yours.</p></div>
 	</div>
 
@@ -33,7 +33,7 @@ if ( ! $me ) :
 				<label class="zp-field"><span>Brand name</span><div class="zp-input"><?php echo zp_icon( 'shield', 18 ); // phpcs:ignore ?><input type="text" name="brand" maxlength="40" required placeholder="e.g. SwiftProxy" id="zp-rs-brand"></div></label>
 				<label class="zp-field"><span>Store link</span><div class="zp-input"><b class="zp-prefix"><?php echo esc_html( $host ); ?>/s/</b><input type="text" name="slug" maxlength="30" required pattern="[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]" placeholder="swiftproxy" id="zp-rs-slug" autocapitalize="none"></div><small>Lowercase letters, numbers and dashes.</small></label>
 			</div>
-			<label class="zp-field"><span>Your markup (%)</span><div class="zp-input"><input type="number" name="markup" value="20" min="0" max="500" step="0.1" required></div><small>Added on top of our price. With 20%, a proxy that costs you <?php echo esc_html( zp_money( 10000 ) ); ?> sells for <?php echo esc_html( zp_money( 12000 ) ); ?>. You can change it any time.</small></label>
+			<label class="zp-field"><span>Your markup (%)</span><div class="zp-input"><input type="number" name="markup" value="20" min="0" max="500" step="0.1" required></div><small>Added on top of your reseller price. With 20%, a proxy that costs you <?php echo esc_html( zp_money( 10000 ) ); ?> sells for <?php echo esc_html( zp_money( 12000 ) ); ?>. You can change it any time.</small></label>
 			<button class="zp-btn zp-btn--primary zp-btn--lg" type="submit"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Create my store</button>
 		</form>
 	</section>
@@ -147,7 +147,8 @@ $tab_url = function ( $t, $args = array() ) {
 				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>Customers register and sign in from your store link, under your brand.</li>
 				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>They pay you directly using the bank details in Store settings.</li>
 				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>You approve the payment under Deposits and their wallet is credited.</li>
-				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>When they buy, our price is taken from your wallet. The rest is your profit.</li>
+				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>When they buy, your reseller price is taken from your wallet. The rest is your profit.</li>
+				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>Your own orders are also charged at the reseller price.</li>
 			</ul>
 		</section>
 		<section class="zp-card zp-anim" style="--d:10">
@@ -304,7 +305,7 @@ $tab_url = function ( $t, $args = array() ) {
 				<div class="zp-card__head"><h3>Brand &amp; pricing</h3></div>
 				<label class="zp-field"><span>Brand name</span><div class="zp-input"><?php echo zp_icon( 'shield', 18 ); // phpcs:ignore ?><input type="text" name="brand" value="<?php echo esc_attr( $me->brand ); ?>" maxlength="40" required></div></label>
 				<label class="zp-field"><span>Store link</span><div class="zp-input"><b class="zp-prefix"><?php echo esc_html( $host ); ?>/s/</b><input type="text" name="slug" value="<?php echo esc_attr( $me->slug ); ?>" maxlength="30" required pattern="[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]" autocapitalize="none"></div><small>Changing this breaks links you have already shared.</small></label>
-				<label class="zp-field"><span>Your markup (%)</span><div class="zp-input"><input type="number" name="markup" value="<?php echo esc_attr( (float) $me->markup ); ?>" min="0" max="500" step="0.1" required></div><small>Customer price = our price + your markup.</small></label>
+				<label class="zp-field"><span>Your markup (%)</span><div class="zp-input"><input type="number" name="markup" value="<?php echo esc_attr( (float) $me->markup ); ?>" min="0" max="500" step="0.1" required></div><small>Customer price = your reseller price + your markup.</small></label>
 			</section>
 			<section class="zp-card zp-anim" style="--d:2">
 				<div class="zp-card__head"><h3>How customers pay you</h3></div>

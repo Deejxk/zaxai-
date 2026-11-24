@@ -64,6 +64,7 @@ if ( ! $error && $opts['countries'] ) {
 					<label class="zp-field"><span><?php echo esc_html( $t['label'] ); ?> markup (%)</span><div class="zp-input"><input type="number" name="markup_<?php echo esc_attr( $slug ); ?>" value="<?php echo esc_attr( $s[ 'markup_' . $slug ] ); ?>" min="0" max="1000" step="0.1" required></div></label>
 				<?php endforeach; ?>
 			</div>
+			<label class="zp-field" style="margin-top:14px"><span>Reseller markup (%), all proxy types</span><div class="zp-input"><?php echo zp_icon( 'users', 18 ); // phpcs:ignore ?><input type="number" name="reseller_markup" value="<?php echo esc_attr( $s['reseller_markup'] ); ?>" min="0" max="1000" step="0.1" required></div><small>The lower rate for accounts with a reseller store. It is what a reseller pays for their own orders and what their wallet is charged for each order in their store. Their customers pay this plus the reseller's own markup.</small></label>
 			<div class="zp-callout" style="margin-top:16px">Selling price = provider price (USD) × exchange rate × (1 + markup %), rounded up to the next whole <?php echo esc_html( $s['currency_code'] ); ?>.</div>
 		</section>
 	</div>
@@ -94,12 +95,13 @@ if ( ! $error && $opts['countries'] ) {
 		<div class="zp-alert zp-alert--error"><?php echo zp_icon( 'x', 18 ); // phpcs:ignore ?><span><?php echo esc_html( $error ); ?></span></div>
 	<?php elseif ( $rows ) : ?>
 		<div class="zp-tablewrap"><table class="zp-table">
-			<thead><tr><th>Period</th><th>Quantity</th><th class="zp-right">API price (USD)</th><th class="zp-right">API price (<?php echo esc_html( $s['currency_code'] ); ?>)</th><th class="zp-right">Markup</th><th class="zp-right">Your price</th><th class="zp-right">Your profit</th></tr></thead>
+			<thead><tr><th>Period</th><th>Quantity</th><th class="zp-right">API price (USD)</th><th class="zp-right">API price (<?php echo esc_html( $s['currency_code'] ); ?>)</th><th class="zp-right">Markup</th><th class="zp-right">Your price</th><th class="zp-right">Your profit</th><th class="zp-right">Reseller price</th><th class="zp-right">Profit from reseller</th></tr></thead>
 			<tbody>
 			<?php
 			foreach ( $rows as $d => $cost ) :
 				$local = $cost * zp_fx();
 				$sell  = ZP_Orders::markup( $cost, $type );
+				$whole = ZP_Orders::markup( $cost, $type, true );
 				?>
 				<tr>
 					<td data-label="Period"><strong><?php echo (int) $d; ?> days</strong></td>
@@ -109,6 +111,8 @@ if ( ! $error && $opts['countries'] ) {
 					<td data-label="Markup" class="zp-right"><?php echo esc_html( rtrim( rtrim( number_format( $pct, 2 ), '0' ), '.' ) ); ?>%</td>
 					<td data-label="Your price" class="zp-right"><strong><?php echo esc_html( zp_money( $sell ) ); ?></strong></td>
 					<td data-label="Your profit" class="zp-right"><strong class="zp-pos"><?php echo esc_html( zp_money( round( $sell - $local, 2 ) ) ); ?></strong></td>
+					<td data-label="Reseller price" class="zp-right"><strong><?php echo esc_html( zp_money( $whole ) ); ?></strong><span class="zp-sub"><?php echo esc_html( rtrim( rtrim( number_format( (float) $s['reseller_markup'], 2 ), '0' ), '.' ) ); ?>%</span></td>
+					<td data-label="Profit from reseller" class="zp-right"><strong class="zp-pos"><?php echo esc_html( zp_money( round( $whole - $local, 2 ) ) ); ?></strong></td>
 				</tr>
 			<?php endforeach; ?>
 			</tbody>

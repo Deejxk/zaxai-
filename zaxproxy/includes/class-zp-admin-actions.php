@@ -48,6 +48,7 @@ class ZP_Admin_Actions {
 				foreach ( array_keys( zp_types() ) as $t ) {
 					$new[ 'markup_' . $t ] = max( 0, min( 1000, (float) zp_post( 'markup_' . $t ) ) );
 				}
+				$new['reseller_markup'] = max( 0, min( 1000, (float) zp_post( 'reseller_markup', 150 ) ) );
 				zp_update_settings( $new );
 				delete_transient( 'zp_public_prices' );
 				zp_flash( 'Pricing saved. New prices apply to every new order.' );

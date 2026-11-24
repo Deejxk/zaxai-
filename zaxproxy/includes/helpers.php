@@ -19,6 +19,7 @@ function zp_defaults() {
 		'currency_code'       => 'NGN',
 		'currency_symbol'     => '₦',
 		'fx_rate'             => 1600,
+		'reseller_markup'     => 150,
 		'min_deposit'         => 1000,
 		'max_deposit'         => 5000000,
 		'manual_enabled'      => 1,
@@ -448,7 +449,7 @@ function zp_public_prices() {
 	$cached = get_transient( 'zp_public_prices' );
 	if ( is_array( $cached ) ) {
 		foreach ( $cached as $row ) {
-			if ( ! in_array( (int) $row['days'], zp_allowed_days(), true ) ) {
+			if ( ! isset( $row['wholesale'] ) || ! in_array( (int) $row['days'], zp_allowed_days(), true ) ) {
 				$cached = false;
 				break;
 			}
@@ -475,7 +476,7 @@ function zp_public_prices() {
 			}
 			$res = ZP_API::order_price( $params );
 			if ( ! is_wp_error( $res ) && ! empty( $res['amount'] ) ) {
-				$out[ $type ] = array( 'price' => ZP_Orders::markup( (float) $res['amount'], $type ) / $qty, 'days' => $days, 'countries' => count( $codes ) );
+				$out[ $type ] = array( 'price' => ZP_Orders::markup( (float) $res['amount'], $type ) / $qty, 'wholesale' => ZP_Orders::markup( (float) $res['amount'], $type, true ) / $qty, 'days' => $days, 'countries' => count( $codes ) );
 			}
 		}
 	}

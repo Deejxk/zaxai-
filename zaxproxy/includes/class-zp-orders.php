@@ -64,9 +64,10 @@ class ZP_Orders {
 	/**
 	 * Selling price in the store currency for a provider cost in USD:
 	 * cost x exchange rate x (1 + markup %), rounded up to a whole unit.
+	 * Resellers (and orders placed in their stores) are priced with the lower reseller markup.
 	 */
-	public static function markup( $cost, $type ) {
-		$pct = max( 0, (float) zp_get( 'markup_' . $type, 0 ) );
+	public static function markup( $cost, $type, $wholesale = false ) {
+		$pct = max( 0, (float) ( $wholesale ? zp_get( 'reseller_markup', 150 ) : zp_get( 'markup_' . $type, 0 ) ) );
 		return (float) ceil( round( (float) $cost * zp_fx() * ( 1 + $pct / 100 ), 4 ) );
 	}
 
@@ -148,8 +149,8 @@ class ZP_Orders {
 		if ( $cost <= 0 ) {
 			return new WP_Error( 'zp_api', 'The provider did not return a price for this configuration.' );
 		}
-		$platform = self::markup( $cost, $spec['type'] );
 		$reseller = ZP_Resellers::of_user( $user_id );
+		$platform = self::markup( $cost, $spec['type'], $reseller || ZP_Resellers::is_reseller( $user_id ) );
 		$total    = $reseller ? ZP_Resellers::price( $platform, $reseller ) : $platform;
 		return array( 'cost' => $cost, 'platform' => $platform, 'total' => $total, 'unit' => round( $total / $spec['qty'], 2 ), 'reseller' => $reseller );
 	}
@@ -400,8 +401,8 @@ class ZP_Orders {
 		if ( $cost <= 0 ) {
 			return new WP_Error( 'zp_api', 'The provider did not return a renewal price.' );
 		}
-		$platform = self::markup( $cost, $t['type'] );
 		$reseller = ZP_Resellers::of_user( $user_id );
+		$platform = self::markup( $cost, $t['type'], $reseller || ZP_Resellers::is_reseller( $user_id ) );
 		return array( 'cost' => $cost, 'platform' => $platform, 'total' => $reseller ? ZP_Resellers::price( $platform, $reseller ) : $platform, 'count' => count( $t['rows'] ), 'targets' => $t, 'reseller' => $reseller );
 	}
 

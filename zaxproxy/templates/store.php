@@ -71,7 +71,7 @@ $base   = zp_public_prices();
 						<span class="zp-type__ico"><?php echo zp_icon( $t['icon'], 22 ); // phpcs:ignore ?></span>
 						<strong><?php echo esc_html( $t['label'] ); ?> proxies</strong>
 						<span><?php echo esc_html( $t['desc'] ); ?></span>
-						<?php if ( isset( $base[ $slug ] ) ) : ?><b class="zp-type__price">from <?php echo esc_html( zp_money( ZP_Resellers::price( $base[ $slug ]['price'], $store ) ) ); ?><small> / <?php echo (int) $base[ $slug ]['days']; ?> days</small></b><?php endif; ?>
+						<?php if ( isset( $base[ $slug ] ) ) : ?><b class="zp-type__price">from <?php echo esc_html( zp_money( ZP_Resellers::price( $base[ $slug ]['wholesale'], $store ) ) ); ?><small> / <?php echo (int) $base[ $slug ]['days']; ?> days</small></b><?php endif; ?>
 						<em><?php echo zp_icon( 'arrow', 16 ); // phpcs:ignore ?></em>
 					</a>
 				<?php endforeach; ?>
