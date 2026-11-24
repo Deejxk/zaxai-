@@ -555,7 +555,7 @@ button{cursor:pointer}
 .zp-pill{display:inline-flex;align-items:center;height:34px;padding:0 13px;border-radius:10px;border:1px solid var(--zp-border);background:var(--zp-surface);color:var(--zp-text-2);font-weight:600;font-size:13.5px}
 .zp-pill:hover{text-decoration:none;border-color:var(--zp-brand)}
 .zp-pill.is-active{background:var(--zp-grad);color:#fff;border-color:transparent}
-.zp-bars{display:flex;align-items:flex-end;gap:8px;height:180px;padding-top:8px}
+.zp-bars{display:flex;align-items:flex-end;gap:4px;height:180px;padding-top:8px}
 .zp-bars__col{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;min-width:0}
 .zp-bars__col i{width:100%;max-width:34px;border-radius:8px 8px 3px 3px;background:var(--zp-grad);transform-origin:bottom;animation:zp-grow .8s var(--zp-ease) both}
 .zp-bars__col span{font-size:11.5px;color:var(--zp-text-3)}

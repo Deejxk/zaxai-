@@ -22,7 +22,6 @@ $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 					<label class="zp-check"><input type="checkbox" name="types[]" value="<?php echo esc_attr( $slug ); ?>" <?php checked( in_array( $slug, (array) $s['types'], true ) ); ?>><span><?php echo esc_html( $t['label'] ); ?></span></label>
 				<?php endforeach; ?>
 			</div>
-			<label class="zp-field" style="margin-top:16px"><span>Rental periods on sale (days)</span><div class="zp-input"><input type="text" name="allowed_days" value="<?php echo esc_attr( $s['allowed_days'] ); ?>" placeholder="30,60,90"></div><small>Comma separated. Only these periods are offered for purchases and renewals. Leave empty to offer every period the provider has.</small></label>
 			<button class="zp-btn zp-btn--soft" type="submit" name="zp_then" value="test" style="margin-top:16px"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Save &amp; test connection</button>
 		</section>
 

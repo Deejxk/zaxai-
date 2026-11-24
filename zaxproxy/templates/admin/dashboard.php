@@ -16,10 +16,10 @@ $has_key  = '' !== trim( (string) zp_get( 'api_key' ) );
 $upstream = $has_key ? ZP_API::balance() : null;
 $last_err = get_option( 'zaxproxy_last_api_error' );
 $days     = array();
-for ( $i = 13; $i >= 0; $i-- ) {
+for ( $i = 29; $i >= 0; $i-- ) {
 	$days[ gmdate( 'Y-m-d', time() - $i * DAY_IN_SECONDS ) ] = 0;
 }
-foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT DATE(created_at) d, SUM(amount) s FROM $o WHERE $paid AND created_at >= %s GROUP BY DATE(created_at)", gmdate( 'Y-m-d 00:00:00', time() - 13 * DAY_IN_SECONDS ) ) ) as $r ) { // phpcs:ignore
+foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT DATE(created_at) d, SUM(amount) s FROM $o WHERE $paid AND created_at >= %s GROUP BY DATE(created_at)", gmdate( 'Y-m-d 00:00:00', time() - 29 * DAY_IN_SECONDS ) ) ) as $r ) { // phpcs:ignore
 	if ( isset( $days[ $r->d ] ) ) {
 		$days[ $r->d ] = (float) $r->s;
 	}
@@ -43,10 +43,10 @@ $max = max( 1, max( $days ) );
 
 <div class="zp-grid2 zp-grid2--wide">
 	<section class="zp-card zp-anim" style="--d:5">
-		<div class="zp-card__head"><h3>Sales, last 14 days</h3></div>
+		<div class="zp-card__head"><h3>Sales, last 30 days</h3></div>
 		<div class="zp-bars">
 			<?php foreach ( $days as $d => $v ) : ?>
-				<div class="zp-bars__col" title="<?php echo esc_attr( $d . ': ' . zp_money( $v ) ); ?>"><i style="height:<?php echo esc_attr( max( 3, round( $v / $max * 100 ) ) ); ?>%"></i><span><?php echo esc_html( gmdate( 'j', strtotime( $d ) ) ); ?></span></div>
+				<div class="zp-bars__col" title="<?php echo esc_attr( $d . ': ' . zp_money( $v ) ); ?>"><i style="height:<?php echo esc_attr( max( 3, round( $v / $max * 100 ) ) ); ?>%"></i><span><?php echo 0 === ( (int) gmdate( 'j', strtotime( $d ) ) % 5 ) ? esc_html( gmdate( 'j', strtotime( $d ) ) ) : '&nbsp;'; ?></span></div>
 			<?php endforeach; ?>
 		</div>
 	</section>

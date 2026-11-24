@@ -36,7 +36,7 @@ $greet   = $hour < 12 ? 'Good morning' : ( $hour < 18 ? 'Good afternoon' : 'Good
 	</a>
 	<a class="zp-stat zp-anim" style="--d:3" href="<?php echo esc_url( zp_url( 'proxies' ) ); ?>">
 		<span class="zp-stat__ico zp-tone-amber"><?php echo zp_icon( 'clock' ); // phpcs:ignore ?></span>
-		<span class="zp-stat__label">Expiring in 3 days</span>
+		<span class="zp-stat__label">Expiring soon</span>
 		<strong class="zp-stat__value" data-zp-count="<?php echo (int) $stats['expiring']; ?>"><?php echo (int) $stats['expiring']; ?></strong>
 	</a>
 	<a class="zp-stat zp-anim" style="--d:4" href="<?php echo esc_url( zp_url( 'orders' ) ); ?>">

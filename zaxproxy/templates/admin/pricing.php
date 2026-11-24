@@ -19,7 +19,7 @@ if ( ! $error && $opts['countries'] ) {
 	if ( ! in_array( $country, $codes, true ) ) {
 		$country = in_array( 'USA', $codes, true ) ? 'USA' : $codes[0];
 	}
-	$cache_key = 'zp_pricelist_' . md5( $type . $country . $s['api_key'] );
+	$cache_key = 'zp_pricelist3_' . md5( $type . $country . $s['api_key'] );
 	$costs     = isset( $_GET['refresh'] ) ? false : get_transient( $cache_key ); // phpcs:ignore
 	if ( ! is_array( $costs ) ) {
 		$costs = array();
@@ -41,7 +41,7 @@ if ( ! $error && $opts['countries'] ) {
 			set_transient( $cache_key, $costs, 30 * MINUTE_IN_SECONDS );
 		}
 	}
-	$rows = $costs;
+	$rows = array_intersect_key( $costs, array_flip( zp_allowed_days() ) );
 }
 ?>
 <form method="post" class="zp-form">

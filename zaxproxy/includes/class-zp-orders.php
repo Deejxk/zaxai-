@@ -93,7 +93,7 @@ class ZP_Orders {
 			return new WP_Error( 'zp_input', 'Choose a country.' );
 		}
 		$allowed = zp_allowed_days();
-		if ( $spec['days'] < 1 || ( $allowed && ! in_array( $spec['days'], $allowed, true ) ) ) {
+		if ( ! in_array( $spec['days'], $allowed, true ) ) {
 			return new WP_Error( 'zp_input', 'Choose a rental period.' );
 		}
 		$min = 'ipv6' === $type ? 10 : 1;
@@ -342,7 +342,7 @@ class ZP_Orders {
 
 	public static function extend_quote( $user_id, array $proxy_ids, $days ) {
 		$allowed = zp_allowed_days();
-		if ( $allowed && ! in_array( (int) $days, $allowed, true ) ) {
+		if ( ! in_array( (int) $days, $allowed, true ) ) {
 			return new WP_Error( 'zp_input', 'Choose a renewal period.' );
 		}
 		$t = self::extend_targets( $user_id, $proxy_ids );
