@@ -22,7 +22,7 @@ $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 					<label class="zp-check"><input type="checkbox" name="types[]" value="<?php echo esc_attr( $slug ); ?>" <?php checked( in_array( $slug, (array) $s['types'], true ) ); ?>><span><?php echo esc_html( $t['label'] ); ?></span></label>
 				<?php endforeach; ?>
 			</div>
-			<button class="zp-btn zp-btn--soft" type="submit" form="zp-test-api" style="margin-top:16px"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Test connection</button>
+			<button class="zp-btn zp-btn--soft" type="submit" name="zp_then" value="test" style="margin-top:16px"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Save &amp; test connection</button>
 		</section>
 
 		<section class="zp-card zp-anim" style="--d:1">
@@ -71,4 +71,3 @@ $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 
 	<div class="zp-savebar"><button class="zp-btn zp-btn--primary zp-btn--lg" type="submit">Save settings</button></div>
 </form>
-<form method="post" id="zp-test-api"><?php zp_nonce_field( 'test_api' ); ?></form>

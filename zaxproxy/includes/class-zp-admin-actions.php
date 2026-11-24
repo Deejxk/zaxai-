@@ -169,6 +169,17 @@ class ZP_Admin_Actions {
 		if ( $key_changed ) {
 			ZP_API::flush_cache();
 		}
+		if ( 'test' === zp_post( 'zp_then' ) ) {
+			$res = ZP_API::balance();
+			if ( is_wp_error( $res ) ) {
+				$hint = 'zp_config' === $res->get_error_code() ? 'Paste your proxy-ipv4.com API key first.' : $res->get_error_message();
+				zp_flash( 'Settings saved, but the provider connection failed: ' . $hint, 'error' );
+			} else {
+				delete_option( 'zaxproxy_last_api_error' );
+				zp_flash( sprintf( 'Settings saved. Connected as %s. Provider balance: %s %s.', $res['user'], number_format( (float) $res['balance'], 2 ), $res['currency'] ) );
+			}
+			return;
+		}
 		zp_flash( 'Settings saved.' );
 	}
 }
