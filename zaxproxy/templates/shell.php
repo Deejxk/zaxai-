@@ -9,13 +9,17 @@ $flash   = zp_take_flash();
 $initial = strtoupper( mb_substr( $user->display_name ? $user->display_name : $user->user_login, 0, 1 ) );
 $home    = $shell['admin'] ? zp_admin_url() : zp_url( 'dashboard' );
 $logout  = add_query_arg( '_zpnonce', wp_create_nonce( 'zp_logout' ), zp_url( 'logout' ) );
+// Resellers get their own footer menu while they are inside their reseller dashboard.
+$zp_rs   = ( ! $shell['admin'] && ! zp_reseller_ctx() ) ? ZP_Resellers::get( $user->ID ) : null;
+$zp_rs   = ( $zp_rs && $zp_rs->paid_until ) ? $zp_rs : null;
+$zp_rs_on = $zp_rs && 'reseller' === $view;
 ?>
 <!doctype html>
 <html lang="en">
 <head>
 <?php ZP_Router::head( $shell['title'] ); ?>
 </head>
-<body class="zp-body<?php echo $shell['admin'] ? ' zp-is-admin' : ''; ?>">
+<body class="zp-body<?php echo $shell['admin'] ? ' zp-is-admin' : ''; ?><?php echo $zp_rs_on ? ' zp-in-rs' : ''; ?>">
 <?php ZP_Router::splash(); ?>
 <div class="zp-shell">
 	<aside class="zp-side">
@@ -107,6 +111,52 @@ $logout  = add_query_arg( '_zpnonce', wp_create_nonce( 'zp_logout' ), zp_url( 'l
 		<span class="zp-tab__ico"><?php echo zp_icon( 'menu', 22 ); // phpcs:ignore ?></span><span class="zp-tab__label">More</span>
 	</button>
 </nav>
+
+<?php
+if ( $zp_rs ) :
+	$zp_rs_stats = ZP_Resellers::stats( $user->ID );
+	$zp_rs_tab   = $zp_rs_on ? sanitize_key( zp_query( 'tab', 'overview' ) ) : '';
+	$zp_rs_url   = function ( $t ) {
+		return zp_url( 'reseller', 'overview' === $t ? array() : array( 'tab' => $t ) );
+	};
+	$zp_rs_tabs  = array(
+		'overview'  => array( 'Overview', 'chart', 0 ),
+		'customers' => array( 'Customers', 'users', 0 ),
+		'deposits'  => array( 'Deposits', 'card', (int) $zp_rs_stats['pending'] ),
+		'orders'    => array( 'Orders', 'receipt', 0 ),
+	);
+	$zp_rs_more  = array(
+		'tickets'  => array( 'Tickets', 'ticket', (int) $zp_rs_stats['tickets'] ),
+		'settings' => array( 'Store settings', 'settings', 0 ),
+		'guide'    => array( 'Documentation', 'list', 0 ),
+	);
+	?>
+<nav class="zp-tabbar zp-tabbar--rs" aria-label="Reseller menu">
+	<a class="zp-tab zp-tab--home" href="<?php echo esc_url( zp_url( 'dashboard' ) ); ?>"><span class="zp-tab__ico"><?php echo zp_icon( 'home', 22 ); // phpcs:ignore ?></span><span class="zp-tab__label">Home</span></a>
+	<?php foreach ( $zp_rs_tabs as $slug => $item ) : ?>
+		<a class="zp-tab<?php echo $slug === $zp_rs_tab ? ' is-active' : ''; ?>" data-rs-tab="<?php echo esc_attr( $slug ); ?>" href="<?php echo esc_url( $zp_rs_url( $slug ) ); ?>">
+			<span class="zp-tab__ico"><?php echo zp_icon( $item[1], 22 ); // phpcs:ignore ?><b class="zp-tab__badge"<?php echo $item[2] ? '' : ' hidden'; ?>><?php echo (int) $item[2]; ?></b></span><span class="zp-tab__label"><?php echo esc_html( $item[0] ); ?></span>
+		</a>
+	<?php endforeach; ?>
+	<button class="zp-tab<?php echo isset( $zp_rs_more[ $zp_rs_tab ] ) ? ' is-active' : ''; ?>" type="button" data-zp-sheet="zp-rs-more">
+		<span class="zp-tab__ico"><?php echo zp_icon( 'menu', 22 ); // phpcs:ignore ?><b class="zp-tab__badge" data-rs-badge="tickets"<?php echo $zp_rs_stats['tickets'] ? '' : ' hidden'; ?>><?php echo (int) $zp_rs_stats['tickets']; ?></b></span><span class="zp-tab__label">More</span>
+	</button>
+</nav>
+<div class="zp-sheet" id="zp-rs-more" hidden>
+	<div class="zp-sheet__backdrop" data-zp-close></div>
+	<div class="zp-sheet__panel" role="dialog" aria-label="Reseller menu">
+		<div class="zp-sheet__grip"></div>
+		<div class="zp-sheet__grid">
+			<?php foreach ( $zp_rs_more as $slug => $item ) : ?>
+				<a class="<?php echo $slug === $zp_rs_tab ? 'is-active' : ''; ?>" data-rs-tab="<?php echo esc_attr( $slug ); ?>" href="<?php echo esc_url( $zp_rs_url( $slug ) ); ?>"><span><?php echo zp_icon( $item[1], 22 ); // phpcs:ignore ?></span><?php echo esc_html( $item[0] ); ?></a>
+			<?php endforeach; ?>
+			<a href="<?php echo esc_url( ZP_Resellers::store_url( $zp_rs ) ); ?>" target="_blank" rel="noopener"><span><?php echo zp_icon( 'eye', 22 ); // phpcs:ignore ?></span>View store</a>
+			<a href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>"><span><?php echo zp_icon( 'wallet', 22 ); // phpcs:ignore ?></span>Wallet</a>
+			<a href="<?php echo esc_url( zp_url( 'dashboard' ) ); ?>"><span><?php echo zp_icon( 'home', 22 ); // phpcs:ignore ?></span>Back to home</a>
+		</div>
+	</div>
+</div>
+<?php endif; ?>
 
 <div class="zp-sheet" id="zp-more" hidden>
 	<div class="zp-sheet__backdrop" data-zp-close></div>

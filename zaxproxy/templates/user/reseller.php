@@ -182,111 +182,261 @@ $paid_ts = strtotime( $me->paid_until . ' UTC' );
 <?php if ( 'guide' === $tab ) : ?>
 	<?php include ZP_DIR . 'templates/user/reseller-guide.php'; ?>
 <?php elseif ( 'overview' === $tab ) : ?>
-	<section class="zp-storelink zp-anim" style="--d:1">
-		<div>
-			<span class="zp-eyebrow">Your store</span>
+	<?php
+	/* ----- numbers for the dashboard ----- */
+	$sym   = zp_get( 'currency_symbol', '₦' );
+	$paidq = "refunded = 0 AND status IN ('completed','processing','review')";
+	$day   = array(); // last 60 days: [ sales, profit, orders ]
+	for ( $i = 59; $i >= 0; $i-- ) {
+		$day[ gmdate( 'Y-m-d', time() - $i * DAY_IN_SECONDS ) ] = array( 0.0, 0.0, 0 );
+	}
+	foreach ( $wpdb->get_results( $wpdb->prepare( 'SELECT DATE(created_at) d, SUM(amount) s, SUM(amount - reseller_cost) p, COUNT(*) n FROM ' . zp_table( 'orders' ) . " WHERE reseller_id = %d AND $paidq AND created_at >= %s GROUP BY DATE(created_at)", $user->ID, gmdate( 'Y-m-d 00:00:00', time() - 59 * DAY_IN_SECONDS ) ) ) as $r ) { // phpcs:ignore
+		if ( isset( $day[ $r->d ] ) ) {
+			$day[ $r->d ] = array( (float) $r->s, (float) $r->p, (int) $r->n );
+		}
+	}
+	$sum = function ( $rows ) {
+		$t = array( 0.0, 0.0, 0 );
+		foreach ( $rows as $v ) {
+			$t[0] += $v[0];
+			$t[1] += $v[1];
+			$t[2] += $v[2];
+		}
+		return $t;
+	};
+	$d30    = array_slice( $day, 30, 30, true );
+	$d7     = array_slice( $day, 53, 7, true );
+	$cur30  = $sum( $d30 );
+	$prev30 = $sum( array_slice( $day, 0, 30, true ) );
+	$cur7   = $sum( $d7 );
+	$prev7  = $sum( array_slice( $day, 46, 7, true ) );
+	$today  = end( $day );
+	$delta  = function ( $now, $before ) {
+		if ( $before <= 0 ) {
+			return $now > 0 ? array( 'up', 'New' ) : array( 'flat', '0%' );
+		}
+		$pct = ( $now - $before ) / $before * 100;
+		return array( $pct > 0.5 ? 'up' : ( $pct < -0.5 ? 'down' : 'flat' ), ( $pct > 0 ? '+' : '' ) . number_format( $pct, abs( $pct ) < 10 ? 1 : 0 ) . '%' );
+	};
+	$spark  = function ( $vals ) { // a tiny trend line, 100 x 30
+		$vals = array_values( $vals );
+		$n    = count( $vals );
+		$max  = max( 1, max( $vals ) );
+		$pts  = array();
+		foreach ( $vals as $i => $v ) {
+			$pts[] = round( $i / max( 1, $n - 1 ) * 100, 1 ) . ',' . round( 27 - $v / $max * 24, 1 );
+		}
+		return '<svg class="zp-spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline pathLength="1" points="' . implode( ' ', $pts ) . '"/></svg>';
+	};
+	$chart  = function ( $rows, $key ) use ( $sym ) { // area chart with a column to tap for each day
+		$dates = array_keys( $rows );
+		$vals  = array_map(
+			function ( $v ) {
+				return $v[0];
+			},
+			array_values( $rows )
+		);
+		$n     = count( $vals );
+		$max   = max( $vals );
+		$top   = $max > 0 ? $max * 1.15 : 1;
+		$line  = '';
+		foreach ( $vals as $i => $v ) {
+			$x     = round( ( $i + 0.5 ) / $n * 600, 1 );
+			$y     = round( 190 - $v / $top * 170, 1 );
+			$line .= ( 0 === $i ? 'M' : 'L' ) . $x . ' ' . $y . ' ';
+		}
+		$first = round( 0.5 / $n * 600, 1 );
+		$last  = round( ( $n - 0.5 ) / $n * 600, 1 );
+		$out   = '<div class="zp-chart" data-range="' . esc_attr( $key ) . '"><div class="zp-chart__plot">';
+		$out  .= '<div class="zp-chart__grid"><span>' . esc_html( $max > 0 ? zp_money( round( $top ) ) : '' ) . '</span><span>' . esc_html( $max > 0 ? zp_money( round( $top / 2 ) ) : '' ) . '</span><span>' . esc_html( $sym . '0' ) . '</span></div>';
+		$out  .= '<svg viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="zp-area-' . esc_attr( $key ) . '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--zp-brand)" stop-opacity=".38"/><stop offset="1" stop-color="var(--zp-brand)" stop-opacity="0"/></linearGradient></defs>';
+		$out  .= '<path class="zp-chart__area" fill="url(#zp-area-' . esc_attr( $key ) . ')" d="' . $line . 'L' . $last . ' 190 L' . $first . ' 190 Z"/><path class="zp-chart__line" pathLength="1" d="' . trim( $line ) . '"/></svg>';
+		$out  .= '<div class="zp-chart__cols">';
+		foreach ( $rows as $d => $v ) {
+			$out .= '<button type="button" class="zp-chart__col" style="--h:' . round( $v[0] / $top * 85 + 5, 1 ) . '%" data-tip="' . esc_attr( gmdate( 'D, M j', strtotime( $d ) ) . '|' . zp_money( $v[0] ) . '|' . $v[2] . ( 1 === $v[2] ? ' order' : ' orders' ) . ' · profit ' . zp_money( $v[1] ) ) . '"><i></i></button>';
+		}
+		$out .= '</div><div class="zp-chart__tip" hidden></div></div><div class="zp-chart__x">';
+		$step = $n > 10 ? 5 : 1;
+		foreach ( $dates as $i => $d ) {
+			$out .= '<span>' . ( 0 === ( $n - 1 - $i ) % $step ? esc_html( gmdate( $n > 10 ? 'M j' : 'D', strtotime( $d ) ) ) : '' ) . '</span>';
+		}
+		return $out . '</div></div>';
+	};
+	// Sales by proxy type, last 30 days.
+	$mix     = $wpdb->get_results( $wpdb->prepare( 'SELECT proxy_type t, SUM(amount) s, COUNT(*) n FROM ' . zp_table( 'orders' ) . " WHERE reseller_id = %d AND $paidq AND created_at >= %s GROUP BY proxy_type ORDER BY s DESC", $user->ID, gmdate( 'Y-m-d 00:00:00', time() - 29 * DAY_IN_SECONDS ) ) ); // phpcs:ignore
+	$mix_sum = 0.0;
+	foreach ( $mix as $m ) {
+		$mix_sum += (float) $m->s;
+	}
+	$tones   = array( 'var(--zp-brand)', '#22d3ee', '#f59e0b', '#10b981', '#ec4899' );
+	$top     = $wpdb->get_results( $wpdb->prepare( 'SELECT user_id, SUM(amount) s, COUNT(*) n FROM ' . zp_table( 'orders' ) . " WHERE reseller_id = %d AND $paidq GROUP BY user_id ORDER BY s DESC LIMIT 5", $user->ID ) ); // phpcs:ignore
+	$latest  = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'orders' ) . ' WHERE reseller_id = %d ORDER BY id DESC LIMIT 5', $user->ID ) );
+	$newest  = $ids ? get_users( array( 'include' => $ids, 'orderby' => 'registered', 'order' => 'DESC', 'number' => 5 ) ) : array();
+	$margin  = $stats['sales'] > 0 ? round( $stats['profit'] / $stats['sales'] * 100 ) : 0;
+	$avg     = $stats['orders'] > 0 ? $stats['sales'] / $stats['orders'] : 0;
+	$free    = ZP_Resellers::is_free( $user->ID );
+	$ds      = $delta( $cur30[0], $prev30[0] );
+	$dp      = $delta( $cur30[1], $prev30[1] );
+	$col     = function ( $rows, $idx ) {
+		return array_map(
+			function ( $v ) use ( $idx ) {
+				return $v[ $idx ];
+			},
+			$rows
+		);
+	};
+	$kpis    = array(
+		array( 'wallet', 'violet', 'Wallet balance', $balance, $sym, 'Pays for customer orders', null, '' ),
+		array( 'chart', 'amber', 'Sales · 30 days', $cur30[0], $sym, 'vs previous 30 days', $ds, $spark( $col( $d30, 0 ) ) ),
+		array( 'zap', 'green', 'Profit · 30 days', $cur30[1], $sym, 'vs previous 30 days', $dp, $spark( $col( $d30, 1 ) ) ),
+		array( 'users', 'cyan', 'Customers', $stats['customers'], '', $stats['orders'] . ( 1 === (int) $stats['orders'] ? ' order' : ' orders' ) . ' all time', null, '' ),
+	);
+	?>
+	<section class="zp-rhero zp-anim" style="--d:1">
+		<div class="zp-rhero__main">
+			<span class="zp-rhero__status<?php echo 'active' === $me->status ? '' : ' is-off'; ?>"><i></i><?php
+			if ( 'active' !== $me->status ) {
+				echo 'Store offline';
+			} elseif ( $free ) {
+				echo 'Store live · no monthly fee';
+			} else {
+				echo esc_html( 'Store live · renews ' . zp_date( $me->paid_until, false ) );
+			}
+			?></span>
 			<h2><?php echo esc_html( $me->brand ); ?></h2>
 			<a class="zp-mono" href="<?php echo esc_url( $store_url ); ?>" target="_blank" rel="noopener"><?php echo esc_html( preg_replace( '#^https?://#', '', untrailingslashit( $store_url ) ) ); ?></a>
 		</div>
-		<div class="zp-row">
+		<div class="zp-rhero__actions">
 			<button type="button" class="zp-btn zp-btn--light" data-zp-copy="<?php echo esc_attr( $store_url ); ?>" data-zp-copied="Store link copied"><?php echo zp_icon( 'copy', 18 ); // phpcs:ignore ?>Copy link</button>
-			<a class="zp-btn zp-btn--glass" href="<?php echo esc_url( $store_url ); ?>" target="_blank" rel="noopener"><?php echo zp_icon( 'eye', 18 ); // phpcs:ignore ?>View store</a>
+			<button type="button" class="zp-btn zp-btn--glass" data-zp-share="<?php echo esc_attr( $store_url ); ?>" data-zp-share-title="<?php echo esc_attr( $me->brand ); ?>"><?php echo zp_icon( 'send', 18 ); // phpcs:ignore ?>Share</button>
+			<a class="zp-btn zp-btn--glass" href="<?php echo esc_url( $store_url ); ?>" target="_blank" rel="noopener"><?php echo zp_icon( 'eye', 18 ); // phpcs:ignore ?>View</a>
+		</div>
+		<div class="zp-rhero__today">
+			<div><span>Today's sales</span><strong data-zp-count="<?php echo esc_attr( $today[0] ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>"><?php echo esc_html( zp_money( $today[0] ) ); ?></strong></div>
+			<div><span>Today's profit</span><strong data-zp-count="<?php echo esc_attr( $today[1] ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>"><?php echo esc_html( zp_money( $today[1] ) ); ?></strong></div>
+			<div><span>Orders today</span><strong data-zp-count="<?php echo (int) $today[2]; ?>"><?php echo (int) $today[2]; ?></strong></div>
+			<div><span>Your markup</span><strong><?php echo esc_html( rtrim( rtrim( number_format( (float) $me->markup, 2 ), '0' ), '.' ) ); ?>%</strong></div>
 		</div>
 	</section>
 
-	<div class="zp-subinfo zp-anim" style="--d:2">
-		<?php echo zp_icon( 'active' === $me->status ? 'check' : 'lock', 18 ); // phpcs:ignore ?>
-		<span><?php
-		if ( 'active' !== $me->status ) {
-			echo 'Reseller account not active.';
-		} elseif ( ZP_Resellers::is_free( $user->ID ) ) {
-			echo 'Reseller account active. Free for administrators: no monthly fee.';
-		} else {
-			echo esc_html( sprintf( 'Reseller account active until %s (%s left). Then %s is charged from your wallet automatically each month.', zp_date( $me->paid_until, false ), zp_time_left( $me->paid_until ), zp_money( $monthly ) ) );
-		}
-		?></span>
-		<?php if ( 'active' === $me->status && ! ZP_Resellers::is_free( $user->ID ) && $paid_ts - time() < 5 * DAY_IN_SECONDS && $balance < $monthly ) : ?><a class="zp-btn zp-btn--sm zp-btn--soft" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">Top up for renewal</a><?php endif; ?>
-	</div>
+	<?php if ( 'active' === $me->status && ! $free && $paid_ts - time() < 5 * DAY_IN_SECONDS && $balance < $monthly ) : ?>
+		<div class="zp-alert zp-alert--info"><?php echo zp_icon( 'wallet', 18 ); // phpcs:ignore ?><span>Your store renews in <?php echo esc_html( zp_time_left( $me->paid_until ) ); ?> for <?php echo esc_html( zp_money( $monthly ) ); ?>, and your wallet does not have enough yet.</span><a class="zp-btn zp-btn--sm zp-btn--primary" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">Top up</a></div>
+	<?php endif; ?>
 
-	<section class="zp-stats">
-		<div class="zp-stat zp-anim" style="--d:2"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'wallet' ); // phpcs:ignore ?></span><span class="zp-stat__label">Your wallet</span><strong class="zp-stat__value"><?php echo esc_html( zp_money( $balance ) ); ?></strong><span class="zp-sub">Pays for customer orders</span></div>
-		<div class="zp-stat zp-anim" style="--d:3"><span class="zp-stat__ico zp-tone-cyan"><?php echo zp_icon( 'users' ); // phpcs:ignore ?></span><span class="zp-stat__label">Customers</span><strong class="zp-stat__value"><?php echo (int) $stats['customers']; ?></strong><span class="zp-sub"><?php echo (int) $stats['orders']; ?> <?php echo 1 === (int) $stats['orders'] ? 'order' : 'orders'; ?></span></div>
-		<div class="zp-stat zp-anim" style="--d:4"><span class="zp-stat__ico zp-tone-amber"><?php echo zp_icon( 'chart' ); // phpcs:ignore ?></span><span class="zp-stat__label">Sales</span><strong class="zp-stat__value"><?php echo esc_html( zp_money( $stats['sales'] ) ); ?></strong><span class="zp-sub">Cost <?php echo esc_html( zp_money( $stats['cost'] ) ); ?></span></div>
-		<div class="zp-stat zp-anim" style="--d:5"><span class="zp-stat__ico zp-tone-green"><?php echo zp_icon( 'zap' ); // phpcs:ignore ?></span><span class="zp-stat__label">Your profit</span><strong class="zp-stat__value zp-pos"><?php echo esc_html( zp_money( $stats['profit'] ) ); ?></strong><span class="zp-sub">Markup <?php echo esc_html( rtrim( rtrim( number_format( (float) $me->markup, 2 ), '0' ), '.' ) ); ?>%</span></div>
+	<section class="zp-kpis">
+		<?php foreach ( $kpis as $i => $k ) : ?>
+			<div class="zp-kpi zp-anim" style="--d:<?php echo (int) $i + 2; ?>">
+				<div class="zp-kpi__top"><span class="zp-stat__ico zp-tone-<?php echo esc_attr( $k[1] ); ?>"><?php echo zp_icon( $k[0] ); // phpcs:ignore ?></span><?php if ( $k[6] ) : ?><b class="zp-trend zp-trend--<?php echo esc_attr( $k[6][0] ); ?>"><?php echo 'up' === $k[6][0] ? '▲' : ( 'down' === $k[6][0] ? '▼' : '•' ); ?> <?php echo esc_html( $k[6][1] ); ?></b><?php endif; ?></div>
+				<span class="zp-kpi__label"><?php echo esc_html( $k[2] ); ?></span>
+				<strong class="zp-kpi__value" data-zp-count="<?php echo esc_attr( $k[3] ); ?>" data-prefix="<?php echo esc_attr( $k[4] ); ?>"><?php echo esc_html( $k[4] ? zp_money( $k[3] ) : (int) $k[3] ); ?></strong>
+				<span class="zp-kpi__sub"><?php echo esc_html( $k[5] ); ?></span>
+				<?php echo $k[7]; // phpcs:ignore ?>
+			</div>
+		<?php endforeach; ?>
 	</section>
 
-	<?php
-	$days = array();
-	for ( $i = 29; $i >= 0; $i-- ) {
-		$days[ gmdate( 'Y-m-d', time() - $i * DAY_IN_SECONDS ) ] = 0;
-	}
-	foreach ( $wpdb->get_results( $wpdb->prepare( 'SELECT DATE(created_at) d, SUM(amount) s FROM ' . zp_table( 'orders' ) . " WHERE reseller_id = %d AND refunded = 0 AND status IN ('completed','processing','review') AND created_at >= %s GROUP BY DATE(created_at)", $user->ID, gmdate( 'Y-m-d 00:00:00', time() - 29 * DAY_IN_SECONDS ) ) ) as $r ) {
-		if ( isset( $days[ $r->d ] ) ) {
-			$days[ $r->d ] = (float) $r->s;
-		}
-	}
-	$max     = max( 1, max( $days ) );
-	$latest  = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . zp_table( 'orders' ) . ' WHERE reseller_id = %d ORDER BY id DESC LIMIT 5', $user->ID ) );
-	$newest  = $ids ? get_users( array( 'include' => $ids, 'orderby' => 'registered', 'order' => 'DESC', 'number' => 5 ) ) : array();
-	?>
 	<div class="zp-grid2 zp-grid2--wide">
-		<section class="zp-card zp-anim" style="--d:6">
-			<div class="zp-card__head"><h3>Sales, last 30 days</h3><a href="<?php echo esc_url( $tab_url( 'orders' ) ); ?>">All orders</a></div>
-			<div class="zp-bars">
-				<?php foreach ( $days as $d => $v ) : ?>
-					<div class="zp-bars__col" title="<?php echo esc_attr( $d . ': ' . zp_money( $v ) ); ?>"><i style="height:<?php echo esc_attr( max( 3, round( $v / $max * 100 ) ) ); ?>%"></i><span><?php echo 0 === ( (int) gmdate( 'j', strtotime( $d ) ) % 5 ) ? esc_html( gmdate( 'j', strtotime( $d ) ) ) : '&nbsp;'; ?></span></div>
-				<?php endforeach; ?>
+		<section class="zp-card zp-anim zp-salescard" style="--d:6" data-zp-ranges>
+			<div class="zp-card__head"><h3>Sales overview</h3><div class="zp-seg" role="tablist"><button type="button" data-range="7">7 days</button><button type="button" class="is-active" data-range="30">30 days</button></div></div>
+			<?php foreach ( array( '7' => array( $cur7, $prev7 ), '30' => array( $cur30, $prev30 ) ) as $key => $pair ) : ?>
+				<div class="zp-salesum" data-range="<?php echo esc_attr( $key ); ?>"<?php echo '30' === (string) $key ? '' : ' hidden'; ?>>
+					<div><span>Sales</span><strong><?php echo esc_html( zp_money( $pair[0][0] ) ); ?></strong><?php $dd = $delta( $pair[0][0], $pair[1][0] ); ?><b class="zp-trend zp-trend--<?php echo esc_attr( $dd[0] ); ?>"><?php echo esc_html( $dd[1] ); ?></b></div>
+					<div><span>Profit</span><strong class="zp-pos"><?php echo esc_html( zp_money( $pair[0][1] ) ); ?></strong><?php $dd = $delta( $pair[0][1], $pair[1][1] ); ?><b class="zp-trend zp-trend--<?php echo esc_attr( $dd[0] ); ?>"><?php echo esc_html( $dd[1] ); ?></b></div>
+					<div><span>Orders</span><strong><?php echo (int) $pair[0][2]; ?></strong><?php $dd = $delta( $pair[0][2], $pair[1][2] ); ?><b class="zp-trend zp-trend--<?php echo esc_attr( $dd[0] ); ?>"><?php echo esc_html( $dd[1] ); ?></b></div>
+				</div>
+			<?php endforeach; ?>
+			<div data-range="30"><?php echo $chart( $d30, '30' ); // phpcs:ignore ?></div>
+			<div data-range="7" hidden><?php echo $chart( $d7, '7' ); // phpcs:ignore ?></div>
+			<p class="zp-chart__hint">Tap a day to see its sales, orders and profit.</p>
+		</section>
+
+		<section class="zp-card zp-anim" style="--d:7">
+			<div class="zp-card__head"><h3>What is selling</h3><span class="zp-sub">Last 30 days</span></div>
+			<?php if ( ! $mix || $mix_sum <= 0 ) : ?>
+				<div class="zp-donutwrap"><div class="zp-donut"><svg viewBox="0 0 42 42" aria-hidden="true"><circle class="zp-donut__bg" cx="21" cy="21" r="15.915"/></svg><div class="zp-donut__mid"><strong>0</strong><span>orders</span></div></div><p class="zp-muted">No sales in the last 30 days yet. Share your store link to get your first order.</p></div>
+			<?php else : ?>
+				<div class="zp-donutwrap">
+					<div class="zp-donut">
+						<svg viewBox="0 0 42 42" aria-hidden="true"><circle class="zp-donut__bg" cx="21" cy="21" r="15.915"/>
+						<?php
+						$off = 25;
+						foreach ( $mix as $i => $m ) :
+							$pct = (float) $m->s / $mix_sum * 100;
+							?>
+							<circle class="zp-donut__seg" cx="21" cy="21" r="15.915" stroke="<?php echo esc_attr( $tones[ $i % 5 ] ); ?>" stroke-dasharray="<?php echo esc_attr( round( $pct, 2 ) . ' ' . round( 100 - $pct, 2 ) ); ?>" stroke-dashoffset="<?php echo esc_attr( round( $off, 2 ) ); ?>" style="--i:<?php echo (int) $i; ?>"/>
+							<?php
+							$off -= $pct;
+						endforeach;
+						?>
+						</svg>
+						<div class="zp-donut__mid"><strong data-zp-count="<?php echo (int) $cur30[2]; ?>"><?php echo (int) $cur30[2]; ?></strong><span><?php echo 1 === (int) $cur30[2] ? 'order' : 'orders'; ?></span></div>
+					</div>
+					<ul class="zp-legend">
+						<?php foreach ( $mix as $i => $m ) : ?>
+							<li><i style="background:<?php echo esc_attr( $tones[ $i % 5 ] ); ?>"></i><span><?php echo esc_html( zp_type_label( $m->t ) ); ?><small><?php echo (int) $m->n; ?> <?php echo 1 === (int) $m->n ? 'order' : 'orders'; ?></small></span><strong><?php echo esc_html( zp_money( $m->s ) ); ?><small><?php echo (int) round( (float) $m->s / $mix_sum * 100 ); ?>%</small></strong></li>
+						<?php endforeach; ?>
+					</ul>
+				</div>
+			<?php endif; ?>
+			<div class="zp-meters">
+				<div><div class="zp-meters__row"><span>Profit margin</span><strong><?php echo (int) $margin; ?>%</strong></div><div class="zp-meter"><i style="--w:<?php echo (int) min( 100, $margin ); ?>%"></i></div></div>
+				<div class="zp-meters__pair"><div><span>Average order</span><strong><?php echo esc_html( zp_money( round( $avg ) ) ); ?></strong></div><div><span>All-time profit</span><strong class="zp-pos"><?php echo esc_html( zp_money( $stats['profit'] ) ); ?></strong></div></div>
 			</div>
 		</section>
-		<section class="zp-card zp-anim" style="--d:7">
-			<div class="zp-card__head"><h3>Newest customers</h3><a href="<?php echo esc_url( $tab_url( 'customers' ) ); ?>">View all</a></div>
-			<?php if ( ! $newest ) : ?>
-				<p class="zp-muted">No customers yet. Share your store link to get your first sign-up.</p>
+	</div>
+
+	<section class="zp-card zp-anim" style="--d:8">
+		<div class="zp-card__head"><h3>Needs your attention</h3></div>
+		<div class="zp-todo">
+			<a class="zp-todo__item<?php echo $stats['pending'] ? ' is-hot' : ''; ?>" href="<?php echo esc_url( $tab_url( 'deposits' ) ); ?>"><span class="zp-stat__ico zp-tone-amber"><?php echo zp_icon( 'card', 18 ); // phpcs:ignore ?></span><div><strong>Deposits to approve</strong><span>Customers waiting for wallet credit</span></div><b><?php echo (int) $stats['pending']; ?></b></a>
+			<a class="zp-todo__item<?php echo $stats['tickets'] ? ' is-hot' : ''; ?>" href="<?php echo esc_url( $tab_url( 'tickets' ) ); ?>"><span class="zp-stat__ico zp-tone-cyan"><?php echo zp_icon( 'ticket', 18 ); // phpcs:ignore ?></span><div><strong>Open tickets</strong><span>Customers waiting for a reply</span></div><b><?php echo (int) $stats['tickets']; ?></b></a>
+			<?php if ( ! $me->bank_account_number ) : ?>
+				<a class="zp-todo__item is-hot" href="<?php echo esc_url( $tab_url( 'settings' ) ); ?>"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'settings', 18 ); // phpcs:ignore ?></span><div><strong>Add your bank details</strong><span>Customers cannot pay you until you do</span></div><b>!</b></a>
 			<?php else : ?>
+				<a class="zp-todo__item" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'wallet', 18 ); // phpcs:ignore ?></span><div><strong>Top up your wallet</strong><span>Keeps customer orders going through</span></div><b>→</b></a>
+			<?php endif; ?>
+			<a class="zp-todo__item" href="<?php echo esc_url( $tab_url( 'settings' ) ); ?>"><span class="zp-stat__ico zp-tone-green"><?php echo zp_icon( 'settings', 18 ); // phpcs:ignore ?></span><div><strong>Store settings</strong><span>Brand, colours, prices and bank</span></div><b>→</b></a>
+		</div>
+	</section>
+
+	<div class="zp-grid2">
+		<section class="zp-card zp-anim" style="--d:9">
+			<div class="zp-card__head"><h3>Latest orders</h3><a href="<?php echo esc_url( $tab_url( 'orders' ) ); ?>">View all</a></div>
+			<?php if ( ! $latest ) : ?>
+				<p class="zp-muted">No orders yet. When a customer buys from your store, it shows up here.</p>
+			<?php else : ?>
+				<ul class="zp-list">
+					<?php
+					foreach ( $latest as $o ) :
+						$c    = get_userdata( $o->user_id );
+						$live = ! $o->refunded && in_array( $o->status, array( 'completed', 'processing', 'review' ), true );
+						?>
+						<li><span class="zp-flag"><?php echo esc_html( zp_flag( $o->country ) ); ?></span><div class="zp-list__main"><strong><?php echo esc_html( $o->qty . ' × ' . zp_type_label( $o->proxy_type ) . ' · ' . $o->days . ' days' ); ?></strong><span><?php echo esc_html( ( $c ? $c->display_name : '—' ) . ' · ' . zp_date( $o->created_at ) ); ?></span></div><div class="zp-list__side"><strong><?php echo esc_html( zp_money( $o->amount ) ); ?></strong><span class="<?php echo $live ? 'zp-pos' : ''; ?>"><?php echo $live ? esc_html( '+' . zp_money( max( 0, $o->amount - $o->reseller_cost ) ) ) : esc_html( ucfirst( $o->refunded ? 'refunded' : $o->status ) ); ?></span></div></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
+		</section>
+		<section class="zp-card zp-anim" style="--d:10">
+			<div class="zp-card__head"><h3>Top customers</h3><a href="<?php echo esc_url( $tab_url( 'customers' ) ); ?>">View all</a></div>
+			<?php if ( $top ) : ?>
+				<ul class="zp-list zp-rank">
+					<?php
+					$lead = (float) $top[0]->s;
+					foreach ( $top as $i => $t ) :
+						$c = get_userdata( $t->user_id );
+						?>
+						<li><span class="zp-rank__n"><?php echo (int) $i + 1; ?></span><div class="zp-list__main"><strong><?php echo esc_html( $c ? $c->display_name : 'Customer' ); ?></strong><div class="zp-meter"><i style="--w:<?php echo (int) max( 4, round( (float) $t->s / max( 1, $lead ) * 100 ) ); ?>%"></i></div></div><div class="zp-list__side"><strong><?php echo esc_html( zp_money( $t->s ) ); ?></strong><span><?php echo (int) $t->n; ?> <?php echo 1 === (int) $t->n ? 'order' : 'orders'; ?></span></div></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php elseif ( $newest ) : ?>
 				<ul class="zp-list">
 					<?php foreach ( $newest as $c ) : ?>
 						<li><span class="zp-avatar"><?php echo esc_html( strtoupper( mb_substr( $c->display_name, 0, 1 ) ) ); ?></span><div class="zp-list__main"><strong><?php echo esc_html( $c->display_name ); ?></strong><span><?php echo esc_html( $c->user_email ); ?></span></div><div class="zp-list__side"><strong><?php echo esc_html( zp_money( ZP_Wallet::balance( $c->ID ) ) ); ?></strong><span><?php echo esc_html( zp_date( $c->user_registered, false ) ); ?></span></div></li>
 					<?php endforeach; ?>
 				</ul>
+			<?php else : ?>
+				<p class="zp-muted">No customers yet. Share your store link to get your first sign-up.</p>
 			<?php endif; ?>
-		</section>
-	</div>
-
-	<?php if ( $latest ) : ?>
-	<section class="zp-card zp-anim" style="--d:8">
-		<div class="zp-card__head"><h3>Latest orders</h3><a href="<?php echo esc_url( $tab_url( 'orders' ) ); ?>">View all</a></div>
-		<ul class="zp-list">
-			<?php
-			foreach ( $latest as $o ) :
-				$c    = get_userdata( $o->user_id );
-				$live = ! $o->refunded && in_array( $o->status, array( 'completed', 'processing', 'review' ), true );
-				?>
-				<li><span class="zp-flag"><?php echo esc_html( zp_flag( $o->country ) ); ?></span><div class="zp-list__main"><strong><?php echo esc_html( $o->qty . ' × ' . zp_type_label( $o->proxy_type ) . ' · ' . $o->days . ' days' ); ?></strong><span><?php echo esc_html( ( $c ? $c->user_email : '—' ) . ' · ' . zp_date( $o->created_at ) ); ?></span></div><div class="zp-list__side"><strong><?php echo esc_html( zp_money( $o->amount ) ); ?></strong><span class="<?php echo $live ? 'zp-pos' : ''; ?>"><?php echo $live ? esc_html( '+' . zp_money( $o->amount - $o->reseller_cost ) . ' profit' ) : esc_html( ucfirst( $o->status ) ); ?></span></div></li>
-			<?php endforeach; ?>
-		</ul>
-	</section>
-	<?php endif; ?>
-
-	<div class="zp-grid2">
-		<section class="zp-card zp-anim" style="--d:9">
-			<div class="zp-card__head"><h3>How your store works</h3></div>
-			<ul class="zp-assure" style="padding:0">
-				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>Customers register and sign in from your store link, under your brand.</li>
-				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>They pay you directly using the bank details in Store settings.</li>
-				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>You approve the payment under Deposits and their wallet is credited.</li>
-				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>When they buy, your reseller price is taken from your wallet. The rest is your profit.</li>
-				<li><?php echo zp_icon( 'check', 18 ); // phpcs:ignore ?>Your own orders are also charged at the reseller price.</li>
-			</ul>
-		</section>
-		<section class="zp-card zp-anim" style="--d:10">
-			<div class="zp-card__head"><h3>Needs attention</h3></div>
-			<ul class="zp-list zp-list--link">
-				<li><a href="<?php echo esc_url( $tab_url( 'deposits' ) ); ?>"><span class="zp-list__ico"><?php echo zp_icon( 'card', 18 ); // phpcs:ignore ?></span><div class="zp-list__main"><strong>Deposits to approve</strong><span>Customers waiting for wallet credit</span></div><div class="zp-list__side"><strong><?php echo (int) $stats['pending']; ?></strong></div></a></li>
-				<li><a href="<?php echo esc_url( $tab_url( 'tickets' ) ); ?>"><span class="zp-list__ico"><?php echo zp_icon( 'ticket', 18 ); // phpcs:ignore ?></span><div class="zp-list__main"><strong>Open tickets</strong><span>Customers waiting for a reply</span></div><div class="zp-list__side"><strong><?php echo (int) $stats['tickets']; ?></strong></div></a></li>
-				<?php if ( ! $me->bank_account_number ) : ?>
-					<li><a href="<?php echo esc_url( $tab_url( 'settings' ) ); ?>"><span class="zp-list__ico zp-tone-amber"><?php echo zp_icon( 'settings', 18 ); // phpcs:ignore ?></span><div class="zp-list__main"><strong>Add your bank details</strong><span>Customers cannot pay you until you do</span></div></a></li>
-				<?php endif; ?>
-			</ul>
 		</section>
 	</div>
 

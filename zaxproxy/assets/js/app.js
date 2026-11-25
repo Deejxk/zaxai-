@@ -177,6 +177,41 @@
     requestAnimationFrame(step);
   });
 
+  /* ---------- Reseller analytics: 7 / 30 day switch, tap a day for details ---------- */
+  $$('[data-zp-ranges]').forEach(function (card) {
+    $$('.zp-seg button', card).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var r = b.getAttribute('data-range');
+        $$('.zp-seg button', card).forEach(function (x) { x.classList.toggle('is-active', x === b); });
+        $$('[data-range]', card).forEach(function (x) { if (x.tagName !== 'BUTTON' && !x.classList.contains('zp-chart')) x.hidden = x.getAttribute('data-range') !== r; });
+      });
+    });
+    $$('.zp-chart', card).forEach(function (ch) {
+      var tip = $('.zp-chart__tip', ch), plot = $('.zp-chart__plot', ch);
+      function show(col) {
+        var p = (col.getAttribute('data-tip') || '').split('|');
+        $$('.zp-chart__col', ch).forEach(function (x) { x.classList.toggle('is-on', x === col); });
+        tip.innerHTML = ''; ['span', 'strong', 'small'].forEach(function (t, i) { var e = document.createElement(t); e.textContent = p[i] || ''; tip.appendChild(e); });
+        tip.hidden = false;
+        var pr = plot.getBoundingClientRect(), cr = col.getBoundingClientRect(), x = cr.left - pr.left + cr.width / 2, w = tip.offsetWidth;
+        tip.style.left = Math.max(4, Math.min(pr.width - w - 4, x - w / 2)) + 'px';
+      }
+      $$('.zp-chart__col', ch).forEach(function (col) {
+        col.addEventListener('mouseenter', function () { show(col); });
+        col.addEventListener('focus', function () { show(col); });
+        col.addEventListener('click', function () { show(col); });
+      });
+      plot.addEventListener('mouseleave', function () { tip.hidden = true; $$('.zp-chart__col', ch).forEach(function (x) { x.classList.remove('is-on'); }); });
+    });
+  });
+  $$('[data-zp-share]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var url = b.getAttribute('data-zp-share'), title = b.getAttribute('data-zp-share-title') || document.title;
+      if (navigator.share) { navigator.share({ title: title, text: 'Buy private proxies from ' + title, url: url }).catch(function () {}); }
+      else { copy(url, 'Store link copied'); }
+    });
+  });
+
   /* ---------- Buy form ---------- */
   var buy = $('#zp-buy');
   if (buy) (function () {
@@ -562,11 +597,30 @@
         return r.text();
       }).then(function (t) { var v = parse(t); if (!v) throw new Error('shape'); put(u, v); return v; });
     }
+    function pageOf(u) {
+      var a = new URL(u, location.href), q = a.searchParams;
+      return (q.get('zpp') !== null ? q.get('zpp') : a.href.slice(ZP.base.length).split(/[?#]/)[0].replace(/^\/+|\/+$/g, '')) || ZP.home;
+    }
     function setActive(u) {
       var target = norm(u).split('?')[0], any = false;
-      $$('.zp-nav__item, .zp-sheet__grid a').forEach(function (a) { a.classList.toggle('is-active', a.href && norm(a.href).split('?')[0] === target); });
-      $$('.zp-tabbar a.zp-tab').forEach(function (a) { var on = norm(a.href).split('?')[0] === target; a.classList.toggle('is-active', on); any = any || on; });
-      var more = $('.zp-tabbar button.zp-tab'); if (more) more.classList.toggle('is-active', !any);
+      $$('.zp-nav__item, #zp-more .zp-sheet__grid a').forEach(function (a) { a.classList.toggle('is-active', a.href && norm(a.href).split('?')[0] === target); });
+      $$('.zp-tabbar:not(.zp-tabbar--rs) a.zp-tab').forEach(function (a) { var on = norm(a.href).split('?')[0] === target; a.classList.toggle('is-active', on); any = any || on; });
+      var more = $('.zp-tabbar:not(.zp-tabbar--rs) button.zp-tab'); if (more) more.classList.toggle('is-active', !any);
+      // Inside the reseller dashboard the footer menu becomes the reseller menu.
+      var rs = $('.zp-tabbar--rs');
+      if (rs) {
+        var inRs = pageOf(u) === 'reseller', tab = new URL(u, location.href).searchParams.get('tab') || 'overview', hit = false;
+        document.body.classList.toggle('zp-in-rs', inRs);
+        $$('[data-rs-tab]').forEach(function (a) { var on = inRs && a.getAttribute('data-rs-tab') === tab; a.classList.toggle('is-active', on); if (on && a.classList.contains('zp-tab')) hit = true; });
+        var rmore = $('button.zp-tab', rs); if (rmore) rmore.classList.toggle('is-active', inRs && !hit);
+      }
+    }
+    function syncRs() { // keep the reseller menu's counters in step with the page that was just loaded
+      var rs = $('.zp-tabbar--rs'); if (!rs) return;
+      $$('.zp-subtabs a').forEach(function (a) {
+        var tab = new URL(a.href, location.href).searchParams.get('tab') || 'overview', b = a.querySelector('b'), n = b ? b.textContent : '';
+        $$('[data-rs-tab="' + tab + '"] .zp-tab__badge, [data-rs-badge="' + tab + '"]', document).forEach(function (x) { x.textContent = n; x.hidden = !n; });
+      });
     }
     function render(v, quiet) {
       main.classList.toggle('zp-quiet', !!quiet);
@@ -575,7 +629,7 @@
       var h = $('.zp-top__title'); if (h && v.heading) h.textContent = v.heading;
       var chip = $('.zp-top__actions .zp-chip'); if (chip && v.chip) chip.innerHTML = v.chip;
       if (v.nonce) ZP.nonce = v.nonce;
-      dirty = false; hideInstallRows(); initPage(!!quiet);
+      dirty = false; hideInstallRows(); syncRs(); initPage(!!quiet);
     }
     function refresh(u, mine, shown) {
       load(u).then(function (v) {
