@@ -176,7 +176,7 @@ $first = true;
 					<?php if ( 'windows' === $key && ZP_App::offered( 'windows' ) ) : ?>
 						<div class="zp-appcard">
 							<span class="zp-appcard__ico"><?php echo zp_logo( 38 ); // phpcs:ignore ?></span>
-							<div><strong>Easiest way: ZaxProxy Connect for Windows</strong><span>Download it, open it, sign in with this account and click Connect on any of your proxies. No settings to change and no password to type.</span><?php if ( ! zp_get( 'app_public' ) ) : ?><em>Only administrators can see this until it is switched on in Settings.</em><?php endif; ?></div>
+							<div><strong>Easiest way: ZaxProxy Connect for Windows</strong><span>Download the zip file, open it and double-click ZaxProxy-Connect. Sign in with this account and click Connect on any of your proxies. No settings to change and no password to type.</span><?php if ( ! zp_get( 'app_public' ) ) : ?><em>Only administrators can see this until it is switched on in Settings.</em><?php endif; ?></div>
 							<a class="zp-btn zp-btn--primary zp-btn--sm" href="<?php echo esc_url( ZP_App::download_url( 'windows' ) ); ?>" target="_blank" rel="noopener"><?php echo zp_icon( 'download', 16 ); // phpcs:ignore ?>Download</a>
 						</div>
 						<p class="zp-appcard__note">Windows may show a blue "Windows protected your PC" box the first time, because the program is new. Click <strong>More info</strong>, then <strong>Run anyway</strong>. ZaxProxy Connect then sits near the clock: right-click its icon to disconnect or quit. You can still set the proxy by hand with the steps below.</p>

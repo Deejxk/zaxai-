@@ -32,7 +32,7 @@ import (
 const (
 	uiAddr    = "127.0.0.1:47821"
 	relayAddr = "127.0.0.1:47822"
-	version   = "1.1.0"
+	version   = "1.1.1"
 )
 
 //go:embed ui.html

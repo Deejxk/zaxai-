@@ -130,7 +130,7 @@ class ZP_App {
 	/** Is the Android app offered to this visitor? Staff always; customers once the owner switches it on. */
 	const FILES = array(
 		'android' => array( 'ZaxProxy-Connect.apk', 'ZaxProxy-Connect.apk', 'application/vnd.android.package-archive' ),
-		'windows' => array( 'ZaxProxy-Connect.exe', 'ZaxProxy-Connect.exe', 'application/vnd.microsoft.portable-executable' ),
+		'windows' => array( 'ZaxProxy-Connect-Windows.zip', 'ZaxProxy-Connect-Windows.zip', 'application/zip' ), // zipped: browsers often refuse a bare .exe
 	);
 
 	public static function offered( $os = 'android' ) {
