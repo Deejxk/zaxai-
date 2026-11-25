@@ -16,6 +16,7 @@ import (
 // relay is the local helper Windows is pointed at. It accepts ordinary proxy requests from this
 // computer only and passes each one to the customer's proxy over SOCKS5, with their credentials.
 type relay struct {
+	addr   string // the local address actually in use
 	ln     net.Listener
 	srv    *http.Server
 	dial   func(ctx context.Context, network, addr string) (net.Conn, error)
@@ -48,9 +49,9 @@ func startRelay(addr string, p Proxy) (*relay, error) {
 
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		return nil, fmt.Errorf("Another program is using the port ZaxProxy needs (%s).", addr)
+		return nil, fmt.Errorf("Windows did not let ZaxProxy Connect open a local address. Restart your computer and try again.")
 	}
-	r := &relay{ln: ln, dial: cd.DialContext}
+	r := &relay{addr: ln.Addr().String(), ln: ln, dial: cd.DialContext}
 	r.client = &http.Transport{DialContext: cd.DialContext, MaxIdleConns: 32, IdleConnTimeout: 60 * time.Second, ResponseHeaderTimeout: 60 * time.Second}
 	r.srv = &http.Server{Handler: http.HandlerFunc(r.serve), ReadHeaderTimeout: 20 * time.Second}
 	go func() { _ = r.srv.Serve(ln) }()

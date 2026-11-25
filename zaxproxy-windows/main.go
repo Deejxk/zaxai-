@@ -30,9 +30,7 @@ import (
 )
 
 const (
-	uiAddr    = "127.0.0.1:47821"
-	relayAddr = "127.0.0.1:47822"
-	version   = "1.1.1"
+	version = "1.1.2"
 )
 
 //go:embed ui.html
@@ -80,6 +78,26 @@ type app struct {
 
 var a = &app{}
 
+// uiAddr is where this copy's window is served (this computer only), chosen at start-up.
+var uiAddr string
+
+func instanceFile() string { return filepath.Join(filepath.Dir(configPath()), "running.txt") }
+
+// runningCopy returns the local address of a copy that is already running, if one left a note.
+func runningCopy() string {
+	b, err := os.ReadFile(instanceFile())
+	if err != nil {
+		return ""
+	}
+	addr := strings.TrimSpace(string(b))
+	if !strings.HasPrefix(addr, "127.0.0.1:") {
+		return ""
+	}
+	return addr
+}
+
+func rememberCopy(addr string) { _ = os.WriteFile(instanceFile(), []byte(addr), 0o600) }
+
 func main() {
 	setupLog()
 	// Nothing fails silently: any unexpected error is written to the log and shown in a message box.
@@ -94,19 +112,30 @@ func main() {
 	a.site = strings.TrimRight(envOr("ZAX_SITE", "https://zaxproxy.cloud"), "/")
 
 	// Already running? Ask that copy to show its window and leave.
-	ln, err := net.Listen("tcp", uiAddr)
-	if err != nil {
+	if p := runningCopy(); p != "" {
 		c := http.Client{Timeout: 3 * time.Second}
-		r, e := c.Get("http://" + uiAddr + "/open")
-		if e == nil && r.StatusCode == 204 {
+		if r, e := c.Get("http://" + p + "/open"); e == nil {
+			ok := r.StatusCode == 204 && r.Header.Get("X-Zax") == "1"
 			r.Body.Close()
-			log.Print("already running: asked the first copy to show its window")
-			return
+			if ok {
+				log.Print("already running: asked the first copy to show its window")
+				return
+			}
 		}
-		log.Printf("cannot listen on %s: %v", uiAddr, err)
-		alert("ZaxProxy Connect cannot start", "Another program on this computer is using the address ZaxProxy needs ("+uiAddr+").\n\nClose that program, or restart your computer, and open ZaxProxy Connect again.", true)
+	}
+	// Any free local address will do. A fixed one is only tried first for convenience: Windows
+	// sometimes reserves ports, and an older copy may still be holding one.
+	ln, err := net.Listen("tcp", "127.0.0.1:47821")
+	if err != nil {
+		ln, err = net.Listen("tcp", "127.0.0.1:0")
+	}
+	if err != nil {
+		log.Printf("cannot open a local address: %v", err)
+		alert("ZaxProxy Connect cannot start", "Windows did not let ZaxProxy Connect open a local address on this computer.\n\nDetails: "+err.Error()+"\n\nRestart your computer and try again. If it still fails, your security software may be blocking it.", true)
 		return
 	}
+	uiAddr = ln.Addr().String()
+	rememberCopy(uiAddr)
 
 	buf := make([]byte, 24)
 	if _, err := rand.Read(buf); err != nil {
@@ -122,7 +151,11 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleUI)
-	mux.HandleFunc("/open", func(w http.ResponseWriter, r *http.Request) { openUI(); w.WriteHeader(204) })
+	mux.HandleFunc("/open", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Zax", "1")
+		w.WriteHeader(204)
+		go openUI()
+	})
 	mux.HandleFunc("/api/state", guard(handleState))
 	mux.HandleFunc("/api/login", guard(handleLogin))
 	mux.HandleFunc("/api/logout", guard(handleLogout))
@@ -180,6 +213,7 @@ func setupLog() {
 
 func quit() {
 	a.disconnect()
+	_ = os.Remove(instanceFile())
 	os.Exit(0)
 }
 
@@ -198,7 +232,7 @@ func handleUI(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func localHost(r *http.Request) bool { return r.Host == uiAddr || r.Host == "localhost:47821" }
+func localHost(r *http.Request) bool { return r.Host == uiAddr }
 
 // guard: only this computer's own page, holding the secret, may give orders.
 func guard(h http.HandlerFunc) http.HandlerFunc {
@@ -364,12 +398,12 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.disconnect()
-	rl, err := startRelay(relayAddr, *chosen)
+	rl, err := startRelay("127.0.0.1:0", *chosen) // any free local port
 	if err != nil {
 		writeJSON(w, 502, map[string]any{"ok": false, "error": err.Error()})
 		return
 	}
-	if err := setSystemProxy(relayAddr); err != nil {
+	if err := setSystemProxy(rl.addr); err != nil {
 		rl.stop()
 		writeJSON(w, 500, map[string]any{"ok": false, "error": "Windows did not accept the proxy setting: " + err.Error()})
 		return
@@ -423,6 +457,7 @@ type config struct {
 	PrevOn    uint32 `json:"prev_on,omitempty"`
 	PrevProxy string `json:"prev_proxy,omitempty"`
 	PrevSkip  string `json:"prev_skip,omitempty"`
+	Relay     string `json:"relay,omitempty"` // the local relay address Windows was pointed at
 }
 
 func configPath() string {

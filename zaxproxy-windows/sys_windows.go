@@ -78,8 +78,9 @@ func setSystemProxy(addr string) error {
 			c.PrevOn, c.PrevProxy = 0, ""
 		}
 		c.Changed = true
-		writeConfig(c)
 	}
+	c.Relay = addr
+	writeConfig(c)
 	return writeProxy(1, addr, "localhost;127.*;10.*;172.16.*;192.168.*;<local>")
 }
 
@@ -89,7 +90,7 @@ func restoreSystemProxy() {
 		return
 	}
 	_ = writeProxy(c.PrevOn, c.PrevProxy, c.PrevSkip)
-	c.Changed, c.PrevOn, c.PrevProxy, c.PrevSkip = false, 0, "", ""
+	c.Changed, c.PrevOn, c.PrevProxy, c.PrevSkip, c.Relay = false, 0, "", "", ""
 	writeConfig(c)
 }
 
@@ -99,7 +100,8 @@ func recoverSystemProxy(c config) {
 		restoreSystemProxy()
 		return
 	}
-	if on, server, _ := readProxy(); on == 1 && server == relayAddr {
+	// Windows still points at a relay of ours that is no longer there (also the fixed address old versions used).
+	if on, server, _ := readProxy(); on == 1 && (server == "127.0.0.1:47822" || (c.Relay != "" && server == c.Relay)) {
 		_ = writeProxy(0, "", "")
 	}
 }
