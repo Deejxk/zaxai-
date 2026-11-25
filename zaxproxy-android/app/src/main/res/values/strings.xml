@@ -21,7 +21,7 @@
     <string name="sign_out">Sign out</string>
     <string name="buy">Buy proxies</string>
     <string name="empty_title">No active proxies</string>
-    <string name="empty_sub">You have no active proxy on this account. Buy one on the website and it will appear here.</string>
+    <string name="empty_sub">You have no active proxy on this account. Buy one on the website and it will appear here, or tap "+ Add manually" to type one in.</string>
     <string name="notif_channel">Connection</string>
     <string name="notif_title">ZaxProxy Connect is on</string>
     <string name="offline">No internet connection. Please try again.</string>
@@ -46,4 +46,28 @@
     <string name="state_expired">Expired</string>
     <string name="expired_hint">This proxy has expired. Renew it on the website to use it again.</string>
     <string name="expired_now">The proxy you were using has expired, so you were disconnected. Renew it on the website or choose another location.</string>
+    <string name="add_manual">+ Add manually</string>
+    <string name="manual_title">Add a proxy manually</string>
+    <string name="manual_intro">Type the details of any SOCKS5 proxy. It is saved on this phone only. Tip: you can paste ip:port:username:password into the first box.</string>
+    <string name="manual_host">IP address or host</string>
+    <string name="manual_port">Port</string>
+    <string name="manual_user">Username</string>
+    <string name="manual_pass">Password</string>
+    <string name="manual_name">Name (optional)</string>
+    <string name="manual_save">Save and connect</string>
+    <string name="manual_checking">Checking…</string>
+    <string name="cancel">Cancel</string>
+    <string name="manual_head">Added manually (%1$d)</string>
+    <string name="manual_type">Manual</string>
+    <string name="manual_default">Manual proxy</string>
+    <string name="manual_remove">Remove</string>
+    <string name="manual_remove_ask">Remove this proxy from the app?</string>
+    <string name="manual_bad_host">Enter the proxy IP address or host, for example 185.12.34.56.</string>
+    <string name="manual_bad_port">Enter the SOCKS5 port: a number between 1 and 65535.</string>
+    <string name="manual_bad_auth">Enter both the username and the password, or leave both empty.</string>
+    <string name="manual_full">You have added the most proxies this app can keep. Remove one first.</string>
+    <string name="manual_unreachable">Could not connect to this proxy. Check the IP address and the SOCKS5 port, and that your internet is on.</string>
+    <string name="manual_rejected">The proxy did not accept this username and password. Check them and try again.</string>
+    <string name="manual_not_socks">This address answered, but not as a SOCKS5 proxy. Use the SOCKS5 port, not the HTTP port.</string>
+    <string name="empty_sub_manual">Buy a proxy on the website, or add one manually.</string>
 </resources>

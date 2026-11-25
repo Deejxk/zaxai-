@@ -65,6 +65,9 @@ public class MainActivity extends Activity {
 
     private JSONArray proxies = new JSONArray();
     private JSONArray expired = new JSONArray();
+    private JSONArray manual = new JSONArray();   // typed in by hand; kept on this phone only
+    private SharedPreferences manualPrefs;
+    private static final int MAX_MANUAL = 30;
     private JSONObject pending;   // waiting for Android's permission dialog
     private long connectingId;    // the location being connected right now
     private ObjectAnimator pulse;
@@ -90,6 +93,7 @@ public class MainActivity extends Activity {
         super.onCreate(saved);
         setContentView(R.layout.activity_main);
         prefs = getSharedPreferences("zax", MODE_PRIVATE);
+        manualPrefs = getSharedPreferences("zax_manual", MODE_PRIVATE);
 
         loginPanel = findViewById(R.id.login_panel);
         mainPanel = findViewById(R.id.main_panel);
@@ -128,6 +132,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.link_register).setOnClickListener(v -> open("/panel/register/"));
         findViewById(R.id.link_forgot).setOnClickListener(v -> open("/panel/forgot/"));
         findViewById(R.id.btn_buy).setOnClickListener(v -> open("/panel/buy/"));
+        findViewById(R.id.btn_add).setOnClickListener(v -> showAddManual());
         findViewById(R.id.btn_refresh).setOnClickListener(v -> {
             v.animate().rotationBy(360).setDuration(600).start();
             refresh(true);
@@ -152,6 +157,7 @@ public class MainActivity extends Activity {
         try {
             proxies = new JSONArray(prefs.getString("proxies", "[]"));
             expired = new JSONArray(prefs.getString("expired", "[]"));
+            manual = new JSONArray(manualPrefs.getString("list", "[]"));
         } catch (Exception ignored) {
         }
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
@@ -263,7 +269,7 @@ public class MainActivity extends Activity {
         JSONObject user = json.optJSONObject("user");
         // The proxy in use has run out or was removed: stop using it.
         String[] st = state();
-        if (st != null && byId(activeId(st)) == null) {
+        if (st != null && activeId(st) > 0 && byId(activeId(st)) == null) {
             startService(new Intent(this, TunnelService.class).setAction(TunnelService.ACTION_DISCONNECT));
             showMessage(getString(R.string.expired_now));
         }
@@ -307,13 +313,17 @@ public class MainActivity extends Activity {
             JSONObject p = proxies.optJSONObject(i);
             if (p != null && p.optLong("id") == id) return p;
         }
+        for (int i = 0; i < manual.length(); i++) {
+            JSONObject p = manual.optJSONObject(i);
+            if (p != null && p.optLong("id") == id) return p;
+        }
         return null;
     }
 
     /** The location the big button uses: the one last tapped, else the first in the list. */
     private JSONObject chosen() {
         JSONObject p = byId(prefs.getLong("selected", 0));
-        return p != null ? p : proxies.optJSONObject(0);
+        return p != null ? p : proxies.length() > 0 ? proxies.optJSONObject(0) : manual.optJSONObject(0);
     }
 
     /* ---------- Connection ---------- */
@@ -475,7 +485,7 @@ public class MainActivity extends Activity {
         } else {
             statusTitle.setText(R.string.not_connected);
             statusTitle.setTextColor(getColor(R.color.text));
-            statusSub.setText(proxies.length() == 0 ? R.string.empty_sub : R.string.tap_connect);
+            statusSub.setText(proxies.length() + manual.length() == 0 ? R.string.empty_sub_manual : R.string.tap_connect);
         }
         timer.setVisibility(st != null ? View.VISIBLE : View.GONE);
         updateTimer();
@@ -486,12 +496,12 @@ public class MainActivity extends Activity {
             selFlag.setText(shown.optString("flag"));
             String place = shown.optString("place");
             selTitle.setText(place.isEmpty() ? shown.optString("country") : place);
-            selSub.setText((place.isEmpty() ? shown.optString("type") : shown.optString("country")) + " · " + shown.optString("ip"));
+            selSub.setText((place.isEmpty() ? shown.optString("type") : shown.optString("country")) + " · " + shown.optString("ip") + (shown.optLong("id") < 0 ? ":" + shown.optInt("port") : ""));
         }
 
-        count.setText(String.valueOf(proxies.length()));
+        count.setText(String.valueOf(proxies.length() + manual.length()));
         search.setVisibility(proxies.length() >= SEARCH_FROM ? View.VISIBLE : View.GONE);
-        empty.setVisibility(proxies.length() == 0 ? View.VISIBLE : View.GONE);
+        empty.setVisibility(proxies.length() + manual.length() == 0 ? View.VISIBLE : View.GONE);
         renderList(st);
     }
 
@@ -548,18 +558,57 @@ public class MainActivity extends Activity {
             row.setOnClickListener(v -> pick(p));
             list.addView(row);
         }
-        none.setVisibility(shownRows == 0 && proxies.length() > 0 ? View.VISIBLE : View.GONE);
+        // Proxies typed in by hand.
+        int manualRows = 0;
+        for (int i = 0; i < manual.length(); i++) {
+            final JSONObject p = manual.optJSONObject(i);
+            if (p == null) continue;
+            String addr = p.optString("ip") + ":" + p.optInt("port");
+            if (!q.isEmpty() && !(p.optString("country") + " " + addr + " manual").toLowerCase(Locale.ROOT).contains(q)) continue;
+            if (manualRows++ == 0) list.addView(sectionHead(getString(R.string.manual_head, manual.length())));
+            shownRows++;
+            long id = p.optLong("id");
+            boolean on = st != null && id == active;
+            boolean picked = !on && id == selId && st == null;
+            boolean busy = connectingId == id;
+            View row = inf.inflate(R.layout.row_proxy, list, false);
+            row.setBackgroundResource(on ? R.drawable.bg_row_on : (picked || busy) ? R.drawable.bg_row_sel : R.drawable.bg_row);
+            ((TextView) row.findViewById(R.id.flag)).setText("✏️");
+            ((TextView) row.findViewById(R.id.title)).setText(p.optString("country"));
+            ((TextView) row.findViewById(R.id.sub)).setText(addr);
+            ((TextView) row.findViewById(R.id.type)).setText(R.string.manual_type);
+            TextView remove = row.findViewById(R.id.left);
+            remove.setText("✕ " + getString(R.string.manual_remove));
+            remove.setTextColor(getColor(R.color.muted));
+            remove.setBackgroundResource(R.drawable.bg_chip);
+            remove.setOnClickListener(v -> askRemove(p));
+            ImageView mark = row.findViewById(R.id.mark);
+            TextView state = row.findViewById(R.id.state);
+            if (on) {
+                mark.setBackgroundResource(R.drawable.dot_on);
+                mark.setImageResource(R.drawable.ic_check);
+                state.setText(R.string.state_connected);
+                state.setTextColor(getColor(R.color.ok));
+            } else if (busy) {
+                mark.setBackgroundResource(R.drawable.dot_sel);
+                state.setText(R.string.connecting);
+                state.setTextColor(getColor(R.color.warn));
+            } else if (picked) {
+                mark.setBackgroundResource(R.drawable.dot_sel);
+                mark.setImageResource(R.drawable.ic_check);
+                state.setText(R.string.state_selected);
+                state.setTextColor(0xFFB3AAFF);
+            } else {
+                state.setText("");
+            }
+            row.setOnClickListener(v -> pick(p));
+            list.addView(row);
+        }
+        none.setVisibility(shownRows == 0 && proxies.length() + manual.length() > 0 ? View.VISIBLE : View.GONE);
 
         // Expired proxies: shown for information only. They cannot be selected or connected.
         if (expired.length() > 0 && q.isEmpty()) {
-            TextView head = new TextView(this);
-            head.setText(getString(R.string.expired_head, expired.length()));
-            head.setTextColor(getColor(R.color.muted));
-            head.setTextSize(13.5f);
-            head.setTypeface(head.getTypeface(), android.graphics.Typeface.BOLD);
-            int pad = (int) (getResources().getDisplayMetrics().density * 4);
-            head.setPadding(pad, pad * 4, pad, pad * 2);
-            list.addView(head);
+            list.addView(sectionHead(getString(R.string.expired_head, expired.length())));
             for (int i = 0; i < expired.length(); i++) {
                 JSONObject p = expired.optJSONObject(i);
                 if (p == null) continue;
@@ -585,6 +634,138 @@ public class MainActivity extends Activity {
                 list.addView(row);
             }
         }
+    }
+
+    private TextView sectionHead(String text) {
+        TextView head = new TextView(this);
+        head.setText(text);
+        head.setTextColor(getColor(R.color.muted));
+        head.setTextSize(13.5f);
+        head.setTypeface(head.getTypeface(), android.graphics.Typeface.BOLD);
+        int pad = (int) (getResources().getDisplayMetrics().density * 4);
+        head.setPadding(pad, pad * 4, pad, pad * 2);
+        return head;
+    }
+
+    /* ---------- Proxies typed in by hand ---------- */
+
+    private void saveManual() {
+        manualPrefs.edit().putString("list", manual.toString()).apply();
+    }
+
+    private void askRemove(final JSONObject p) {
+        new android.app.AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+                .setTitle(p.optString("country"))
+                .setMessage(R.string.manual_remove_ask)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.manual_remove, (d, w) -> {
+                    long id = p.optLong("id");
+                    if (activeId(state()) == id) disconnect();
+                    JSONArray kept = new JSONArray();
+                    for (int i = 0; i < manual.length(); i++) {
+                        JSONObject x = manual.optJSONObject(i);
+                        if (x != null && x.optLong("id") != id) kept.put(x);
+                    }
+                    manual = kept;
+                    saveManual();
+                    render();
+                })
+                .show();
+    }
+
+    /** "ip:port:user:pass" or "user:pass@ip:port" typed into the first box fills every box. */
+    private static void spread(EditText host, EditText port, EditText user, EditText pass) {
+        String v = host.getText().toString().trim().replaceFirst("^[A-Za-z0-9]+://", "");
+        String cred = "";
+        int at = v.lastIndexOf('@');
+        if (at > 0) {
+            cred = v.substring(0, at);
+            v = v.substring(at + 1);
+        }
+        String[] parts = v.split(":", 4);
+        if (parts.length < 2 || !parts[1].matches("\\d{1,5}")) return;
+        host.setText(parts[0]);
+        port.setText(parts[1]);
+        if (!cred.isEmpty()) {
+            int c = cred.indexOf(':');
+            user.setText(c < 0 ? cred : cred.substring(0, c));
+            pass.setText(c < 0 ? "" : cred.substring(c + 1));
+        } else if (parts.length == 4) {
+            user.setText(parts[2]);
+            pass.setText(parts[3]);
+        }
+    }
+
+    private void showAddManual() {
+        final android.app.Dialog d = new android.app.Dialog(this);
+        d.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        d.setContentView(R.layout.dialog_manual);
+        if (d.getWindow() != null) {
+            d.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0));
+            d.getWindow().setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.94f), android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+            d.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+        final EditText host = d.findViewById(R.id.m_host), port = d.findViewById(R.id.m_port), user = d.findViewById(R.id.m_user), pass = d.findViewById(R.id.m_pass), name = d.findViewById(R.id.m_name);
+        final TextView error = d.findViewById(R.id.m_error);
+        final Button save = d.findViewById(R.id.m_save);
+        host.setOnFocusChangeListener((v, has) -> {
+            if (!has) spread(host, port, user, pass);
+        });
+        d.findViewById(R.id.m_cancel).setOnClickListener(v -> d.dismiss());
+        save.setOnClickListener(v -> {
+            spread(host, port, user, pass);
+            final String h = host.getText().toString().trim(), u = user.getText().toString().trim(), pw = pass.getText().toString();
+            int pt;
+            try {
+                pt = Integer.parseInt(port.getText().toString().trim());
+            } catch (NumberFormatException e) {
+                pt = 0;
+            }
+            int problem = 0;
+            if (h.isEmpty() || h.length() > 253 || h.matches(".*[\\s/@].*")) problem = R.string.manual_bad_host;
+            else if (pt < 1 || pt > 65535) problem = R.string.manual_bad_port;
+            else if (u.isEmpty() != pw.isEmpty() || u.length() > 255 || pw.length() > 255) problem = R.string.manual_bad_auth;
+            else if (manual.length() >= MAX_MANUAL) problem = R.string.manual_full;
+            if (problem != 0) {
+                error.setText(problem);
+                error.setVisibility(View.VISIBLE);
+                return;
+            }
+            final int portNo = pt;
+            error.setVisibility(View.GONE);
+            save.setEnabled(false);
+            save.setText(R.string.manual_checking);
+            io.execute(() -> {
+                final int result = Api.checkSocks5(h, portNo, u, pw);
+                ui.post(() -> {
+                    if (!d.isShowing()) return;
+                    save.setEnabled(true);
+                    save.setText(R.string.manual_save);
+                    if (result != 0) {
+                        error.setText(result == 2 ? R.string.manual_rejected : result == 3 ? R.string.manual_not_socks : R.string.manual_unreachable);
+                        error.setVisibility(View.VISIBLE);
+                        return;
+                    }
+                    long id = -1;
+                    for (int i = 0; i < manual.length(); i++) {
+                        JSONObject x = manual.optJSONObject(i);
+                        if (x != null && x.optLong("id") <= id) id = x.optLong("id") - 1;
+                    }
+                    String label = name.getText().toString().trim();
+                    JSONObject p = new JSONObject();
+                    try {
+                        p.put("id", id).put("type", getString(R.string.manual_type)).put("country", label.isEmpty() ? getString(R.string.manual_default) : label)
+                                .put("flag", "✏️").put("ip", h).put("place", "").put("port", portNo).put("username", u).put("password", pw);
+                    } catch (Exception ignored) {
+                    }
+                    manual.put(p);
+                    saveManual();
+                    d.dismiss();
+                    connect(p);
+                });
+            });
+        });
+        d.show();
     }
 
     private void updateTimer() {

@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	version = "1.2.0"
+	version = "1.3.0"
 )
 
 //go:embed ui.html
@@ -68,6 +68,7 @@ type app struct {
 	token     string
 	name      string
 	proxies   []Proxy
+	manual    []Proxy // typed in by hand; kept on this computer only
 	expired   []Expired
 	notice    string
 	connected int64
@@ -146,6 +147,7 @@ func main() {
 	cfg := loadConfig()
 	a.token = cfg.Token
 	a.name = cfg.Name
+	a.manual = unpackManual(cfg.Manual)
 	// A previous run that ended badly may have left Windows pointing at our relay: put it back.
 	recoverSystemProxy(cfg)
 
@@ -163,6 +165,8 @@ func main() {
 	mux.HandleFunc("/api/refresh", guard(handleRefresh))
 	mux.HandleFunc("/api/connect", guard(handleConnect))
 	mux.HandleFunc("/api/disconnect", guard(handleDisconnect))
+	mux.HandleFunc("/api/manual/add", guard(handleManualAdd))
+	mux.HandleFunc("/api/manual/remove", guard(handleManualRemove))
 	mux.HandleFunc("/api/quit", guard(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"ok": true})
 		go func() { time.Sleep(300 * time.Millisecond); quit() }()
@@ -273,7 +277,7 @@ func (x *app) snapshot() map[string]any {
 	if old == nil {
 		old = []Expired{}
 	}
-	return map[string]any{"ok": true, "signedIn": x.token != "", "name": x.name, "proxies": list, "expired": old, "notice": x.notice, "connected": x.connected, "since": x.since, "version": version}
+	return map[string]any{"ok": true, "signedIn": x.token != "", "name": x.name, "proxies": list, "manual": x.manualList(), "expired": old, "notice": x.notice, "connected": x.connected, "since": x.since, "version": version}
 }
 
 func handleState(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, a.snapshot()) }
@@ -359,7 +363,7 @@ func (x *app) refresh() error {
 	}
 	x.mu.Lock()
 	x.proxies, x.expired, x.name = res.Proxies, res.Expired, res.User.Name
-	gone := x.connected != 0
+	gone := x.connected > 0 // only account proxies can run out; hand-typed ones are left alone
 	for _, p := range res.Proxies {
 		if p.ID == x.connected {
 			gone = false
@@ -392,17 +396,29 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 			chosen = &p
 		}
 	}
+	for i := range a.manual {
+		if a.manual[i].ID == in.ID {
+			p := a.manual[i]
+			chosen = &p
+		}
+	}
 	a.mu.Unlock()
 	if chosen == nil {
 		writeJSON(w, 404, map[string]any{"ok": false, "error": "That proxy is no longer in your list. Click Refresh."})
 		return
 	}
-	a.disconnect()
+	// The new proxy is proven to work first; only then is the current one let go. A failed switch
+	// therefore leaves the user on the proxy they were already using.
 	rl, err := startRelay("127.0.0.1:0", *chosen) // any free local port
 	if err != nil {
-		writeJSON(w, 502, map[string]any{"ok": false, "error": err.Error()})
+		msg := err.Error()
+		if chosen.ID < 0 {
+			msg = "Could not connect through this proxy. Check the IP address, the SOCKS5 port, the username and the password, and that the proxy has not expired."
+		}
+		writeJSON(w, 502, map[string]any{"ok": false, "error": msg})
 		return
 	}
+	a.disconnect()
 	if err := setSystemProxy(rl.addr); err != nil {
 		rl.stop()
 		writeJSON(w, 500, map[string]any{"ok": false, "error": "Windows did not accept the proxy setting: " + err.Error()})
@@ -457,7 +473,8 @@ type config struct {
 	PrevOn    uint32 `json:"prev_on,omitempty"`
 	PrevProxy string `json:"prev_proxy,omitempty"`
 	PrevSkip  string `json:"prev_skip,omitempty"`
-	Relay     string `json:"relay,omitempty"` // the local relay address Windows was pointed at
+	Manual    string `json:"manual,omitempty"` // proxies typed in by hand, protected the same way as the token
+	Relay     string `json:"relay,omitempty"`  // the local relay address Windows was pointed at
 }
 
 func configPath() string {
@@ -503,6 +520,7 @@ func (x *app) save() {
 	c := loadConfig()
 	x.mu.Lock()
 	c.Token, c.Name = x.token, x.name
+	c.Manual = packManual(x.manual)
 	x.mu.Unlock()
 	writeConfig(c)
 }
