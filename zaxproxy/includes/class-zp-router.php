@@ -78,7 +78,7 @@ class ZP_Router {
 				self::admin( $page );
 				break;
 			default:
-				if ( zp_get( 'landing' ) && isset( self::PUBLIC_PAGES[ $base ] ) && '' === $page && ( '' !== $base || empty( $_GET ) ) ) { // phpcs:ignore
+				if ( zp_get( 'landing' ) && isset( self::PUBLIC_PAGES[ $base ] ) && '' === $page ) { // phpcs:ignore
 					self::no_cache();
 					if ( 'contact' === $base && 'POST' === self::method() ) {
 						self::contact();
@@ -359,6 +359,7 @@ class ZP_Router {
 <?php if ( $description ) : ?><meta name="description" content="<?php echo esc_attr( $description ); ?>"><?php endif; ?>
 <?php echo $index ? '' : '<meta name="robots" content="noindex">' . "\n"; // phpcs:ignore ?>
 <meta name="theme-color" content="#0b0d14" id="zp-theme-color">
+<?php if ( ZP_Shield::alias_on() ) : ?><script>window.zpPlain=function(){try{if(document.cookie.indexOf('zp_plain=')<0){document.cookie='zp_plain=1; path=/; max-age=86400; samesite=lax';location.reload();}}catch(e){}};</script><?php endif; ?>
 <link rel="manifest" href="<?php echo esc_url( zp_route_url( 'zp-manifest' ) ); ?>">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -376,7 +377,7 @@ class ZP_Router {
 <?php if ( ! empty( $GLOBALS['zp_reseller_ctx'] ) ) { self::$no_splash = true; } ?>
 <?php if ( self::$no_splash ) : ?><script>try{sessionStorage.setItem('zp-splash','1')}catch(e){}</script><?php endif; ?>
 <?php if ( ! self::$no_splash ) : ?><script>(function(){try{if(!sessionStorage.getItem('zp-splash')){sessionStorage.setItem('zp-splash','1');document.documentElement.className+=' zp-splashing';setTimeout(function(){document.documentElement.className=document.documentElement.className.replace(' zp-splashing','');},5700);}}catch(e){}})();</script><?php endif; ?>
-<link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/app.css' ) ); ?>">
+<link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/app.css' ) ); ?>"<?php echo ZP_Shield::alias_on() ? ' onerror="window.zpPlain&&zpPlain()"' : ''; ?>>
 <?php
 $zp_color = ZP_Resellers::color( zp_reseller_ctx() );
 if ( $zp_color ) : // a store's own brand colour replaces the platform palette everywhere on its pages

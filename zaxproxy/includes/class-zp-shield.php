@@ -186,7 +186,8 @@ class ZP_Shield {
 	/* ---------- Neutral asset addresses ---------- */
 
 	public static function alias_on() {
-		return 'on' === get_option( 'zp_alias' );
+		// A browser that could not load the styles from the neutral address sets this cookie and gets normal links.
+		return 'on' === get_option( 'zp_alias' ) && empty( $_COOKIE['zp_plain'] );
 	}
 
 	/** Public address of an uploaded file (store logos) without the upload folder name. */
@@ -254,11 +255,15 @@ class ZP_Shield {
 				@file_put_contents( $file . '.zp-backup', $clean ); // phpcs:ignore
 			}
 			if ( false !== @file_put_contents( $file, $rules . $clean, LOCK_EX ) ) { // phpcs:ignore
-				$res  = wp_remote_get( home_url( '/zx/assets/css/app.css?check=' . time() ), array( 'timeout' => 10, 'sslverify' => false, 'redirection' => 0 ) );
+				$res  = wp_remote_get( home_url( '/zx/assets/css/app.css?check=' . time() ), array( 'timeout' => 6, 'sslverify' => false, 'redirection' => 0 ) );
 				$ok   = ! is_wp_error( $res ) && 200 === (int) wp_remote_retrieve_response_code( $res ) && false !== strpos( (string) wp_remote_retrieve_body( $res ), '--zp-brand' );
-				$home = wp_remote_get( home_url( '/?check=' . time() ), array( 'timeout' => 10, 'sslverify' => false, 'redirection' => 0 ) );
+				$home = wp_remote_get( home_url( '/?check=' . time() ), array( 'timeout' => 6, 'sslverify' => false, 'redirection' => 0 ) );
 				$up   = ! is_wp_error( $home ) && (int) wp_remote_retrieve_response_code( $home ) < 500;
-				if ( $ok && $up ) {
+				// Some hosts do not let a site call itself. When the call cannot be made at all, trust a web server
+				// that is known to read these rules; every page also carries its own check (see head()).
+				$blind  = is_wp_error( $res ) && is_wp_error( $home );
+				$server = isset( $_SERVER['SERVER_SOFTWARE'] ) ? strtolower( (string) wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) ) : ''; // phpcs:ignore
+				if ( ( $ok && $up ) || ( $blind && preg_match( '/litespeed|apache/', $server ) ) ) {
 					$state = 'on';
 				} else {
 					@file_put_contents( $file, $clean, LOCK_EX ); // phpcs:ignore -- put everything back exactly as it was

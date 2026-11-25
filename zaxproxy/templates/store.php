@@ -123,7 +123,7 @@ $buttons  = '<div class="zs-cta-row"><a class="zs-btn zs-btn--primary zs-btn--lg
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=Archivo:wght@500;600;800&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/store.css' ) ); ?>">
+<link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/store.css' ) ); ?>"<?php echo ZP_Shield::alias_on() ? " onerror=\"if(document.cookie.indexOf('zp_plain=')<0){document.cookie='zp_plain=1; path=/; max-age=86400; samesite=lax';location.reload()}\"" : ''; ?>>
 <?php
 $pal = ZP_Resellers::store_palette( $store, $theme );
 if ( $pal ) : // the store's own brand colour replaces the design's accent, with text colours chosen to stay readable
