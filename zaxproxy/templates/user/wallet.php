@@ -18,16 +18,68 @@ $min      = (float) zp_get( 'min_deposit' );
 $presets  = array_values( array_filter( array( 2000, 5000, 10000, 20000, 50000 ), function ( $v ) use ( $min ) { return $v >= $min; } ) );
 $tx_icons = array( 'deposit' => 'plus', 'purchase' => 'cart', 'extend' => 'refresh', 'refund' => 'swap', 'adjustment' => 'settings' );
 ?>
+<?php
+global $wpdb;
+$sym   = zp_get( 'currency_symbol', '₦' );
+$tt    = zp_table( 'transactions' );
+$since = gmdate( 'Y-m-d 00:00:00', time() - 29 * DAY_IN_SECONDS );
+$flow  = $wpdb->get_row( $wpdb->prepare( "SELECT COALESCE(SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END),0) money_in, COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END),0) money_out FROM $tt WHERE user_id = %d AND created_at >= %s", $user->ID, $since ) ); // phpcs:ignore
+$life  = $wpdb->get_row( $wpdb->prepare( "SELECT COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount ELSE 0 END),0) funded, COALESCE(SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END),0) spent FROM $tt WHERE user_id = %d", $user->ID ) ); // phpcs:ignore
+$pend  = $wpdb->get_row( $wpdb->prepare( 'SELECT COUNT(*) n, COALESCE(SUM(amount),0) s FROM ' . zp_table( 'deposits' ) . " WHERE user_id = %d AND status = 'pending'", $user->ID ) );
+$lastd = $wpdb->get_row( $wpdb->prepare( "SELECT amount, created_at FROM $tt WHERE user_id = %d AND type = 'deposit' ORDER BY id DESC LIMIT 1", $user->ID ) ); // phpcs:ignore
+// Balance at the end of each of the last 30 days.
+$start = $wpdb->get_var( $wpdb->prepare( "SELECT balance_after FROM $tt WHERE user_id = %d AND created_at < %s ORDER BY id DESC LIMIT 1", $user->ID, $since ) ); // phpcs:ignore
+$ends  = array();
+$moves = array();
+foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT DATE(created_at) d, balance_after b FROM $tt WHERE user_id = %d AND created_at >= %s ORDER BY id ASC", $user->ID, $since ) ) as $r ) { // phpcs:ignore
+	$ends[ $r->d ]  = (float) $r->b;
+	$moves[ $r->d ] = isset( $moves[ $r->d ] ) ? $moves[ $r->d ] + 1 : 1;
+}
+$hist  = array();
+$run   = null === $start ? 0.0 : (float) $start;
+for ( $i = 29; $i >= 0; $i-- ) {
+	$d = gmdate( 'Y-m-d', time() - $i * DAY_IN_SECONDS );
+	if ( isset( $ends[ $d ] ) ) {
+		$run = $ends[ $d ];
+	}
+	$n          = isset( $moves[ $d ] ) ? $moves[ $d ] : 0;
+	$hist[ $d ] = array( max( 0, $run ), $n ? $n . ( 1 === $n ? ' transaction' : ' transactions' ) : 'No activity' );
+}
+$holder = $user->display_name ? $user->display_name : $user->user_login;
+?>
 <div class="zp-walletgrid">
-	<section class="zp-balance zp-anim">
-		<div class="zp-balance__art"><?php echo zp_illustration( 'wallet' ); // phpcs:ignore ?></div>
-		<span>Available balance</span>
-		<strong data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( zp_get( 'currency_symbol' ) ); ?>" data-decimals="2"><?php echo esc_html( zp_money( $balance ) ); ?></strong>
-		<p>Funds are used for purchases and renewals. Balances are held in <?php echo esc_html( zp_get( 'currency_code' ) ); ?>.</p>
-	</section>
+	<div class="zp-walletcol">
+		<section class="zp-wcard zp-anim">
+			<div class="zp-wcard__top"><span class="zp-wcard__brand"><?php echo zp_logo( 30 ); // phpcs:ignore ?><?php echo esc_html( zp_get( 'brand' ) ); ?></span><span class="zp-wcard__chip"><?php echo esc_html( zp_get( 'currency_code' ) ); ?> wallet</span></div>
+			<span class="zp-wcard__label">Available balance</span>
+			<strong class="zp-wcard__amount" data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>" data-decimals="2"><?php echo esc_html( zp_money( $balance ) ); ?></strong>
+			<div class="zp-wcard__foot">
+				<div><span>Account holder</span><strong><?php echo esc_html( $holder ); ?></strong></div>
+				<div><span>Wallet ID</span><strong class="zp-mono">ZX-<?php echo esc_html( str_pad( (string) $user->ID, 6, '0', STR_PAD_LEFT ) ); ?></strong></div>
+			</div>
+			<div class="zp-wcard__actions">
+				<a class="zp-btn zp-btn--light" href="#zp-deposit"><?php echo zp_icon( 'plus', 18 ); // phpcs:ignore ?>Add funds</a>
+				<a class="zp-btn zp-btn--glass" href="<?php echo esc_url( zp_url( 'buy' ) ); ?>"><?php echo zp_icon( 'cart', 18 ); // phpcs:ignore ?>Buy proxies</a>
+			</div>
+		</section>
+		<section class="zp-wstats">
+			<div class="zp-wstat zp-anim" style="--d:1"><span class="zp-stat__ico zp-tone-green"><?php echo zp_icon( 'plus', 18 ); // phpcs:ignore ?></span><span>Money in · 30 days</span><strong class="zp-pos"><?php echo esc_html( zp_money( $flow->money_in ) ); ?></strong></div>
+			<div class="zp-wstat zp-anim" style="--d:2"><span class="zp-stat__ico zp-tone-amber"><?php echo zp_icon( 'cart', 18 ); // phpcs:ignore ?></span><span>Money out · 30 days</span><strong><?php echo esc_html( zp_money( $flow->money_out ) ); ?></strong></div>
+			<div class="zp-wstat zp-anim" style="--d:3"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'clock', 18 ); // phpcs:ignore ?></span><span>Awaiting confirmation</span><strong><?php echo esc_html( zp_money( $pend->s ) ); ?></strong><small><?php echo (int) $pend->n; ?> <?php echo 1 === (int) $pend->n ? 'deposit' : 'deposits'; ?></small></div>
+			<div class="zp-wstat zp-anim" style="--d:4"><span class="zp-stat__ico zp-tone-cyan"><?php echo zp_icon( 'receipt', 18 ); // phpcs:ignore ?></span><span>Last top-up</span><strong><?php echo $lastd ? esc_html( zp_money( $lastd->amount ) ) : '—'; ?></strong><small><?php echo $lastd ? esc_html( zp_date( $lastd->created_at, false ) ) : 'None yet'; ?></small></div>
+		</section>
+		<section class="zp-card zp-anim zp-wflow" style="--d:5">
+			<div class="zp-card__head"><h3>All time</h3></div>
+			<div class="zp-meters__row"><span>Total funded</span><strong><?php echo esc_html( zp_money( $life->funded ) ); ?></strong></div>
+			<div class="zp-meter"><i style="--w:100%"></i></div>
+			<div class="zp-meters__row" style="margin-top:14px"><span>Total spent</span><strong><?php echo esc_html( zp_money( $life->spent ) ); ?></strong></div>
+			<div class="zp-meter zp-meter--amber"><i style="--w:<?php echo (int) ( $life->funded > 0 ? min( 100, round( $life->spent / $life->funded * 100 ) ) : ( $life->spent > 0 ? 100 : 0 ) ); ?>%"></i></div>
+		</section>
+	</div>
 
-	<section class="zp-card zp-anim" style="--d:1">
-		<div class="zp-card__head"><h3>Add funds</h3></div>
+	<section class="zp-card zp-anim zp-fund" style="--d:1">
+		<div class="zp-card__head"><h3>Add funds</h3><span class="zp-fund__safe"><?php echo zp_icon( 'shield', 14 ); // phpcs:ignore ?>Secure top-up</span></div>
+		<ol class="zp-fund__steps"><li><b>1</b>Enter amount</li><li><b>2</b>Make transfer</li><li><b>3</b>Send receipt</li></ol>
 		<?php if ( ! $gateways ) : ?>
 			<p class="zp-muted">Top-ups are not available right now. Please contact support.</p>
 		<?php else : ?>
@@ -83,6 +135,12 @@ $tx_icons = array( 'deposit' => 'plus', 'purchase' => 'cart', 'extend' => 'refre
 	</section>
 </div>
 
+<section class="zp-card zp-anim" style="--d:2">
+	<div class="zp-card__head"><h3>Balance history</h3><span class="zp-sub">Last 30 days</span></div>
+	<?php echo zp_area_chart( $hist, 'bal' ); // phpcs:ignore ?>
+	<p class="zp-chart__hint">Tap a day to see your balance at the end of that day.</p>
+</section>
+
 <?php if ( $deposits ) : ?>
 <section class="zp-card zp-anim" style="--d:2" id="zp-receipts">
 	<div class="zp-card__head"><h3>Your deposits</h3></div>
@@ -122,13 +180,13 @@ $tx_icons = array( 'deposit' => 'plus', 'purchase' => 'cart', 'extend' => 'refre
 <?php endif; ?>
 
 <section class="zp-card zp-anim" style="--d:3">
-	<div class="zp-card__head"><h3>Transactions</h3></div>
+	<div class="zp-card__head"><h3>Transactions</h3><div class="zp-seg" data-zp-txfilter><button type="button" class="is-active" data-dir="all">All</button><button type="button" data-dir="in">Money in</button><button type="button" data-dir="out">Money out</button></div></div>
 	<?php if ( ! $tx ) : ?>
 		<?php echo zp_empty( 'empty-orders', 'No transactions yet', 'Top-ups, purchases and refunds will be listed here.' ); // phpcs:ignore ?>
 	<?php else : ?>
-		<ul class="zp-list">
+		<ul class="zp-list" id="zp-txlist">
 			<?php foreach ( $tx as $t ) : ?>
-				<li>
+				<li data-dir="<?php echo $t->amount >= 0 ? 'in' : 'out'; ?>">
 					<span class="zp-list__ico <?php echo $t->amount >= 0 ? 'zp-tone-green' : ''; ?>"><?php echo zp_icon( isset( $tx_icons[ $t->type ] ) ? $tx_icons[ $t->type ] : 'swap', 18 ); // phpcs:ignore ?></span>
 					<div class="zp-list__main"><strong><?php echo esc_html( $t->description ? $t->description : ucfirst( $t->type ) ); ?></strong><span><?php echo esc_html( zp_date( $t->created_at ) ); ?></span></div>
 					<div class="zp-list__side"><strong class="<?php echo $t->amount >= 0 ? 'zp-pos' : 'zp-neg'; ?>"><?php echo esc_html( ( $t->amount >= 0 ? '+' : '' ) . zp_money( $t->amount ) ); ?></strong><span>Balance <?php echo esc_html( zp_money( $t->balance_after ) ); ?></span></div>

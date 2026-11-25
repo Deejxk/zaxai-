@@ -634,3 +634,93 @@ function zp_fit_contrast( $hex, $against, $min ) {
 function zp_ink_on( $hex ) {
 	return zp_contrast( $hex, '#ffffff' ) >= zp_contrast( $hex, '#0b0d14' ) ? '#ffffff' : '#0b0d14';
 }
+
+/* ---------- Small charts used on dashboards ---------- */
+
+/** [ direction, label ] comparing a figure with the period before it. */
+function zp_delta( $now, $before ) {
+	if ( $before <= 0 ) {
+		return $now > 0 ? array( 'up', 'New' ) : array( 'flat', '0%' );
+	}
+	$pct = ( $now - $before ) / $before * 100;
+	return array( $pct > 0.5 ? 'up' : ( $pct < -0.5 ? 'down' : 'flat' ), ( $pct > 0 ? '+' : '' ) . number_format( $pct, abs( $pct ) < 10 ? 1 : 0 ) . '%' );
+}
+
+function zp_trend( array $delta, $arrow = true ) {
+	$sign = 'up' === $delta[0] ? '▲ ' : ( 'down' === $delta[0] ? '▼ ' : '' );
+	return '<b class="zp-trend zp-trend--' . esc_attr( $delta[0] ) . '">' . ( $arrow ? $sign : '' ) . esc_html( $delta[1] ) . '</b>';
+}
+
+/** A tiny trend line that draws itself in. */
+function zp_spark( array $vals ) {
+	$vals = array_values( $vals );
+	$n    = count( $vals );
+	$max  = max( 1, max( $vals ) );
+	$min  = min( 0, min( $vals ) );
+	$pts  = array();
+	foreach ( $vals as $i => $v ) {
+		$pts[] = round( $i / max( 1, $n - 1 ) * 100, 1 ) . ',' . round( 27 - ( $v - $min ) / max( 1, $max - $min ) * 24, 1 );
+	}
+	return '<svg class="zp-spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline pathLength="1" points="' . implode( ' ', $pts ) . '"/></svg>';
+}
+
+/**
+ * Animated area chart with a tappable column per day.
+ *
+ * @param array  $rows date (Y-m-d) => [ value, detail line shown under the value ].
+ * @param string $key  unique name on the page (also the range it belongs to).
+ */
+function zp_area_chart( array $rows, $key ) {
+	$sym   = zp_get( 'currency_symbol', '₦' );
+	$dates = array_keys( $rows );
+	$vals  = array();
+	foreach ( $rows as $v ) {
+		$vals[] = (float) $v[0];
+	}
+	$n    = count( $vals );
+	$max  = $n ? max( $vals ) : 0;
+	$top  = $max > 0 ? $max * 1.15 : 1;
+	$line = '';
+	foreach ( $vals as $i => $v ) {
+		$line .= ( 0 === $i ? 'M' : 'L' ) . round( ( $i + 0.5 ) / $n * 600, 1 ) . ' ' . round( 190 - $v / $top * 170, 1 ) . ' ';
+	}
+	$first = round( 0.5 / max( 1, $n ) * 600, 1 );
+	$last  = round( ( $n - 0.5 ) / max( 1, $n ) * 600, 1 );
+	$id    = 'zp-area-' . sanitize_html_class( $key );
+	$out   = '<div class="zp-chart" data-range="' . esc_attr( $key ) . '"><div class="zp-chart__plot">';
+	$out  .= '<div class="zp-chart__grid"><span>' . esc_html( $max > 0 ? zp_money( round( $top ) ) : '' ) . '</span><span>' . esc_html( $max > 0 ? zp_money( round( $top / 2 ) ) : '' ) . '</span><span>' . esc_html( $sym . '0' ) . '</span></div>';
+	$out  .= '<svg viewBox="0 0 600 200" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="' . $id . '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--zp-brand)" stop-opacity=".38"/><stop offset="1" stop-color="var(--zp-brand)" stop-opacity="0"/></linearGradient></defs>';
+	$out  .= '<path class="zp-chart__area" fill="url(#' . $id . ')" d="' . $line . 'L' . $last . ' 190 L' . $first . ' 190 Z"/><path class="zp-chart__line" pathLength="1" d="' . trim( $line ) . '"/></svg><div class="zp-chart__cols">';
+	foreach ( $rows as $d => $v ) {
+		$out .= '<button type="button" class="zp-chart__col" style="--h:' . round( (float) $v[0] / $top * 85 + 5, 1 ) . '%" data-tip="' . esc_attr( gmdate( 'D, M j', strtotime( $d ) ) . '|' . zp_money( $v[0] ) . '|' . ( isset( $v[1] ) ? $v[1] : '' ) ) . '"><i></i></button>';
+	}
+	$out .= '</div><div class="zp-chart__tip" hidden></div></div><div class="zp-chart__x">';
+	$step = $n > 10 ? 5 : 1;
+	foreach ( $dates as $i => $d ) {
+		$out .= '<span>' . ( 0 === ( $n - 1 - $i ) % $step ? esc_html( gmdate( $n > 10 ? 'M j' : 'D', strtotime( $d ) ) ) : '' ) . '</span>';
+	}
+	return $out . '</div></div>';
+}
+
+/** Donut: segments = [ [ label, value, small text, right text ], ... ]. */
+function zp_donut( array $segments, $mid, $mid_label ) {
+	$tones = array( 'var(--zp-brand)', '#22d3ee', '#f59e0b', '#10b981', '#ec4899', '#94a3b8' );
+	$sum   = 0.0;
+	foreach ( $segments as $seg ) {
+		$sum += (float) $seg[1];
+	}
+	$out = '<div class="zp-donutwrap"><div class="zp-donut"><svg viewBox="0 0 42 42" aria-hidden="true"><circle class="zp-donut__bg" cx="21" cy="21" r="15.915"/>';
+	$off = 25;
+	if ( $sum > 0 ) {
+		foreach ( array_values( $segments ) as $i => $seg ) {
+			$pct  = (float) $seg[1] / $sum * 100;
+			$out .= '<circle class="zp-donut__seg" cx="21" cy="21" r="15.915" stroke="' . esc_attr( $tones[ $i % 6 ] ) . '" stroke-dasharray="' . esc_attr( round( $pct, 2 ) . ' ' . round( 100 - $pct, 2 ) ) . '" stroke-dashoffset="' . esc_attr( round( $off, 2 ) ) . '" style="--i:' . (int) $i . '"/>';
+			$off -= $pct;
+		}
+	}
+	$out .= '</svg><div class="zp-donut__mid"><strong>' . esc_html( $mid ) . '</strong><span>' . esc_html( $mid_label ) . '</span></div></div><ul class="zp-legend">';
+	foreach ( array_values( $segments ) as $i => $seg ) {
+		$out .= '<li><i style="background:' . esc_attr( $tones[ $i % 6 ] ) . '"></i><span>' . esc_html( $seg[0] ) . '<small>' . esc_html( $seg[2] ) . '</small></span><strong>' . esc_html( $seg[3] ) . '<small>' . ( $sum > 0 ? (int) round( (float) $seg[1] / $sum * 100 ) : 0 ) . '%</small></strong></li>';
+	}
+	return $out . '</ul></div>';
+}

@@ -186,7 +186,8 @@
         $$('[data-range]', card).forEach(function (x) { if (x.tagName !== 'BUTTON' && !x.classList.contains('zp-chart')) x.hidden = x.getAttribute('data-range') !== r; });
       });
     });
-    $$('.zp-chart', card).forEach(function (ch) {
+  });
+  $$('.zp-chart').forEach(function (ch) {
       var tip = $('.zp-chart__tip', ch), plot = $('.zp-chart__plot', ch);
       function show(col) {
         var p = (col.getAttribute('data-tip') || '').split('|');
@@ -202,6 +203,16 @@
         col.addEventListener('click', function () { show(col); });
       });
       plot.addEventListener('mouseleave', function () { tip.hidden = true; $$('.zp-chart__col', ch).forEach(function (x) { x.classList.remove('is-on'); }); });
+    });
+  $$('[data-zp-txfilter]').forEach(function (seg) {
+    $$('button', seg).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var dir = b.getAttribute('data-dir'), shown = 0;
+        $$('button', seg).forEach(function (x) { x.classList.toggle('is-active', x === b); });
+        $$('#zp-txlist > li[data-dir]').forEach(function (li) { var on = dir === 'all' || li.getAttribute('data-dir') === dir; li.hidden = !on; if (on) shown++; });
+        var none = $('#zp-txnone'); if (!none) { none = document.createElement('p'); none.id = 'zp-txnone'; none.className = 'zp-muted'; none.textContent = 'Nothing of this kind on this page.'; $('#zp-txlist').after(none); }
+        none.hidden = shown > 0;
+      });
     });
   });
   $$('[data-zp-share]').forEach(function (b) {
