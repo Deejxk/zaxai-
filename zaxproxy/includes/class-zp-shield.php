@@ -124,6 +124,9 @@ class ZP_Shield {
 			return;
 		}
 		$script = isset( $_SERVER['SCRIPT_NAME'] ) ? strtolower( basename( (string) wp_unslash( $_SERVER['SCRIPT_NAME'] ) ) ) : ''; // phpcs:ignore
+		if ( 'wp-login.php' === $script ) {
+			self::login(); // decided here, before that page sets any cookie of its own
+		}
 		if ( is_admin() && ! in_array( $script, array( 'admin-ajax.php', 'admin-post.php' ), true ) && ! is_user_logged_in() ) {
 			self::not_found();
 		}
