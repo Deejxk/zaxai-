@@ -177,6 +177,12 @@ class ZP_Orders {
 	 */
 	public static function purchase( $user_id, array $spec ) {
 		global $wpdb;
+		if ( ZP_Wallet::balance( $user_id ) <= 0 ) {
+			return new WP_Error( 'zp_funds', 'Your wallet balance is too low for this order. Please add funds.' );
+		}
+		if ( zp_throttled( 'buy' . (int) $user_id, 12, 5 * MINUTE_IN_SECONDS, false ) ) {
+			return new WP_Error( 'zp_busy', 'You are ordering very quickly. Please wait a minute and try again.' );
+		}
 		if ( ! self::lock() ) {
 			return new WP_Error( 'zp_busy', 'The store is busy processing another order. Please try again in a few seconds.' );
 		}
@@ -274,7 +280,7 @@ class ZP_Orders {
 	}
 
 	/** Hide provider-side account problems from customers; log them for the admin. */
-	private static function public_error( WP_Error $e ) {
+	public static function public_error( WP_Error $e ) {
 		$data = $e->get_error_data();
 		$id   = is_array( $data ) && isset( $data['error_id'] ) ? (int) $data['error_id'] : 0;
 		if ( in_array( $id, array( 1, 3, 23, 24, 25 ), true ) || 'zp_config' === $e->get_error_code() ) {
@@ -529,9 +535,24 @@ class ZP_Orders {
 		}
 
 		$waiting = $wpdb->get_results(
-			$wpdb->prepare( 'SELECT * FROM ' . zp_table( 'orders' ) . " WHERE kind = 'purchase' AND proxy_type = %s AND status IN ('processing','review') ORDER BY id ASC", $type )
+			$wpdb->prepare( 'SELECT * FROM ' . zp_table( 'orders' ) . " WHERE kind = 'purchase' AND proxy_type = %s AND status IN ('processing','review') ORDER BY (status = 'review') ASC, id ASC", $type )
 		);
+		// Provider order numbers: when the provider tells us which order a proxy belongs to, that decides who gets it.
+		$claimed = array(); // provider order number => our order id
+		foreach ( $waiting as $w ) {
+			if ( '' !== (string) $w->upstream_order ) {
+				$claimed[ (string) $w->upstream_order ] = (int) $w->id;
+			}
+		}
+		$seen = array();
+		foreach ( $remote as $row ) {
+			if ( ! empty( $row['upstream_order_id'] ) ) {
+				$seen[ (string) $row['upstream_order_id'] ] = true;
+			}
+		}
 		foreach ( $waiting as $o ) {
+			$mine  = (string) $o->upstream_order;
+			$exact = '' !== $mine && isset( $seen[ $mine ] );
 			$pre  = array_flip( (array) json_decode( (string) $o->pre_ids, true ) );
 			$have = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $table WHERE order_id = %d", $o->id ) ); // phpcs:ignore
 			$need = (int) $o->qty - $have;
@@ -541,6 +562,13 @@ class ZP_Orders {
 				}
 				if ( isset( $known[ $uid ] ) || isset( $pre[ $uid ] ) || $row['country'] !== strtoupper( $o->country ) ) {
 					continue;
+				}
+				$theirs = isset( $row['upstream_order_id'] ) ? (string) $row['upstream_order_id'] : '';
+				if ( $exact && $theirs !== $mine ) {
+					continue; // this order's own proxies are in the list: take only those
+				}
+				if ( ! $exact && '' !== $theirs && isset( $claimed[ $theirs ] ) && $claimed[ $theirs ] !== (int) $o->id ) {
+					continue; // bought with another customer's order
 				}
 				$row['user_id']    = $o->user_id;
 				$row['order_id']   = $o->id;

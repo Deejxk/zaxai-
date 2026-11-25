@@ -621,6 +621,11 @@
     else { toast('Open your browser menu and choose “Install app” or “Add to Home screen”.'); }
   }
 
+  /* Signed out (or on a sign-in screen): forget every page and price list kept for instant navigation. */
+  function forgetPages() { try { Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf('zpp:') === 0 || k.indexOf('zpo:') === 0 || k === 'zp-uid') sessionStorage.removeItem(k); }); } catch (e) {} }
+  if (!ZP.uid) forgetPages();
+  document.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a[href*="logout"]'); if (a) forgetPages(); }, true);
+
   /* ---------- Instant in-app navigation ----------
      Panel links swap the page content from a local copy straight away (no reload, the header and
      footer menu never move), then the fresh version is fetched and swapped in quietly. */
@@ -752,7 +757,7 @@
       user: '<circle cx="12" cy="8" r="3.600"/><path d="M5 20a7 7 0 0 1 14 0"/>',
       alert: '<path d="M12 4 2.500 20h19z"/><path d="M12 10v4.500M12 17.300v.2"/>'
     };
-    function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML; }
+    function esc(t) { var d = document.createElement('div'); d.textContent = t == null ? '' : String(t); return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
     function getLast() { try { return parseInt(localStorage.getItem(lastKey) || '0', 10) || 0; } catch (e) { return 0; } }
     function setLast(v) { try { localStorage.setItem(lastKey, String(v)); } catch (e) {} }
 

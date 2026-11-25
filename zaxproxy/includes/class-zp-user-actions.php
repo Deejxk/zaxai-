@@ -43,6 +43,10 @@ class ZP_User_Actions {
 			zp_redirect( zp_url( 'login' ) );
 		}
 		$login = zp_post( 'login' );
+		if ( '' !== $login && zp_throttled( 'acct' . md5( strtolower( $login ) ), 12, 15 * MINUTE_IN_SECONDS, false ) ) { // per account, whatever address the attempts come from
+			zp_flash( 'Too many attempts. Please wait a few minutes and try again.', 'error' );
+			zp_redirect( zp_url( 'login' ) );
+		}
 		$pass  = isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore
 		$user  = wp_signon( array( 'user_login' => $login, 'user_password' => $pass, 'remember' => (bool) zp_post( 'remember' ) ), is_ssl() );
 		if ( is_wp_error( $user ) ) {
@@ -118,6 +122,13 @@ class ZP_User_Actions {
 			zp_redirect( zp_url( 'forgot' ) );
 		}
 		$user = get_user_by( 'email', sanitize_email( zp_post( 'email' ) ) );
+		$ds   = zp_domain_store();
+		if ( $user && $ds && ! ZP_Resellers::is_customer_of( $user->ID, $ds->user_id ) ) {
+			$user = null; // a store's own domain can only send reset links to that store's customers
+		}
+		if ( $user && ! $ds && user_can( $user, 'manage_options' ) && zp_reseller_ctx() ) {
+			$user = null;
+		}
 		if ( $user ) {
 			$key = get_password_reset_key( $user );
 			if ( ! is_wp_error( $key ) ) {
@@ -258,6 +269,13 @@ class ZP_User_Actions {
 					zp_flash( 'Enter a valid name and email address.', 'error' );
 					zp_redirect( zp_url( 'profile' ) );
 				}
+				if ( strtolower( $email ) !== strtolower( $user->user_email ) ) {
+					$current = isset( $_POST['current_password'] ) ? (string) wp_unslash( $_POST['current_password'] ) : ''; // phpcs:ignore
+					if ( zp_throttled( 'mailchg' . $user->ID, 6, 15 * MINUTE_IN_SECONDS, false ) || ! wp_check_password( $current, $user->user_pass, $user->ID ) ) {
+						zp_flash( 'Enter your current password to change your email address.', 'error' );
+						zp_redirect( zp_url( 'profile' ) );
+					}
+				}
 				$owner = email_exists( $email );
 				if ( $owner && (int) $owner !== $user->ID ) {
 					zp_flash( 'That email is already used by another account.', 'error' );
@@ -309,7 +327,7 @@ class ZP_User_Actions {
 			wp_redirect( esc_url_raw( $url ) ); // phpcs:ignore -- external hosted checkout
 			exit;
 		}
-		$note = isset( $_POST['note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['note'] ) ) : ''; // phpcs:ignore
+		$note = isset( $_POST['note'] ) ? mb_substr( sanitize_text_field( wp_unslash( $_POST['note'] ) ), 0, 120 ) : ''; // phpcs:ignore
 		if ( mb_strlen( $note ) < 3 ) {
 			zp_flash( 'Enter the name on the bank account you paid from so we can match your transfer.', 'error' );
 			zp_redirect( zp_url( 'wallet' ) );
@@ -338,6 +356,8 @@ class ZP_User_Actions {
 
 		if ( 'options' === $act ) {
 			$res = ZP_Orders::options( sanitize_key( zp_query( 'type' ) ) );
+		} elseif ( in_array( $act, array( 'quote', 'extend_quote' ), true ) && zp_throttled( 'quote' . $user->ID, 45, MINUTE_IN_SECONDS, false ) ) {
+			$res = new WP_Error( 'zp_input', 'Too many price checks. Please wait a moment.' );
 		} elseif ( 'quote' === $act ) {
 			$spec = ZP_Orders::sanitize_spec( wp_unslash( $_POST ) ); // phpcs:ignore
 			$res  = is_wp_error( $spec ) ? $spec : ZP_Orders::quote( $spec, $user->ID );
@@ -365,7 +385,8 @@ class ZP_User_Actions {
 			}
 		}
 		if ( is_wp_error( $res ) ) {
-			$msg = in_array( $res->get_error_code(), array( 'zp_config', 'zp_http' ), true ) ? 'The store is temporarily unavailable. Please try again later.' : $res->get_error_message();
+			$res = ZP_Orders::public_error( $res ); // account-level provider problems are logged for staff, not shown
+			$msg = in_array( $res->get_error_code(), array( 'zp_config', 'zp_http', 'zp_unavailable' ), true ) ? 'The store is temporarily unavailable. Please try again later.' : $res->get_error_message();
 			wp_send_json( array( 'ok' => false, 'error' => $msg ) );
 		}
 		wp_send_json( array( 'ok' => true, 'data' => $res ) );

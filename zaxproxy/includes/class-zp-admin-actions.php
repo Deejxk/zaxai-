@@ -15,6 +15,10 @@ class ZP_Admin_Actions {
 			zp_redirect( zp_admin_url( 'login' ) );
 		}
 		$pass = isset( $_POST['password'] ) ? (string) wp_unslash( $_POST['password'] ) : ''; // phpcs:ignore
+		if ( '' !== zp_post( 'login' ) && zp_throttled( 'acct' . md5( strtolower( zp_post( 'login' ) ) ), 12, 15 * MINUTE_IN_SECONDS, false ) ) {
+			zp_flash( 'Too many attempts. Please wait a few minutes.', 'error' );
+			zp_redirect( zp_admin_url( 'login' ) );
+		}
 		$user = wp_authenticate( zp_post( 'login' ), $pass );
 		if ( is_wp_error( $user ) || ! user_can( $user, 'manage_options' ) ) {
 			zp_flash( 'Incorrect credentials or insufficient permissions.', 'error' );

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ZaxProxy
  * Description: Standalone proxy store: customers buy, manage and extend IPv4 / IPv6 / ISP / mobile proxies (proxy-ipv4.com API) from a dedicated user panel, with a separate admin panel outside wp-admin.
- * Version: 1.9.1
+ * Version: 1.10.0
  * Requires PHP: 7.4
  * Requires at least: 5.8
  * Author: ZaxProxy
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ZP_VERSION', '1.9.1' );
+define( 'ZP_VERSION', '1.10.0' );
 define( 'ZP_FILE', __FILE__ );
 define( 'ZP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ZP_USER_BASE', 'panel' );
@@ -33,6 +33,9 @@ require_once ZP_DIR . 'includes/class-zp-gateways.php';
 require_once ZP_DIR . 'includes/class-zp-user-actions.php';
 require_once ZP_DIR . 'includes/class-zp-admin-actions.php';
 require_once ZP_DIR . 'includes/class-zp-router.php';
+require_once ZP_DIR . 'includes/class-zp-shield.php';
+
+ZP_Shield::early();
 
 /*
  * Branded reseller domains. When the site is opened on a .cloud domain that belongs to an
@@ -41,9 +44,10 @@ require_once ZP_DIR . 'includes/class-zp-router.php';
  */
 $GLOBALS['zp_domain_store'] = ZP_Resellers::match_request_domain();
 if ( $GLOBALS['zp_domain_store'] ) {
-	$zp_domain_origin = ( is_ssl() ? 'https://' : 'http://' ) . strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) ); // phpcs:ignore
+	$zp_domain_www    = 0 === stripos( (string) wp_unslash( $_SERVER['HTTP_HOST'] ), 'www.' ) ? 'www.' : ''; // phpcs:ignore
+	$zp_domain_origin = ( is_ssl() ? 'https://' : 'http://' ) . $zp_domain_www . $GLOBALS['zp_domain_store']->domain; // the stored domain, never the raw request header
 	// Serve the plugin's own assets from the branded domain as well.
-	define( 'ZP_URL', $zp_domain_origin . wp_parse_url( plugin_dir_url( __FILE__ ), PHP_URL_PATH ) );
+	define( 'ZP_URL', ZP_Shield::alias_on() ? $zp_domain_origin . '/zx/' : $zp_domain_origin . wp_parse_url( plugin_dir_url( __FILE__ ), PHP_URL_PATH ) );
 	foreach ( array( 'option_home', 'option_siteurl' ) as $zp_hook ) {
 		add_filter(
 			$zp_hook,
@@ -56,11 +60,13 @@ if ( $GLOBALS['zp_domain_store'] ) {
 }
 
 if ( ! defined( 'ZP_URL' ) ) {
-	define( 'ZP_URL', plugin_dir_url( __FILE__ ) );
+	// With the web-server rules in place, assets are served from a neutral /zx/ address.
+	define( 'ZP_URL', ZP_Shield::alias_on() ? home_url( '/zx/' ) : plugin_dir_url( __FILE__ ) );
 }
 
 register_activation_hook( __FILE__, array( 'ZP_Install', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'ZP_Install', 'deactivate' ) );
+register_deactivation_hook( __FILE__, array( 'ZP_Shield', 'teardown' ) );
 
 add_action( 'plugins_loaded', array( 'ZP_Install', 'maybe_upgrade' ) );
 

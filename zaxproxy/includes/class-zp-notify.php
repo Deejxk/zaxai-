@@ -227,13 +227,19 @@ class ZP_Notify {
 
 	public static function subscribe( $user_id, $endpoint, $p256dh, $auth ) {
 		global $wpdb;
-		$host = (string) wp_parse_url( $endpoint, PHP_URL_HOST );
+		$host = strtolower( (string) wp_parse_url( $endpoint, PHP_URL_HOST ) );
+		if ( ! self::push_host_ok( $host ) ) {
+			return false; // only the browsers' own push services, never an address a user makes up
+		}
 		if ( 0 !== strpos( $endpoint, 'https://' ) || ! $host || strlen( $endpoint ) > 1000 || 65 !== strlen( self::unb64( $p256dh ) ) || strlen( self::unb64( $auth ) ) < 12 ) {
 			return false;
 		}
 		$t    = zp_table( 'push' );
 		$hash = md5( $endpoint );
-		$wpdb->query( $wpdb->prepare( "DELETE FROM $t WHERE hash = %s", $hash ) ); // phpcs:ignore
+		$wpdb->query( $wpdb->prepare( "DELETE FROM $t WHERE hash = %s AND user_id = %d", $hash, $user_id ) ); // phpcs:ignore
+		if ( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $t WHERE hash = %s", $hash ) ) ) { // phpcs:ignore
+			return false; // this device address is registered to someone else
+		}
 		$wpdb->insert( $t, array( 'user_id' => (int) $user_id, 'hash' => $hash, 'endpoint' => $endpoint, 'p256dh' => $p256dh, 'auth' => $auth, 'created_at' => zp_now() ) );
 		// A user keeps at most 8 devices; the oldest ones drop off.
 		$old = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM $t WHERE user_id = %d ORDER BY id DESC LIMIT 8, 50", $user_id ) ); // phpcs:ignore
@@ -241,6 +247,19 @@ class ZP_Notify {
 			$wpdb->query( "DELETE FROM $t WHERE id IN (" . implode( ',', array_map( 'intval', $old ) ) . ')' ); // phpcs:ignore
 		}
 		return true;
+	}
+
+	/** Push messages may only be handed to the push services run by the browser makers. */
+	private static function push_host_ok( $host ) {
+		if ( defined( 'ZP_PUSH_TEST_HOST' ) && ZP_PUSH_TEST_HOST === $host ) {
+			return true; // automated tests only
+		}
+		foreach ( array( 'fcm.googleapis.com', 'android.googleapis.com', 'push.services.mozilla.com', 'notify.windows.com', 'push.apple.com' ) as $ok ) {
+			if ( $host === $ok || substr( $host, -strlen( '.' . $ok ) ) === '.' . $ok ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static function unsubscribe( $endpoint ) {
@@ -305,10 +324,14 @@ class ZP_Notify {
 		if ( ! $jwt ) {
 			return 0;
 		}
-		$res = wp_remote_post(
+		if ( ! self::push_host_ok( strtolower( (string) $p['host'] ) ) ) {
+			return 410; // not a push service: drop it
+		}
+		$res = wp_safe_remote_post(
 			$sub->endpoint,
 			array(
-				'timeout' => 6,
+				'timeout'     => 5,
+				'redirection' => 0,
 				'headers' => array(
 					'Authorization'    => 'vapid t=' . $jwt . ', k=' . $keys['public'],
 					'Content-Type'     => 'application/octet-stream',

@@ -256,9 +256,21 @@ function zp_country_name( $alpha3, $fallback = '' ) {
 
 /* ---------- Flash messages (cookie based, survives PRG redirect) ---------- */
 
+function zp_flash_cookie( $value, $expires ) {
+	$opts = array( 'expires' => $expires, 'path' => COOKIEPATH ? COOKIEPATH : '/', 'domain' => COOKIE_DOMAIN, 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Lax' );
+	if ( PHP_VERSION_ID >= 70300 ) {
+		setcookie( 'zp_flash', $value, $opts );
+	} else {
+		setcookie( 'zp_flash', $value, $expires, $opts['path'] . '; samesite=Lax', $opts['domain'], $opts['secure'], true );
+	}
+}
+
 function zp_flash( $message, $type = 'success' ) {
-	$val = base64_encode( wp_json_encode( array( 't' => $type, 'm' => $message ) ) );
-	setcookie( 'zp_flash', $val, time() + 60, COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN, is_ssl(), true );
+	$body = base64_encode( wp_json_encode( array( 't' => $type, 'm' => $message ) ) ); // phpcs:ignore
+	$val  = $body . '.' . wp_hash( $body, 'nonce' ); // signed: only this site can write a message
+	if ( ! headers_sent() ) {
+		zp_flash_cookie( $val, time() + 60 );
+	}
 	$_COOKIE['zp_flash'] = $val;
 }
 
@@ -266,9 +278,14 @@ function zp_take_flash() {
 	if ( empty( $_COOKIE['zp_flash'] ) ) {
 		return null;
 	}
-	$data = json_decode( (string) base64_decode( wp_unslash( $_COOKIE['zp_flash'] ), true ), true ); // phpcs:ignore
+	$raw   = (string) wp_unslash( $_COOKIE['zp_flash'] ); // phpcs:ignore
+	$parts = explode( '.', $raw, 2 );
+	$data  = null;
+	if ( 2 === count( $parts ) && hash_equals( wp_hash( $parts[0], 'nonce' ), $parts[1] ) ) {
+		$data = json_decode( (string) base64_decode( $parts[0], true ), true ); // phpcs:ignore
+	}
 	if ( ! headers_sent() ) {
-		setcookie( 'zp_flash', '', time() - 3600, COOKIEPATH ? COOKIEPATH : '/', COOKIE_DOMAIN, is_ssl(), true );
+		zp_flash_cookie( '', time() - 3600 );
 	}
 	unset( $_COOKIE['zp_flash'] );
 	if ( ! is_array( $data ) || empty( $data['m'] ) ) {
@@ -305,8 +322,8 @@ function zp_client_ip() {
 }
 
 /** Simple attempt limiter. Returns true when the caller is over the limit. */
-function zp_throttled( $bucket, $max, $window ) {
-	$key  = 'zp_rl_' . md5( $bucket . '|' . zp_client_ip() );
+function zp_throttled( $bucket, $max, $window, $per_ip = true ) {
+	$key  = 'zp_rl_' . md5( $bucket . '|' . ( $per_ip ? zp_client_ip() : '' ) );
 	$hits = (int) get_transient( $key );
 	if ( $hits >= $max ) {
 		return true;
@@ -407,7 +424,7 @@ function zp_logo( $size = 30 ) {
 		// Reseller stores show a monogram of their own brand instead of the platform mark.
 		++$n;
 		if ( ! empty( $r->logo_url ) ) {
-			return '<img class="zp-logo-mark zp-logo-img" src="' . esc_url( set_url_scheme( $r->logo_url ) ) . '" width="' . (int) $size . '" height="' . (int) $size . '" alt="">';
+			return '<img class="zp-logo-mark zp-logo-img" src="' . esc_url( ZP_Shield::media_url( $r->logo_url ) ) . '" width="' . (int) $size . '" height="' . (int) $size . '" alt="">';
 		}
 		$c1     = ZP_Resellers::color( $r ) ? ZP_Resellers::color( $r ) : '#6d5efc';
 		$c2     = ZP_Resellers::color( $r ) ? $c1 : '#22d3ee';
@@ -478,6 +495,11 @@ function zp_public_prices() {
 		return $cached;
 	}
 	$out = array();
+	if ( get_transient( 'zp_public_prices_busy' ) ) {
+		$last = get_option( 'zp_public_prices_last' );
+		return is_array( $last ) ? $last : array(); // someone else is already refreshing the prices
+	}
+	set_transient( 'zp_public_prices_busy', 1, 90 );
 	if ( '' !== trim( (string) zp_get( 'api_key' ) ) ) {
 		foreach ( array_keys( zp_enabled_types() ) as $type ) {
 			$opts = ZP_Orders::options( $type );
@@ -510,6 +532,10 @@ function zp_public_prices() {
 		}
 	}
 	set_transient( 'zp_public_prices', $out, $out ? 2 * HOUR_IN_SECONDS : 5 * MINUTE_IN_SECONDS );
+	if ( $out ) {
+		update_option( 'zp_public_prices_last', $out, false );
+	}
+	delete_transient( 'zp_public_prices_busy' );
 	return $out;
 }
 

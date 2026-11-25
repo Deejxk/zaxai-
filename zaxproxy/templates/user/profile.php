@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php zp_nonce_field( 'profile' ); ?>
 			<label class="zp-field"><span>Full name</span><div class="zp-input"><?php echo zp_icon( 'user', 18 ); // phpcs:ignore ?><input type="text" name="name" value="<?php echo esc_attr( $user->display_name ); ?>" required></div></label>
 			<label class="zp-field"><span>Email</span><div class="zp-input"><?php echo zp_icon( 'mail', 18 ); // phpcs:ignore ?><input type="email" name="email" value="<?php echo esc_attr( $user->user_email ); ?>" required></div></label>
+			<label class="zp-field"><span>Current password</span><div class="zp-input"><?php echo zp_icon( 'lock', 18 ); // phpcs:ignore ?><input type="password" name="current_password" autocomplete="current-password" placeholder="Only needed to change your email"></div></label>
 			<button class="zp-btn zp-btn--primary" type="submit">Save changes</button>
 		</form>
 	</section>

@@ -104,7 +104,7 @@ $std_head = array(
 );
 $h1       = '' !== $headline ? esc_html( $headline ) : $std_head[ $theme ];
 $lead     = '' !== $lead ? nl2br( esc_html( $lead ) ) : esc_html( $std_lead[ $theme ] );
-$mark     = $store->logo_url ? '<img src="' . esc_url( set_url_scheme( $store->logo_url ) ) . '" alt="">' : '<i>' . esc_html( strtoupper( mb_substr( $brand, 0, 1 ) ) ) . '</i>';
+$mark     = $store->logo_url ? '<img src="' . esc_url( ZP_Shield::media_url( $store->logo_url ) ) . '" alt="">' : '<i>' . esc_html( strtoupper( mb_substr( $brand, 0, 1 ) ) ) . '</i>';
 $svg      = function ( $d ) {
 	return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $d . '</svg>';
 };

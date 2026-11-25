@@ -117,14 +117,26 @@ class ZP_Resellers {
 		if ( ! $r ) {
 			return new WP_Error( 'zp_input', 'Create your store first.' );
 		}
+		if ( 'suspended' === $r->status ) {
+			return new WP_Error( 'zp_input', 'This store is suspended. Please contact support.' );
+		}
 		if ( $r->paid_until ) {
 			return true;
 		}
-		$fee = self::is_free( $user_id ) ? 0 : (float) zp_get( 'reseller_fee', 45000 );
+		$fee   = self::is_free( $user_id ) ? 0 : (float) zp_get( 'reseller_fee', 45000 );
+		$until = gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS );
+		// Claim the activation first, so two requests at the same moment cannot both be charged.
+		$claimed = $wpdb->query( $wpdb->prepare( 'UPDATE ' . zp_table( 'resellers' ) . " SET paid_until = %s WHERE user_id = %d AND paid_until IS NULL AND status <> 'suspended'", $until, $user_id ) );
+		if ( ! $claimed ) {
+			$GLOBALS['zp_resellers_dirty'] = true;
+			return true;
+		}
 		if ( $fee > 0 && ! ZP_Wallet::debit( $user_id, $fee, 'reseller_fee', 'store', 'Reseller store: activation' ) ) {
+			$wpdb->query( $wpdb->prepare( 'UPDATE ' . zp_table( 'resellers' ) . ' SET paid_until = NULL WHERE user_id = %d AND paid_until = %s', $user_id, $until ) );
+			$GLOBALS['zp_resellers_dirty'] = true;
 			return new WP_Error( 'zp_funds', sprintf( 'You need %s in your wallet to activate your reseller account. Please add funds.', zp_money( $fee ) ) );
 		}
-		$wpdb->update( zp_table( 'resellers' ), array( 'status' => 'active', 'paid_until' => gmdate( 'Y-m-d H:i:s', time() + 30 * DAY_IN_SECONDS ) ), array( 'user_id' => $user_id ) );
+		$wpdb->update( zp_table( 'resellers' ), array( 'status' => 'active', 'paid_until' => $until ), array( 'user_id' => $user_id ) );
 		$GLOBALS['zp_resellers_dirty'] = true;
 		ZP_Notify::add( $user_id, 'store', 'Your reseller account is active', 'Your store is open. Share your link and start selling.', ZP_Notify::user_path( 'reseller' ) );
 		if ( $fee > 0 ) {
@@ -263,7 +275,24 @@ class ZP_Resellers {
 			if ( isset( $up['error'] ) || empty( $up['url'] ) ) {
 				return new WP_Error( 'zp_input', 'The logo could not be uploaded. Please try another image.' );
 			}
-			$new_url = esc_url_raw( $up['url'] );
+			$editor = wp_get_image_editor( $up['file'] );
+			if ( is_wp_error( $editor ) ) {
+				wp_delete_file( $up['file'] );
+				return new WP_Error( 'zp_input', 'The logo could not be read. Please try another image.' );
+			}
+			$size = $editor->get_size();
+			if ( $size['width'] > 600 || $size['height'] > 600 ) {
+				$editor->resize( 600, 600, false );
+			}
+			$saved = $editor->save( $up['file'] ); // rewrites the pixels only: comments, EXIF and appended data are dropped
+			if ( is_wp_error( $saved ) || empty( $saved['path'] ) ) {
+				wp_delete_file( $up['file'] );
+				return new WP_Error( 'zp_input', 'The logo could not be saved. Please try another image.' );
+			}
+			if ( $saved['path'] !== $up['file'] ) {
+				wp_delete_file( $up['file'] );
+			}
+			$new_url = esc_url_raw( trailingslashit( dirname( $up['url'] ) ) . basename( $saved['path'] ) );
 		}
 		if ( $r->logo_url ) {
 			$uploads = wp_get_upload_dir();
@@ -364,8 +393,15 @@ class ZP_Resellers {
 		if ( is_wp_error( $domain ) ) {
 			return $domain;
 		}
-		$fee = self::is_free( $user_id ) ? 0 : (float) zp_get( 'reseller_domain_fee', 12000 );
+		$fee     = self::is_free( $user_id ) ? 0 : (float) zp_get( 'reseller_domain_fee', 12000 );
+		$claimed = $wpdb->query( $wpdb->prepare( 'UPDATE ' . zp_table( 'resellers' ) . " SET domain = %s, domain_status = 'pending', domain_fee = 0 WHERE user_id = %d AND ( domain_status IS NULL OR domain_status NOT IN ('pending','active') )", $domain, $user_id ) );
+		if ( ! $claimed ) {
+			$GLOBALS['zp_resellers_dirty'] = true;
+			return new WP_Error( 'zp_input', 'You already have a branded domain on this store.' );
+		}
 		if ( $fee > 0 && ! ZP_Wallet::debit( $user_id, $fee, 'domain_fee', 'store', 'Branded domain: ' . $domain ) ) {
+			$wpdb->update( zp_table( 'resellers' ), array( 'domain' => (string) $r->domain, 'domain_status' => (string) $r->domain_status ), array( 'user_id' => $user_id ) );
+			$GLOBALS['zp_resellers_dirty'] = true;
 			return new WP_Error( 'zp_funds', sprintf( 'A branded domain costs %s. Please add funds to your wallet.', zp_money( $fee ) ) );
 		}
 		$wpdb->update( zp_table( 'resellers' ), array( 'domain' => $domain, 'domain_status' => 'pending', 'domain_fee' => $fee ), array( 'user_id' => $user_id ) );
@@ -630,6 +666,10 @@ class ZP_Resellers {
 		if ( ! $me || ! $me->paid_until ) {
 			zp_redirect( zp_url( 'reseller' ) );
 		}
+		if ( 'suspended' === $me->status ) {
+			zp_flash( 'Your store is suspended. Please contact support.', 'error' );
+			zp_redirect( zp_url( 'reseller' ) );
+		}
 
 		switch ( $do ) {
 			case 'reseller_deposit_approve':
@@ -651,7 +691,7 @@ class ZP_Resellers {
 			case 'reseller_adjust':
 				$cid    = (int) zp_post( 'customer_id' );
 				$amount = round( (float) zp_post( 'amount' ), 2 );
-				if ( ! self::is_customer_of( $cid, $user->ID ) || $amount <= 0 ) {
+				if ( ! self::is_customer_of( $cid, $user->ID ) || $amount <= 0 || ! is_finite( $amount ) || $amount > max( 1, (float) zp_get( 'max_deposit' ) ) ) {
 					zp_flash( 'Choose one of your customers and enter a valid amount.', 'error' );
 				} elseif ( 'debit' === zp_post( 'direction' ) ) {
 					$ok = ZP_Wallet::debit( $cid, $amount, 'adjustment', 'store', zp_post( 'note', 'Balance adjustment' ) );

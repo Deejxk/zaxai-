@@ -63,7 +63,8 @@ class ZP_Gateways {
 		);
 		if ( is_wp_error( $data ) ) {
 			ZP_Wallet::reject_deposit( ZP_Wallet::deposit_by_ref( $ref )->id, $data->get_error_message() );
-			return new WP_Error( 'zp_pay', 'Could not start the payment: ' . $data->get_error_message() );
+			update_option( 'zaxproxy_last_api_error', array( 'time' => zp_now(), 'message' => 'Paystack: ' . $data->get_error_message(), 'id' => 0 ), false );
+			return new WP_Error( 'zp_pay', 'Could not start the payment. Please try again or use bank transfer.' );
 		}
 		return $data['authorization_url'];
 	}

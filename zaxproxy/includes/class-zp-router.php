@@ -211,7 +211,7 @@ class ZP_Router {
 		}
 		if ( 'wallet' === $page && zp_query( 'zp_verify' ) ) {
 			$res = ZP_Gateways::paystack_verify( zp_query( 'zp_verify' ) );
-			zp_flash( is_wp_error( $res ) ? $res->get_error_message() : 'Payment received. Your wallet has been credited.', is_wp_error( $res ) ? 'error' : 'success' );
+			zp_flash( is_wp_error( $res ) ? 'We could not confirm this payment yet. If you were charged, contact support with your reference.' : 'Payment received. Your wallet has been credited.', is_wp_error( $res ) ? 'error' : 'success' );
 			zp_redirect( zp_url( 'wallet' ) );
 		}
 

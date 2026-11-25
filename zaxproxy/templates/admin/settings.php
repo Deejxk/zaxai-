@@ -72,7 +72,7 @@ $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 			<label class="zp-field"><span>Support email (ticket alerts, contact form)</span><div class="zp-input"><input type="email" name="support_email" value="<?php echo esc_attr( $s['support_email'] ); ?>"></div></label>
 		</div>
 		<?php $toggle( 'registration', 'Allow new sign-ups', 'Turn off to close registration.' ); ?>
-		<?php $toggle( 'landing', 'Public website', 'Serve the ZaxProxy home, pricing, FAQ, contact and legal pages instead of the WordPress theme.' ); ?>
+		<?php $toggle( 'landing', 'Public website', 'Serve the ZaxProxy home, pricing, FAQ, contact and legal pages instead of the default site theme.' ); ?>
 	</section>
 
 	<div class="zp-savebar"><button class="zp-btn zp-btn--primary zp-btn--lg" type="submit">Save settings</button></div>
