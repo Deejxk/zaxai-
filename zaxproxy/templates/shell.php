@@ -59,7 +59,7 @@ $zp_rs_on = $zp_rs && 'reseller' === $view;
 				<div class="zp-menu zp-bell">
 					<button class="zp-iconbtn" id="zp-bell" type="button" title="Notifications" aria-label="Notifications" aria-haspopup="true"><?php echo zp_icon( 'bell' ); // phpcs:ignore ?><b class="zp-bell__dot" id="zp-bell-dot"<?php echo $zp_unread ? '' : ' hidden'; ?>><?php echo $zp_unread > 9 ? '9+' : (int) $zp_unread; ?></b></button>
 					<div class="zp-bell__panel" id="zp-bell-panel" hidden>
-						<div class="zp-bell__head"><strong>Notifications</strong><button type="button" class="zp-bell__x" id="zp-bell-close" aria-label="Close"><?php echo zp_icon( 'x', 18 ); // phpcs:ignore ?></button></div>
+						<div class="zp-bell__head"><strong>Notifications</strong><button type="button" class="zp-bell__clear" id="zp-bell-clear" hidden>Delete all</button><button type="button" class="zp-bell__x" id="zp-bell-close" aria-label="Close"><?php echo zp_icon( 'x', 18 ); // phpcs:ignore ?></button></div>
 						<div class="zp-bell__push" id="zp-bell-push" hidden>
 							<span class="zp-bell__pushico"><?php echo zp_icon( 'bell', 18 ); // phpcs:ignore ?></span>
 							<div><strong>Get alerts on this phone</strong><small id="zp-bell-push-text">Your phone will ring when something needs you, even when the app is closed.</small></div>

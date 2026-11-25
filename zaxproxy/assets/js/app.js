@@ -714,12 +714,14 @@
       dot.hidden = unread < 1; dot.textContent = unread > 9 ? '9+' : String(unread);
       bell.classList.toggle('has-unread', unread > 0);
       try { if (navigator.setAppBadge) { if (unread > 0) navigator.setAppBadge(unread); else navigator.clearAppBadge(); } } catch (e) {}
+      var clr = document.getElementById('zp-bell-clear'); if (clr) clr.hidden = !items.length;
       if (!items.length) { list.innerHTML = '<div class="zp-bell__empty"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.600" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.500 7.500 2.500 7.500h-17S6 15 6 9"/><path d="M10 20a2.200 2.200 0 0 0 4 0"/></svg><strong>You are all caught up</strong><span>New activity will show up here.</span></div>'; return; }
       list.innerHTML = items.map(function (n) {
         var tag = n.url ? 'a' : 'div';
-        return '<' + tag + (n.url ? ' href="' + esc(n.url) + '"' : '') + ' class="zp-note zp-note--' + esc(n.type) + (n.read ? '' : ' is-new') + '">' +
+        return '<div class="zp-noterow" data-id="' + n.id + '"><' + tag + (n.url ? ' href="' + esc(n.url) + '"' : '') + ' class="zp-note zp-note--' + esc(n.type) + (n.read ? '' : ' is-new') + '">' +
           '<span class="zp-note__ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round">' + (ICON[n.type] || ICON.alert) + '</svg></span>' +
-          '<span class="zp-note__main"><strong>' + esc(n.title) + '</strong>' + (n.body ? '<span>' + esc(n.body) + '</span>' : '') + '<em>' + esc(n.time) + '</em></span></' + tag + '>';
+          '<span class="zp-note__main"><strong>' + esc(n.title) + '</strong>' + (n.body ? '<span>' + esc(n.body) + '</span>' : '') + '<em>' + esc(n.time) + '</em></span></' + tag + '>' +
+          '<button type="button" class="zp-note__del" aria-label="Delete this notification" title="Delete"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>';
       }).join('');
     }
 
@@ -775,10 +777,27 @@
     bell.addEventListener('click', function (e) { e.stopPropagation(); if (panel.hidden) open(); else close(); });
     document.addEventListener('click', function (e) {
       if (e.target.closest('#zp-bell-close')) { close(); return; }
-      if (!panel.hidden && !e.target.closest('#zp-bell-panel') && !e.target.closest('#zp-bell')) close();
+      if (!panel.hidden && !e.target.closest('#zp-bell-panel') && !e.target.closest('#zp-bell') && document.body.contains(e.target)) close();
       if (e.target.closest('#zp-bell-panel a.zp-note')) close();
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+
+    /* ----- Delete one / delete all ----- */
+    list.addEventListener('click', function (e) {
+      var del = e.target.closest('.zp-note__del'); if (!del) return;
+      e.preventDefault(); e.stopPropagation();
+      var row = del.closest('.zp-noterow'), id = parseInt(row.getAttribute('data-id'), 10);
+      row.classList.add('is-gone');
+      setTimeout(function () { items = items.filter(function (n) { return n.id !== id; }); unread = items.filter(function (n) { return !n.read; }).length; draw(); }, 200);
+      post({ do: 'delete', id: id });
+    });
+    document.addEventListener('click', function (e) {
+      var c = e.target.closest('#zp-bell-clear'); if (!c) return;
+      e.stopPropagation();
+      if (!c.classList.contains('is-sure')) { c.classList.add('is-sure'); c.textContent = 'Tap again to delete all'; setTimeout(function () { c.classList.remove('is-sure'); c.textContent = 'Delete all'; }, 3500); return; }
+      c.classList.remove('is-sure'); c.textContent = 'Delete all';
+      items = []; unread = 0; draw(); post({ do: 'clear' }).then(function () { toast('Notifications deleted'); });
+    });
 
     /* ----- Phone alerts ----- */
     var canPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && window.isSecureContext && N.key;

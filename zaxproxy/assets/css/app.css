@@ -1045,3 +1045,16 @@ a.zp-kpi{color:var(--zp-text)}a.zp-kpi:hover{text-decoration:none}
 [data-theme="light"] .zp-logo-mark{filter:drop-shadow(0 5px 9px rgba(91,70,232,.3))}
 .zp-splash__logo .zp-logo-mark{filter:drop-shadow(0 18px 34px rgba(91,70,232,.65))}
 .zp-wordmark--store{font-family:"Sora",var(--zp-font);font-weight:800;letter-spacing:-.045em}
+
+/* notifications: delete one / delete all */
+.zp-bell__head{gap:10px}.zp-bell__head strong{margin-right:auto}
+.zp-bell__clear{height:32px;padding:0 12px;border-radius:10px;border:1px solid var(--zp-border);background:var(--zp-surface-2);color:var(--zp-text-2);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.zp-bell__clear[hidden]{display:none}
+.zp-bell__clear.is-sure{background:#e11d48;border-color:transparent;color:#fff}
+.zp-noterow{position:relative;transition:opacity .2s,transform .2s,max-height .2s;max-height:220px}
+.zp-noterow.is-gone{opacity:0;transform:translateX(24px)}
+.zp-noterow .zp-note{padding-right:44px}
+.zp-noterow .zp-note__main{padding-right:0}
+.zp-note.is-new::after{right:auto;left:4px;top:8px}
+.zp-note__del{position:absolute;right:8px;top:10px;width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--zp-border);border-radius:9px;background:var(--zp-surface);color:var(--zp-text-2);cursor:pointer;transition:background .15s,color .15s,border-color .15s;-webkit-tap-highlight-color:transparent}
+.zp-note__del:hover,.zp-note__del:active{background:#e11d48;border-color:transparent;color:#fff}

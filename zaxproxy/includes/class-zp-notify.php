@@ -156,6 +156,13 @@ class ZP_Notify {
 				case 'read':
 					self::mark_read( $uid );
 					break;
+				case 'delete':
+					$wpdb_n = $GLOBALS['wpdb'];
+					$wpdb_n->delete( zp_table( 'notifications' ), array( 'id' => (int) zp_post( 'id' ), 'user_id' => $uid ) ); // only ever the user's own
+					break;
+				case 'clear':
+					$GLOBALS['wpdb']->delete( zp_table( 'notifications' ), array( 'user_id' => $uid ) );
+					break;
 				case 'subscribe':
 					$ok = self::subscribe( $uid, isset( $_POST['endpoint'] ) ? esc_url_raw( wp_unslash( $_POST['endpoint'] ) ) : '', zp_post( 'p256dh' ), zp_post( 'auth' ) ); // phpcs:ignore
 					if ( ! $ok ) {
