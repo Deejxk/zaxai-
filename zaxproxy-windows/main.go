@@ -7,8 +7,8 @@
 // SOCKS5, signing in with the proxy's username and password, so browsers never ask for them.
 // Disconnecting (or quitting) puts the Windows proxy setting back exactly as it was.
 //
-// The window is a page in your browser served from this computer only; a tray icon keeps the
-// program reachable. The account password is used once to sign in and is never stored.
+// The program has its own window. Its screen is a page served from this computer only and shown
+// inside the window; closing the window disconnects and quits. The account password is used once to sign in and is never stored.
 package main
 
 import (
@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	version = "1.1.2"
+	version = "1.2.0"
 )
 
 //go:embed ui.html
@@ -154,9 +154,10 @@ func main() {
 	mux.HandleFunc("/open", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Zax", "1")
 		w.WriteHeader(204)
-		go openUI()
+		go focusWindow()
 	})
 	mux.HandleFunc("/api/state", guard(handleState))
+	mux.HandleFunc("/api/open", guard(handleOpen))
 	mux.HandleFunc("/api/login", guard(handleLogin))
 	mux.HandleFunc("/api/logout", guard(handleLogout))
 	mux.HandleFunc("/api/refresh", guard(handleRefresh))
@@ -175,14 +176,7 @@ func main() {
 		}
 	}()
 	log.Printf("window address: http://%s", uiAddr)
-	if os.Getenv("ZAX_NO_BROWSER") == "" {
-		go func() {
-			// A plain message first, so it is obvious the program is running and where to find it.
-			alert("ZaxProxy Connect is running", "ZaxProxy Connect is now running on this computer.\n\nWhen you click OK, the ZaxProxy Connect window opens in your web browser. Sign in there and click Connect on a proxy.\n\nYou can reopen it any time from the shield icon near the clock (click the small ^ arrow if you do not see it).", false)
-			openUI()
-		}()
-	}
-	runTray() // blocks until Quit
+	runWindow(uiURL()) // returns when the window is closed
 	quit()
 }
 
@@ -194,13 +188,6 @@ func envOr(k, d string) string {
 }
 
 func uiURL() string { return "http://" + uiAddr + "/#k=" + a.key }
-
-func openUI() {
-	if err := openBrowser(uiURL()); err != nil {
-		log.Printf("could not open the browser: %v", err)
-		alert("Open ZaxProxy Connect in your browser", "ZaxProxy Connect could not open your web browser by itself.\n\nOpen your browser and type this address:\n\n"+uiURL(), false)
-	}
-}
 
 func logPath() string { return filepath.Join(filepath.Dir(configPath()), "log.txt") }
 
@@ -290,6 +277,19 @@ func (x *app) snapshot() map[string]any {
 }
 
 func handleState(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, a.snapshot()) }
+
+// handleOpen opens a page of the ZaxProxy website in the user's normal browser (buy, register, renew).
+func handleOpen(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Path string `json:"path"`
+	}
+	if readBody(r, &in) != nil || !strings.HasPrefix(in.Path, "/") || strings.HasPrefix(in.Path, "//") || strings.ContainsAny(in.Path, "\\\r\n ") {
+		writeJSON(w, 400, map[string]any{"ok": false})
+		return
+	}
+	_ = openBrowser("https://zaxproxy.cloud" + in.Path)
+	writeJSON(w, 200, map[string]any{"ok": true})
+}
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	var in struct{ Login, Password string }

@@ -21,7 +21,9 @@ func unprotect(s string) (string, error) {
 	return s, nil
 }
 func trayStatus(on bool, label string) {}
-func runTray() {
+func focusWindow()                     { log.Println("[test] window to front") }
+func runWindow(url string) {
+	log.Println("[test] open", url)
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 	<-ch

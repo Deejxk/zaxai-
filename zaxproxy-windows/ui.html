@@ -5,141 +5,199 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>ZaxProxy Connect</title>
 <style>
-:root{--bg:#0b0d14;--surface:#141826;--surface2:#1b2032;--border:#262c45;--text:#eef1f8;--muted:#a4adc4;--brand:#6d5efc;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
+:root{--bg:#090b12;--panel:#10131f;--surface:#151a2b;--surface2:#1b2136;--line:#232a44;--text:#eef1f8;--muted:#9aa4bf;--faint:#6f7a98;--brand:#6d5efc;--brand2:#2563eb;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
 *{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;background:radial-gradient(900px 500px at 50% -10%,#1a1640 0%,var(--bg) 60%);background-attachment:fixed;color:var(--text);font:15px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
-.app{max-width:980px;margin:0 auto;padding:18px 20px 40px}
-.top{display:flex;align-items:center;gap:11px;margin-bottom:18px}
-.top .name{flex:1;line-height:1.15}
-.top .name b{display:block;font:700 20px Georgia,"Times New Roman",serif;letter-spacing:-.01em}
-.top .name span{font-size:12.5px;color:var(--muted)}
-.logo{width:38px;height:38px;flex:none}
-button{font:inherit;cursor:pointer;border:0;color:#fff}
-.icon{height:40px;padding:0 14px;border-radius:13px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:13.5px;display:inline-flex;align-items:center;gap:7px;transition:border-color .2s,transform .2s}
-.icon:hover{border-color:#3a4160;transform:translateY(-1px)}
-.icon svg{width:17px;height:17px}
-.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:18px;align-items:start}
-.stage{position:sticky;top:18px;border-radius:28px;padding:28px 22px 22px;text-align:center;background:linear-gradient(180deg,#171b33,#0f1220);border:1px solid var(--border);box-shadow:0 40px 80px -50px #000}
-.power{position:relative;width:196px;height:196px;margin:0 auto;border-radius:50%;background:none;display:grid;place-items:center;outline:0}
-.power i{position:absolute;inset:0;border-radius:50%;background:var(--c);opacity:.13;animation:halo var(--speed,2.600s) ease-in-out infinite alternate}
-.power u{position:absolute;inset:20px;border-radius:50%;border:2px solid var(--c);opacity:.55}
-.power s{position:relative;width:126px;height:126px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 18px 40px -12px var(--c);transition:transform .2s}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:14.5px/1.5 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none;cursor:default}
+button{font:inherit;cursor:pointer;border:0;color:inherit;background:none}
+input{font:inherit;user-select:text;-webkit-user-select:text}
+[hidden]{display:none!important}
+::-webkit-scrollbar{width:10px}::-webkit-scrollbar-thumb{background:#262d49;border-radius:6px;border:2px solid var(--panel)}::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- sign in ---------- */
+.login{height:100%;display:grid;grid-template-columns:1.05fr 1fr}
+.login__art{position:relative;overflow:hidden;padding:44px;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(700px 480px at 15% 10%,rgba(109,94,252,.5),transparent 60%),radial-gradient(600px 460px at 90% 100%,rgba(37,99,235,.42),transparent 60%),#0d0f1c}
+.login__art::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(circle at 40% 40%,#000,transparent 75%);mask-image:radial-gradient(circle at 40% 40%,#000,transparent 75%)}
+.login__art>*{position:relative;z-index:1}
+.brandrow{display:flex;align-items:center;gap:12px}
+.brandrow svg{width:44px;height:44px}
+.brandrow b{font:700 24px Georgia,"Times New Roman",serif}
+.brandrow em{font-style:normal;margin-left:2px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.1);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#cfc9ff}
+.login__art h1{margin:0 0 12px;font-size:38px;line-height:1.12;font-weight:800;letter-spacing:-.03em;max-width:420px}
+.login__art h1 span{background:linear-gradient(135deg,#b3aaff,#67e8f9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.login__art p{margin:0;color:#c3cae0;font-size:15.5px;max-width:400px}
+.points{display:flex;flex-direction:column;gap:10px;margin-top:26px}
+.points div{display:flex;align-items:center;gap:10px;color:#dfe4f5;font-size:14.5px}
+.points i{width:26px;height:26px;border-radius:9px;background:rgba(255,255,255,.1);display:grid;place-items:center}
+.points svg{width:14px;height:14px}
+.login__foot{color:#8f9ab8;font-size:12.5px}
+.login__form{display:grid;place-items:center;padding:40px;background:var(--panel)}
+.formbox{width:100%;max-width:360px}
+.formbox h2{margin:0 0 4px;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.formbox>p{margin:0 0 24px;color:var(--muted)}
+label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--muted)}
+.field{width:100%;height:50px;margin-bottom:14px;padding:0 15px;border-radius:13px;border:1px solid var(--line);background:var(--surface);color:var(--text);outline:0;transition:border-color .2s,box-shadow .2s}
+.field:focus{border-color:var(--brand);box-shadow:0 0 0 4px rgba(109,94,252,.18)}
+.primary{width:100%;height:52px;border-radius:13px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:700;font-size:15.5px;box-shadow:0 16px 30px -14px rgba(109,94,252,.9);transition:transform .15s,opacity .2s}
+.primary:hover{transform:translateY(-1px)}.primary:disabled{opacity:.6;transform:none;cursor:default}
+.check{display:flex;align-items:center;gap:9px;margin:2px 0 18px;color:var(--muted);font-size:13.5px;font-weight:500}
+.check input{width:17px;height:17px;accent-color:var(--brand)}
+.links{margin-top:20px;text-align:center;color:var(--muted);font-size:13.5px}
+.link{color:#b3aaff;font-weight:600}
+.err{margin:0 0 14px;padding:11px 14px;border-radius:12px;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);color:#fda4a4;font-size:13.5px}
+
+/* ---------- main ---------- */
+.shell{height:100%;display:grid;grid-template-columns:392px minmax(0,1fr);grid-template-rows:minmax(0,1fr);overflow:hidden}
+.left{position:relative;min-height:0;display:flex;flex-direction:column;padding:20px 22px 18px;background:var(--panel);border-right:1px solid var(--line);overflow:hidden}
+.left::before{content:"";position:absolute;left:-120px;top:-140px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,var(--glow,rgba(109,94,252,.34)),transparent 65%);transition:background .5s;pointer-events:none}
+.left>*{position:relative}
+.acct{display:flex;align-items:center;gap:10px}
+.acct .brandrow svg{width:34px;height:34px}.acct .brandrow b{font-size:18px}
+.acct .who{margin-left:auto;display:flex;align-items:center;gap:9px;min-width:0}
+.avatar{width:34px;height:34px;flex:none;border-radius:11px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;font-weight:800}
+.who span{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 0}
+.power{position:relative;width:204px;height:204px;border-radius:50%;display:grid;place-items:center;outline:0;--c:#6d5efc;--c1:#8b7bff;--c2:#3b2fc4;--speed:2.600s}
+.power i{position:absolute;inset:0;border-radius:50%;background:var(--c);opacity:.13;animation:halo var(--speed) ease-in-out infinite alternate}
+.power u{position:absolute;inset:22px;border-radius:50%;border:2px solid var(--c);opacity:.5}
+.power u::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid transparent;border-top-color:#fff;opacity:0}
+.power.busy u::after{opacity:.9;animation:spin 1s linear infinite}
+.power s{position:relative;width:130px;height:130px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,var(--c1),var(--c2));box-shadow:0 20px 44px -12px var(--c),inset 0 2px 0 rgba(255,255,255,.25);transition:transform .2s}
 .power:hover s{transform:scale(1.04)}.power:active s{transform:scale(.96)}
 .power svg{width:54px;height:54px}
-.power{--c:#6d5efc;--c1:#7c6cff;--c2:#3b2fc4}
 .power.on{--c:#10b981;--c1:#34d399;--c2:#047857;--speed:1.800s}
 .power.busy{--c:#f59e0b;--c1:#fbbf24;--c2:#d97706;--speed:.700s}
 @keyframes halo{from{transform:scale(.9);opacity:.2}to{transform:scale(1.1);opacity:.05}}
-.stage h2{margin:14px 0 0;font-size:25px;font-weight:800;letter-spacing:-.02em}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stage h2{margin:16px 0 0;font-size:25px;font-weight:800;letter-spacing:-.02em;transition:color .3s}
 .stage h2.on{color:var(--ok)}.stage h2.busy{color:var(--warn)}
-.stage p{margin:2px 0 0;color:var(--muted);font-size:14.5px}
-.timer{display:inline-block;margin-top:10px;padding:5px 14px;border-radius:20px;background:rgba(52,211,153,.12);color:var(--ok);font:700 14px ui-monospace,Consolas,monospace}
-.sel{display:flex;align-items:center;gap:12px;margin-top:18px;padding:12px;border-radius:16px;background:var(--surface2);border:1px solid var(--border);text-align:left}
-.flag{width:44px;height:44px;flex:none;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:grid;place-items:center;font-size:22px}
-.sel .flag{background:var(--surface)}
-.sel small{display:block;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
-.sel strong{display:block;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sel span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sel>div{min-width:0}
-.head{display:flex;align-items:center;gap:10px;margin:2px 0 10px}
-.head h3{flex:1;margin:0;font-size:17px}
-.chip{padding:3px 11px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700}
+.stage p{margin:2px 0 0;color:var(--muted)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;margin-top:18px}
+.tile{padding:11px 13px;border-radius:14px;background:var(--surface);border:1px solid var(--line);text-align:left;min-width:0}
+.tile.wide{grid-column:1/-1;display:flex;align-items:center;gap:12px}
+.tile small{display:block;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.tile strong{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile span{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .mono{font-family:ui-monospace,Consolas,monospace;font-size:14px}
+.flag{width:42px;height:42px;flex:none;border-radius:50%;background:var(--surface2);border:1px solid var(--line);display:grid;place-items:center;font-size:21px}
+.leftfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--faint);font-size:12px;margin-top:12px}
+.ghost{height:34px;padding:0 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);color:var(--muted);font-size:12.5px;font-weight:600;transition:border-color .2s,color .2s}
+.ghost:hover{border-color:#3a4366;color:var(--text)}
+
+.right{display:flex;flex-direction:column;min-width:0;min-height:0}
+.bar{display:flex;align-items:center;gap:10px;padding:18px 24px 12px}
+.bar h3{margin:0;font-size:18px;font-weight:800;letter-spacing:-.01em}
+.count{padding:2px 10px;border-radius:20px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);font-size:12px;font-weight:700}
+.bar .search{margin-left:auto;width:230px;height:38px;padding:0 13px;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--text);outline:0}
+.bar .search:focus{border-color:var(--brand)}
+.iconbtn{width:38px;height:38px;border-radius:11px;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);transition:border-color .2s,color .2s}
+.iconbtn:hover{border-color:#3a4366;color:var(--text)}.iconbtn svg{width:17px;height:17px}.iconbtn.spin svg{animation:spin .7s linear}
+.scroll{flex:1;min-height:0;overflow-y:auto;padding:4px 24px 20px}
+.row{display:flex;align-items:center;gap:13px;width:100%;margin-bottom:8px;padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);text-align:left;transition:border-color .2s,background .2s,transform .15s}
+.row:hover{border-color:#3a4366;transform:translateX(2px)}
+.row.sel{background:#1a1f3d;border-color:var(--brand)}
+.row.on{background:#0f241e;border-color:#10b981}
+.row .main{flex:1;min-width:0}
+.row strong{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .addr{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;gap:6px;flex:none}
+.chip{padding:3px 10px;border-radius:20px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);font-size:11.5px;font-weight:700;white-space:nowrap}
 .chip.ok{background:rgba(52,211,153,.12);border-color:transparent;color:var(--ok)}
 .chip.warn{background:rgba(251,191,36,.12);border-color:transparent;color:var(--warn)}
-input{width:100%;height:46px;margin-bottom:10px;padding:0 15px;border-radius:14px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:inherit;outline:0;transition:border-color .2s}
-input:focus{border-color:var(--brand)}
-.row{display:flex;align-items:center;gap:12px;width:100%;margin-bottom:9px;padding:12px 13px;border-radius:18px;background:var(--surface);border:1px solid #232941;color:var(--text);text-align:left;transition:border-color .2s,transform .2s,background .2s}
-.row:hover{border-color:#3a4160;transform:translateY(-1px)}
-.row.sel{background:#1a1f3d;border:1.5px solid var(--brand);text-align:left;margin-top:0;display:flex}
-.row.on{background:#10261f;border:1.5px solid #10b981}
-.row .main{flex:1;min-width:0}
-.row strong{display:block;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .addr{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.row .chips{display:flex;gap:6px;margin-top:6px}
-.mark{width:24px;height:24px;border-radius:50%;border:1.5px solid #3a4160;display:grid;place-items:center;margin:0 auto 4px}
-.row.sel .mark{background:var(--brand);border-color:var(--brand)}.row.on .mark{background:#10b981;border-color:#10b981}
-.mark svg{width:14px;height:14px;opacity:0}.row.sel .mark svg,.row.on .mark svg{opacity:1}
-.side{text-align:center;min-width:62px;font-size:10.5px;font-weight:700;color:var(--muted)}
-.row.sel .side{color:#b3aaff}.row.on .side{color:var(--ok)}
 .chip.bad{background:rgba(248,113,113,.12);border-color:transparent;color:var(--bad)}
-.exhead{margin:18px 4px 8px;font-size:13.5px;font-weight:700;color:var(--muted)}
-.row.gone{opacity:.6}.row.gone .side{color:var(--bad)}
-.err{margin:0 0 12px;padding:11px 14px;border-radius:14px;background:rgba(248,113,113,.12);color:var(--bad);font-size:14px}
-.empty{padding:26px;border-radius:18px;border:1px dashed var(--border);text-align:center;color:var(--muted)}
-.empty strong{display:block;color:var(--text);margin-bottom:4px}
-.wide{width:100%;height:48px;border-radius:14px;background:var(--surface2);border:1px solid var(--border);color:var(--text);margin-top:6px}
-.note{margin-top:16px;padding:13px 15px;border-radius:14px;border:1px dashed var(--border);color:var(--muted);font-size:13px;line-height:1.55}
-a{color:#b3aaff}
-.login{max-width:400px;margin:6vh auto 0;text-align:center}
-.login .logo{width:84px;height:84px}
-.login h1{font:700 32px Georgia,serif;margin:12px 0 0}
-.badge{display:inline-block;margin-top:6px;padding:4px 14px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:#b3aaff;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
-.login p{margin:10px 0 24px;color:var(--muted)}
-.card{padding:18px;border-radius:24px;background:linear-gradient(180deg,#171b33,#0f1220);border:1px solid var(--border)}
-.card input{height:52px;margin-bottom:12px}
-.btn{width:100%;height:52px;border-radius:14px;background:linear-gradient(135deg,#6d5efc,#2563eb);font-weight:700;font-size:16px}
-.btn:disabled{opacity:.6;cursor:default}
-.foot{margin-top:14px;text-align:center;color:var(--muted);font-size:12.5px}
-[hidden]{display:none!important}
-@media (max-width:760px){.grid{grid-template-columns:1fr}.stage{position:static}}
+.act{flex:none;min-width:96px;height:34px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--muted);font-size:12.5px;font-weight:700;display:grid;place-items:center}
+.row:hover .act{border-color:var(--brand);color:#cfc9ff}
+.row.sel .act{background:var(--brand);border-color:var(--brand);color:#fff}
+.row.on .act{background:#10b981;border-color:#10b981;color:#04130f}
+.row.gone{opacity:.55}.row.gone .act{color:var(--bad)}
+.sec{margin:16px 2px 8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.empty{margin-top:8px;padding:34px 20px;border-radius:18px;border:1px dashed var(--line);text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--text);font-size:16px;margin-bottom:4px}
+.empty .primary{width:auto;height:44px;padding:0 22px;margin-top:16px;font-size:14px}
+.tip{padding:10px 24px 14px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px;display:flex;gap:10px;align-items:center}
+.tip b{flex:1;font-weight:400}
+/* short or narrow windows: shrink the power button and the side panel so nothing is cut off */
+.power{zoom:var(--pz,1)}
+@media (max-height:780px){.power{--pz:.8}.stage h2{margin-top:10px;font-size:22px}.tiles{margin-top:12px}}
+@media (max-height:680px){.power{--pz:.62}.tile{padding:8px 12px}.left{padding-top:14px;padding-bottom:12px}}
+@media (max-width:980px){.shell{grid-template-columns:320px minmax(0,1fr)}.bar .search{width:170px}.chips .chip:first-child{display:none}.bar,.scroll{padding-left:16px;padding-right:16px}.act{min-width:84px}}
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute"><defs>
 <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b7bff"/><stop offset=".5" stop-color="#5b46e8"/><stop offset="1" stop-color="#3b2fc4"/></linearGradient>
-<symbol id="mark" viewBox="0 0 64 64"><path d="M32 4 9 12.5v17.2C9 44.6 18.8 55.3 32 60c13.2-4.700 23-15.400 23-30.300V12.500L32 4Z" fill="url(#g)"/><path d="M40.500 19.500H27.200l-1.700 12.600c2.100-1.900 4.700-2.800 7.600-2.800 5.400 0 9.200 3.600 9.200 8.500 0 5.100-4.200 8.900-9.900 8.900-3.900 0-7-1.500-8.900-4" fill="none" stroke="#fff" stroke-width="5.600" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="mark" viewBox="0 0 64 64"><path d="M32 4 9 12.500v17.200C9 44.600 18.800 55.300 32 60c13.200-4.700 23-15.400 23-30.300V12.500L32 4Z" fill="url(#g)"/><path d="M32 4 9 12.500v17.200C9 44.600 18.800 55.300 32 60Z" fill="#fff" opacity=".13"/><path d="M40.500 19.500H27.200l-1.700 12.600c2.100-1.900 4.700-2.800 7.600-2.800 5.400 0 9.200 3.600 9.200 8.500 0 5.100-4.200 8.900-9.900 8.900-3.900 0-7-1.500-8.900-4" fill="none" stroke="#fff" stroke-width="5.600" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 <symbol id="tick" viewBox="0 0 24 24"><path d="M5 12.500 9.500 17 19 7.500" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </defs></svg>
 
-<div class="app">
-  <section id="login" class="login" hidden>
-    <svg class="logo"><use href="#mark"/></svg>
-    <h1>ZaxProxy</h1>
-    <span class="badge">Connect</span>
-    <p>Sign in to use your proxies on this PC</p>
-    <div class="card">
+<!-- Sign in -->
+<section id="login" class="login" hidden>
+  <div class="login__art">
+    <div class="brandrow"><svg><use href="#mark"/></svg><b>ZaxProxy</b><em>Connect</em></div>
+    <div>
+      <h1>Your private proxies, <span>one click away.</span></h1>
+      <p>Sign in once. ZaxProxy Connect picks up every proxy on your account and puts this PC on the one you choose.</p>
+      <div class="points">
+        <div><i><svg><use href="#tick"/></svg></i>All your locations in one list</div>
+        <div><i><svg><use href="#tick"/></svg></i>Switch location without typing anything</div>
+        <div><i><svg><use href="#tick"/></svg></i>No proxy settings or passwords to enter</div>
+      </div>
+    </div>
+    <div class="login__foot" id="lver"></div>
+  </div>
+  <div class="login__form">
+    <div class="formbox">
+      <h2>Welcome back</h2>
+      <p>Use your ZaxProxy email and password.</p>
       <div id="lerr" class="err" hidden></div>
       <form id="lform">
-        <input id="lmail" type="text" placeholder="Email or username" autocomplete="username" required>
-        <input id="lpass" type="password" placeholder="Password" autocomplete="current-password" required>
-        <button class="btn" id="lbtn" type="submit">Sign in</button>
+        <label for="lmail">Email or username</label>
+        <input class="field" id="lmail" type="text" autocomplete="username" required>
+        <label for="lpass">Password</label>
+        <input class="field" id="lpass" type="password" autocomplete="current-password" required>
+        <label class="check"><input type="checkbox" id="lauto" checked>Connect automatically after signing in</label>
+        <button class="primary" id="lbtn" type="submit">Sign in</button>
       </form>
+      <div class="links">New here? <button class="link" data-open="/panel/register/">Create an account</button> · <button class="link" data-open="/panel/forgot/">Forgot password?</button></div>
     </div>
-    <p style="margin-top:18px">New here? <a href="https://zaxproxy.cloud/panel/register/" target="_blank" rel="noopener">Create an account</a></p>
-  </section>
+  </div>
+</section>
 
-  <section id="main" hidden>
-    <div class="top">
-      <svg class="logo"><use href="#mark"/></svg>
-      <div class="name"><b>ZaxProxy Connect</b><span id="hello"></span></div>
-      <button class="icon" id="refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11A8 8 0 0 0 6 6.300L4 8M4 4v4h4M4 13a8 8 0 0 0 14 4.700l2-1.700M20 20v-4h-4"/></svg>Refresh</button>
-      <button class="icon" id="logout" title="Sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9"/></svg>Sign out</button>
+<!-- Signed in -->
+<section id="main" class="shell" hidden>
+  <div class="left" id="left">
+    <div class="acct">
+      <div class="brandrow"><svg><use href="#mark"/></svg><b>ZaxProxy</b><em>Connect</em></div>
+      <div class="who"><span id="hello"></span><div class="avatar" id="avatar">Z</div></div>
     </div>
-
-    <div class="grid">
-      <div class="stage">
-        <button class="power" id="power" aria-label="Connect"><i></i><u></u><s><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.200" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.600 6.800a7.600 7.600 0 1 0 10.800 0"/></svg></s></button>
-        <h2 id="st">Not connected</h2>
-        <p id="stsub">Click to connect</p>
-        <span class="timer" id="timer" hidden>00:00:00</span>
-        <div class="sel" id="selbox" hidden><div class="flag" id="selflag"></div><div><small id="sellabel">Selected location</small><strong id="seltitle"></strong><span id="selsub"></span></div></div>
-      </div>
-
-      <div>
-        <div id="err" class="err" hidden></div>
-        <div class="head"><h3>Your locations</h3><span class="chip" id="count">0</span></div>
-        <input id="search" type="search" placeholder="Search country, city or IP" hidden>
-        <div id="list"></div>
-        <div id="none" class="empty" hidden>No location matches your search.</div>
-        <div id="empty" class="empty" hidden><strong>No active proxies</strong>You have no active proxy on this account. Buy one on the website and click Refresh.</div>
-        <button class="wide" onclick="window.open('https://zaxproxy.cloud/panel/buy/','_blank')">Buy proxies</button>
-        <div class="note">Click a location to choose it. While you are connected, clicking another location switches to it. Your browsers and most programs on this PC then use that proxy. ZaxProxy Connect stays near the clock: right-click its shield icon to disconnect or quit. Closing this page does not disconnect you. <a href="#" id="quit">Quit ZaxProxy Connect</a></div>
-        <div class="foot" id="ver"></div>
+    <div class="stage">
+      <button class="power" id="power" aria-label="Connect"><i></i><u></u><s><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.200" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.600 6.800a7.600 7.600 0 1 0 10.800 0"/></svg></s></button>
+      <h2 id="st">Not connected</h2>
+      <p id="stsub">Click the button to connect</p>
+      <div class="tiles">
+        <div class="tile wide"><div class="flag" id="selflag">🌐</div><div style="min-width:0"><small id="sellabel">Selected location</small><strong id="seltitle">None</strong><span id="selsub"></span></div></div>
+        <div class="tile"><small>IP address</small><strong class="mono" id="tip">—</strong></div>
+        <div class="tile"><small>Session</small><strong class="mono" id="timer">00:00:00</strong></div>
       </div>
     </div>
-  </section>
-</div>
+    <div class="leftfoot"><span id="ver"></span><button class="ghost" id="logout">Sign out</button></div>
+  </div>
+
+  <div class="right">
+    <div class="bar">
+      <h3>Your locations</h3><span class="count" id="count">0</span>
+      <input class="search" id="search" type="search" placeholder="Search country, city or IP" hidden>
+      <button class="iconbtn" id="refresh" title="Refresh" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11A8 8 0 0 0 6 6.300L4 8M4 4v4h4M4 13a8 8 0 0 0 14 4.700l2-1.700M20 20v-4h-4"/></svg></button>
+    </div>
+    <div class="scroll">
+      <div id="err" class="err" hidden></div>
+      <div id="list"></div>
+      <div id="none" class="empty" hidden>No location matches your search.</div>
+      <div id="empty" class="empty" hidden><strong>No active proxies</strong>You have no active proxy on this account yet. Buy one and it appears here.<br><button class="primary" data-open="/panel/buy/">Buy a proxy</button></div>
+    </div>
+    <div class="tip"><b>Click a location to use it. While connected, clicking another location switches to it. Keep this window open while you browse (you can minimise it); closing it disconnects.</b><button class="ghost" data-open="/panel/buy/">Buy proxies</button></div>
+  </div>
+</section>
 
 <script>
 (function () {
@@ -147,10 +205,12 @@ a{color:#b3aaff}
   if (key) { sessionStorage.setItem('zk', key); history.replaceState(null, '', '/'); }
   var $ = function (id) { return document.getElementById(id); }, busy = 0, last = null, since = 0;
   var chosen = parseInt(localStorage.getItem('zsel') || '0', 10) || 0;
+  document.addEventListener('contextmenu', function (e) { if (!e.target.closest('input')) e.preventDefault(); });
   function call(path, body) {
     return fetch('/api/' + path, { method: body === undefined ? 'GET' : 'POST', headers: { 'X-Key': key, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
       .then(function (r) { return r.json(); });
   }
+  document.addEventListener('click', function (e) { var b = e.target.closest('[data-open]'); if (b) { e.preventDefault(); call('open', { path: b.getAttribute('data-open') }); } });
   function fail(el, text) { el.textContent = text || ''; el.hidden = !text; }
   function find(id) { var hit = null; ((last && last.proxies) || []).forEach(function (p) { if (p.id === id) hit = p; }); return hit; }
   function pick() { return find(chosen) || ((last && last.proxies) || [])[0] || null; }
@@ -158,53 +218,51 @@ a{color:#b3aaff}
   function draw() {
     var s = last; if (!s) return;
     $('login').hidden = !!s.signedIn; $('main').hidden = !s.signedIn;
+    $('lver').textContent = 'ZaxProxy Connect ' + s.version;
     if (!s.signedIn) return;
-    $('hello').textContent = s.name ? 'Hello, ' + s.name : 'Private proxies, one click away';
+    $('hello').textContent = s.name || '';
+    $('avatar').textContent = (s.name || 'Z').charAt(0).toUpperCase();
     $('ver').textContent = 'Version ' + s.version;
     var on = find(s.connected), mode = on ? 'on' : (busy ? 'busy' : 'idle'), shown = on || (busy ? find(busy) : pick());
     $('power').className = 'power' + (mode === 'idle' ? '' : ' ' + mode);
+    $('left').style.setProperty('--glow', on ? 'rgba(16,185,129,.34)' : busy ? 'rgba(245,158,11,.3)' : 'rgba(109,94,252,.34)');
     $('st').className = mode === 'idle' ? '' : mode;
     $('st').textContent = on ? 'Protected' : (busy ? 'Connecting…' : 'Not connected');
-    $('stsub').textContent = on ? 'Click to disconnect' : (busy ? (shown ? shown.country : '') : (s.proxies.length ? 'Click to connect' : 'Buy a proxy to get started'));
-    $('timer').hidden = !on;
-    $('selbox').hidden = !shown;
-    if (shown) {
-      $('sellabel').textContent = on ? 'Your IP is now' : 'Selected location';
-      $('selflag').textContent = shown.flag;
-      $('seltitle').textContent = shown.place || shown.country;
-      $('selsub').textContent = (shown.place ? shown.country : shown.type) + ' · ' + shown.ip;
-    }
+    $('stsub').textContent = on ? 'This PC is using your proxy' : (busy ? 'Please wait a moment' : (s.proxies.length ? 'Click the button to connect' : 'Buy a proxy to get started'));
+    $('sellabel').textContent = on ? 'Connected to' : 'Selected location';
+    $('selflag').textContent = shown ? shown.flag : '🌐';
+    $('seltitle').textContent = shown ? (shown.place || shown.country) : 'None';
+    $('selsub').textContent = shown ? (shown.place ? shown.country + ' · ' : '') + shown.type : '';
+    $('tip').textContent = shown ? shown.ip : '—';
+    if (!on) $('timer').textContent = '00:00:00';
     $('count').textContent = s.proxies.length;
     $('search').hidden = s.proxies.length < 6;
+    $('refresh').style.marginLeft = $('search').hidden ? 'auto' : '0';
     $('empty').hidden = s.proxies.length > 0;
     var q = $('search').hidden ? '' : $('search').value.trim().toLowerCase(), list = $('list'), n = 0, sel = pick();
     list.textContent = '';
     s.proxies.slice().sort(function (x, y) { return (y.id === s.connected) - (x.id === s.connected); }).forEach(function (p) {
       if (q && (p.country + ' ' + p.place + ' ' + p.type + ' ' + p.ip).toLowerCase().indexOf(q) < 0) return;
       n++;
-      var isOn = !!on && p.id === s.connected, isBusy = busy === p.id, isSel = !on && !isOn && sel && p.id === sel.id;
+      var isOn = !!on && p.id === s.connected, isBusy = busy === p.id, isSel = !on && sel && p.id === sel.id;
       var row = el('button', 'row' + (isOn ? ' on' : (isSel || isBusy) ? ' sel' : ''));
       row.appendChild(el('div', 'flag', p.flag));
-      var m = el('div', 'main'); m.appendChild(el('strong', '', p.country)); m.appendChild(el('div', 'addr', p.place ? p.place + ' · ' + p.ip : p.ip));
-      var chips = el('div', 'chips'); chips.appendChild(el('span', 'chip', p.type)); chips.appendChild(el('span', 'chip ' + (p.state === 'expiring' ? 'warn' : 'ok'), p.left)); m.appendChild(chips);
-      row.appendChild(m);
-      var side = el('div', 'side'), mk = el('div', 'mark'); mk.innerHTML = '<svg><use href="#tick"/></svg>'; side.appendChild(mk);
-      side.appendChild(document.createTextNode(isOn ? 'Connected' : isBusy ? 'Connecting…' : isSel ? 'Selected' : ''));
-      row.appendChild(side);
+      var m = el('div', 'main'); m.appendChild(el('strong', '', p.country)); m.appendChild(el('div', 'addr', p.place ? p.place + ' · ' + p.ip : p.ip)); row.appendChild(m);
+      var chips = el('div', 'chips'); chips.appendChild(el('span', 'chip', p.type)); chips.appendChild(el('span', 'chip ' + (p.state === 'expiring' ? 'warn' : 'ok'), p.left)); row.appendChild(chips);
+      row.appendChild(el('div', 'act', isOn ? 'Connected' : isBusy ? 'Connecting…' : on ? 'Switch' : isSel ? 'Selected' : 'Select'));
       row.onclick = function () { choose(p); };
       list.appendChild(row);
     });
     $('none').hidden = !(n === 0 && s.proxies.length > 0);
     var old = s.expired || [];
     if (old.length && !q) {
-      list.appendChild(el('div', 'exhead', 'Expired (' + old.length + ')'));
+      list.appendChild(el('div', 'sec', 'Expired (' + old.length + ')'));
       old.forEach(function (p) {
         var row = el('button', 'row gone'); row.appendChild(el('div', 'flag', p.flag));
-        var m = el('div', 'main'); m.appendChild(el('strong', '', p.country)); m.appendChild(el('div', 'addr', p.place ? p.place + ' · ' + p.ip : p.ip));
-        var chips = el('div', 'chips'); chips.appendChild(el('span', 'chip', p.type)); chips.appendChild(el('span', 'chip bad', 'Expired ' + p.ended)); m.appendChild(chips);
-        row.appendChild(m); row.appendChild(el('div', 'side', 'Expired'));
-        row.title = 'This proxy has expired. Click to renew it on the website.';
-        row.onclick = function () { window.open('https://zaxproxy.cloud/panel/proxies/', '_blank'); };
+        var m = el('div', 'main'); m.appendChild(el('strong', '', p.country)); m.appendChild(el('div', 'addr', p.place ? p.place + ' · ' + p.ip : p.ip)); row.appendChild(m);
+        var chips = el('div', 'chips'); chips.appendChild(el('span', 'chip', p.type)); chips.appendChild(el('span', 'chip bad', 'Expired ' + p.ended)); row.appendChild(chips);
+        row.appendChild(el('div', 'act', 'Renew'));
+        row.setAttribute('data-open', '/panel/proxies/');
         list.appendChild(row);
       });
     }
@@ -225,34 +283,35 @@ a{color:#b3aaff}
   function connect(id) {
     busy = id; fail($('err'), ''); draw();
     call('connect', { id: id }).then(function (s) { busy = 0; if (s.ok === false) fail($('err'), s.error); show(s); })
-      .catch(function () { busy = 0; fail($('err'), 'ZaxProxy Connect is not responding. Open it again from the shield icon near the clock.'); draw(); });
+      .catch(function () { busy = 0; fail($('err'), 'ZaxProxy Connect is not responding. Close it and open it again.'); draw(); });
   }
   function disconnect() { call('disconnect', {}).then(show); }
   $('power').onclick = function () {
     if (busy || !last) return;
     if (last.connected) { disconnect(); return; }
-    var p = pick(); if (!p) { fail($('err'), 'Buy a proxy on the website, then click Refresh.'); return; }
+    var p = pick(); if (!p) { fail($('err'), 'Buy a proxy on the website, then click the refresh button.'); return; }
     connect(p.id);
   };
   $('search').oninput = draw;
-  $('refresh').onclick = function () { fail($('err'), ''); call('refresh', {}).then(function (s) { if (s.ok === false) fail($('err'), s.error); show(s); }); };
+  $('refresh').onclick = function () { var b = this; b.classList.add('spin'); setTimeout(function () { b.classList.remove('spin'); }, 700); fail($('err'), ''); call('refresh', {}).then(function (s) { if (s.ok === false) fail($('err'), s.error); show(s); }); };
   $('logout').onclick = function () { call('logout', {}).then(show); };
-  $('quit').onclick = function (e) { e.preventDefault(); call('quit', {}).then(function () { document.body.innerHTML = '<p style="text-align:center;margin-top:80px;color:#a4adc4">ZaxProxy Connect has closed. You can close this tab.</p>'; }); };
   $('lform').onsubmit = function (e) {
     e.preventDefault(); fail($('lerr'), ''); $('lbtn').disabled = true; $('lbtn').textContent = 'Signing in…';
     call('login', { login: $('lmail').value.trim(), password: $('lpass').value }).then(function (s) {
       $('lbtn').disabled = false; $('lbtn').textContent = 'Sign in';
       if (s.ok === false) { fail($('lerr'), s.error); return; }
       $('lpass').value = ''; show(s);
-    }).catch(function () { $('lbtn').disabled = false; $('lbtn').textContent = 'Sign in'; fail($('lerr'), 'ZaxProxy Connect is not responding. Open it again from the shield icon near the clock.'); });
+      // Signed in: connect straight away to the last location used, or the first one in the list.
+      if ($('lauto').checked && !s.connected) { var p = pick(); if (p) connect(p.id); }
+    }).catch(function () { $('lbtn').disabled = false; $('lbtn').textContent = 'Sign in'; fail($('lerr'), 'ZaxProxy Connect is not responding. Close it and open it again.'); });
   };
   setInterval(function () {
-    if ($('timer').hidden || !since) return;
+    if (!last || !last.connected || !since) return;
     var t = Math.max(0, Math.floor((Date.now() - since) / 1000)), two = function (v) { return (v < 10 ? '0' : '') + v; };
     $('timer').textContent = two(Math.floor(t / 3600)) + ':' + two(Math.floor(t % 3600 / 60)) + ':' + two(t % 60);
   }, 1000);
-  function poll() { call('state').then(function (s) { if (s.ok === false) { document.body.innerHTML = '<p style="text-align:center;margin-top:80px;color:#a4adc4">This page has expired. Open ZaxProxy Connect again from the shield icon near the clock.</p>'; return; } show(s); }).catch(function () {}); }
-  poll(); setInterval(function () { if (!busy && !document.hidden) poll(); }, 4000);
+  function poll() { call('state').then(function (s) { if (s.ok === false) return; show(s); }).catch(function () {}); }
+  poll(); setInterval(function () { if (!busy) poll(); }, 4000);
 })();
 </script>
 </body>

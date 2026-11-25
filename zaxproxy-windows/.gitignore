@@ -1,3 +1,5 @@
 *.exe
 *.syso
 zaxproxy-test
+*.syso
+ZaxProxy-Connect-Setup.exe

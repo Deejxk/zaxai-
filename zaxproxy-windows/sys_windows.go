@@ -3,19 +3,22 @@
 package main
 
 import (
-	_ "embed"
 	"encoding/base64"
+	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"syscall"
 	"unsafe"
 
-	"fyne.io/systray"
+	"github.com/jchv/go-webview2"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 )
 
-//go:embed icon.ico
-var iconICO []byte
+// The window must be created and run on the program's first thread.
+func init() { runtime.LockOSThread() }
 
 const inetKey = `Software\Microsoft\Windows\CurrentVersion\Internet Settings`
 
@@ -166,52 +169,69 @@ func unprotect(text string) (string, error) {
 	return string(unsafe.Slice(out.Data, out.Size)), nil
 }
 
-/* ---------- Tray icon ---------- */
+/* ---------- The app window ---------- */
 
 var (
-	trayState *systray.MenuItem
-	trayStop  *systray.MenuItem
+	win      webview2.WebView
+	user32   = windows.NewLazySystemDLL("user32.dll")
+	setFore  = user32.NewProc("SetForegroundWindow")
+	showWin  = user32.NewProc("ShowWindow")
+	isIconic = user32.NewProc("IsIconic")
 )
 
-func runTray() {
-	systray.Run(func() {
-		systray.SetIcon(iconICO)
-		systray.SetTitle("ZaxProxy Connect")
-		systray.SetTooltip("ZaxProxy Connect: not connected")
-		open := systray.AddMenuItem("Open ZaxProxy Connect", "Show the ZaxProxy Connect window")
-		trayState = systray.AddMenuItem("Not connected", "")
-		trayState.Disable()
-		trayStop = systray.AddMenuItem("Disconnect", "Stop using the proxy")
-		trayStop.Disable()
-		systray.AddSeparator()
-		exit := systray.AddMenuItem("Quit", "Disconnect and close ZaxProxy Connect")
-		go func() {
-			for {
-				select {
-				case <-open.ClickedCh:
-					openUI()
-				case <-trayStop.ClickedCh:
-					a.disconnect()
-				case <-exit.ClickedCh:
-					systray.Quit()
-					return
-				}
-			}
-		}()
-	}, func() {})
+// runWindow opens the ZaxProxy Connect window and returns when the user closes it.
+// The window shows the program's own screen (served from this computer only) using the
+// WebView2 component that ships with Windows 10 and 11.
+func runWindow(url string) {
+	dir := filepath.Join(filepath.Dir(configPath()), "window")
+	_ = os.MkdirAll(dir, 0o700)
+	win = webview2.NewWithOptions(webview2.WebViewOptions{
+		AutoFocus: true,
+		DataPath:  dir,
+		WindowOptions: webview2.WindowOptions{
+			Title:  "ZaxProxy Connect",
+			Width:  1080,
+			Height: 760,
+			IconId: 1, // the icon built into the program file
+			Center: true,
+		},
+	})
+	if win == nil {
+		// Very old Windows without the WebView2 component: fall back to the browser so the app is still usable.
+		log.Print("the app window could not be created (WebView2 missing); using the browser instead")
+		alert("ZaxProxy Connect", "This computer is missing a Windows component (Microsoft Edge WebView2) that ZaxProxy Connect uses for its window.\n\nZaxProxy Connect will open in your web browser instead. Leave this message open while you use it: clicking OK closes ZaxProxy Connect and disconnects.", false)
+		_ = openBrowser(url)
+		alert("ZaxProxy Connect is running", "ZaxProxy Connect is open in your web browser.\n\nClick OK here when you want to close it and disconnect.", false)
+		return
+	}
+	defer win.Destroy()
+	win.SetSize(1080, 760, webview2.HintNone)
+	win.SetSize(820, 600, webview2.HintMin)
+	win.Navigate(url)
+	win.Run()
+}
+
+// focusWindow brings the window to the front (a second launch asks for this instead of opening twice).
+func focusWindow() {
+	if win == nil {
+		return
+	}
+	win.Dispatch(func() {
+		h := uintptr(win.Window())
+		if r, _, _ := isIconic.Call(h); r != 0 {
+			showWin.Call(h, 9) // restore from the taskbar
+		}
+		setFore.Call(h)
+	})
 }
 
 func trayStatus(on bool, label string) {
-	if trayState == nil {
+	if win == nil {
 		return
 	}
+	title := "ZaxProxy Connect"
 	if on {
-		trayState.SetTitle("Connected: " + label)
-		trayStop.Enable()
-		systray.SetTooltip("ZaxProxy Connect: connected, " + label)
-	} else {
-		trayState.SetTitle("Not connected")
-		trayStop.Disable()
-		systray.SetTooltip("ZaxProxy Connect: not connected")
+		title = "ZaxProxy Connect · Connected · " + label
 	}
+	win.Dispatch(func() { win.SetTitle(title) })
 }
