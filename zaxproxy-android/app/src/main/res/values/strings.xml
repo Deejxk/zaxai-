@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ZaxProxy</string>
+    <string name="tagline">Private proxies, one tap away</string>
+    <string name="email">Email or username</string>
+    <string name="password">Password</string>
+    <string name="sign_in">Sign in</string>
+    <string name="signing_in">Signing in…</string>
+    <string name="no_account">New here? Create an account</string>
+    <string name="forgot">Forgot password?</string>
+    <string name="not_connected">Not connected</string>
+    <string name="not_connected_sub">Choose a proxy below and tap Connect</string>
+    <string name="connecting">Connecting…</string>
+    <string name="connected">Connected</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="your_proxies">Your proxies</string>
+    <string name="refresh">Refresh</string>
+    <string name="sign_out">Sign out</string>
+    <string name="buy">Buy proxies</string>
+    <string name="empty_title">No active proxies yet</string>
+    <string name="empty_sub">Buy a proxy on the website and it will show up here.</string>
+    <string name="notif_channel">Connection</string>
+    <string name="notif_title">ZaxProxy is connected</string>
+    <string name="offline">No internet connection. Please try again.</string>
+    <string name="vpn_denied">Android needs your permission to connect. Tap Connect and choose OK.</string>
+    <string name="hello">Hello, %1$s</string>
+</resources>

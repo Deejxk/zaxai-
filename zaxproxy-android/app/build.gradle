@@ -1,0 +1,65 @@
+plugins {
+    id 'com.android.application'
+}
+
+def keystoreProps = new Properties()
+def keystoreFile = rootProject.file('keystore.properties')
+if (keystoreFile.exists()) {
+    keystoreFile.withInputStream { keystoreProps.load(it) }
+}
+
+android {
+    namespace 'cloud.zaxproxy.app'
+    compileSdk 34
+    ndkVersion '26.3.11579264'
+
+    defaultConfig {
+        applicationId 'cloud.zaxproxy.app'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0.0'
+        buildConfigField 'String', 'SITE', '"https://zaxproxy.cloud"'
+        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64' }
+        externalNativeBuild {
+            ndkBuild {
+                arguments 'APP_PLATFORM=android-24', 'APP_CFLAGS=-O3 -DPKGNAME=cloud/zaxproxy/app -DCLSNAME=TunnelService', 'APP_SUPPORT_FLEXIBLE_PAGE_SIZES=true'
+            }
+        }
+    }
+
+    externalNativeBuild {
+        ndkBuild { path 'src/main/jni/Android.mk' }
+    }
+
+    signingConfigs {
+        release {
+            if (keystoreProps.getProperty('storeFile')) {
+                storeFile file(keystoreProps.getProperty('storeFile'))
+                storePassword keystoreProps.getProperty('storePassword')
+                keyAlias keystoreProps.getProperty('keyAlias')
+                keyPassword keystoreProps.getProperty('keyPassword')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (keystoreProps.getProperty('storeFile')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    buildFeatures { buildConfig true }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        jniLibs { useLegacyPackaging false }
+    }
+}

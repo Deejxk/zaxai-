@@ -173,6 +173,14 @@ $first = true;
 				<?php endif; ?>
 
 				<div class="zp-setup__text">
+					<?php if ( 'android' === $key && ZP_App::offered() ) : ?>
+						<div class="zp-appcard">
+							<span class="zp-appcard__ico"><?php echo zp_logo( 38 ); // phpcs:ignore ?></span>
+							<div><strong>Easiest way: the ZaxProxy app</strong><span>Install it, sign in with this account and tap Connect on any of your proxies. Nothing to type.</span><?php if ( ! zp_get( 'app_public' ) ) : ?><em>Only administrators can see this until it is switched on in Settings.</em><?php endif; ?></div>
+							<a class="zp-btn zp-btn--primary zp-btn--sm" href="<?php echo esc_url( ZP_App::download_url() ); ?>" target="_blank" rel="noopener"><?php echo zp_icon( 'download', 16 ); // phpcs:ignore ?>Download</a>
+						</div>
+						<p class="zp-appcard__note">Android will ask you to allow installing the app, because it comes from our website and not from the Play Store. If you prefer, you can still use Tun2Socks with the steps below.</p>
+					<?php endif; ?>
 					<?php if ( ! empty( $g['app'] ) ) : ?>
 						<div class="zp-setup__app"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'download', 18 ); // phpcs:ignore ?></span><div><strong>App to use: <?php echo esc_html( $g['app'][0] ); ?></strong><span><?php echo esc_html( $g['app'][1] ); ?></span></div></div>
 					<?php endif; ?>

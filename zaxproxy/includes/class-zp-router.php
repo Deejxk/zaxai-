@@ -58,6 +58,9 @@ class ZP_Router {
 			case 'zp-notify':
 				ZP_Notify::endpoint();
 				break;
+			case 'zp-app':
+				ZP_App::endpoint( $page );
+				break;
 			case 'zp-offline':
 				self::no_cache();
 				include ZP_DIR . 'templates/offline.php';

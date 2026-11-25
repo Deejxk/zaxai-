@@ -15,6 +15,7 @@ function zp_defaults() {
 		'markup_isp'          => 30,
 		'markup_mobile'       => 30,
 		'registration'        => 1,
+		'app_public'          => 0,
 		'landing'             => 1,
 		'currency_code'       => 'NGN',
 		'currency_symbol'     => '₦',

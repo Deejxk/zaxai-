@@ -41,6 +41,9 @@ $export_url = add_query_arg( '_zpnonce', wp_create_nonce( 'zp_export' ), zp_url(
 endif;
 ?>
 
+<?php if ( ZP_App::offered() ) : ?>
+<a class="zp-howto zp-anim" href="<?php echo esc_url( ZP_App::download_url() ); ?>" target="_blank" rel="noopener"><span class="zp-stat__ico zp-tone-green"><?php echo zp_icon( 'download', 18 ); // phpcs:ignore ?></span><div><strong>Get the ZaxProxy app for Android</strong><span>Sign in and connect any of your proxies with one tap<?php echo zp_get( 'app_public' ) ? '' : ' · visible to administrators only'; ?></span></div><b><?php echo zp_icon( 'arrow', 16 ); // phpcs:ignore ?></b></a>
+<?php endif; ?>
 <a class="zp-howto zp-anim" href="<?php echo esc_url( zp_url( 'help' ) ); ?>#connect"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?></span><div><strong>How to connect your proxy</strong><span>Step-by-step guides for Windows, Android and iPhone</span></div><b><?php echo zp_icon( 'arrow', 16 ); // phpcs:ignore ?></b></a>
 
 <div class="zp-bulk zp-anim" style="--d:1" id="zp-bulk">
