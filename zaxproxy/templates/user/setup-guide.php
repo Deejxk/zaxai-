@@ -4,7 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 /**
  * "Connect your proxy" guides: an animated walkthrough plus written steps for each device.
- * Screens are simplified drawings; the real app can look a little different.
+ * The box and button names are the real ones used by Windows, Tun2Socks and Potatso; the screens themselves are drawn.
+ * Drop a real screen recording at assets/guides/{windows|android|ios}.mp4 and it is shown instead of the drawing.
  */
 $ex    = array( 'ip' => '205.120.31.217', 'http' => '53062', 'socks' => '53063', 'user' => 'zx9c9748af', 'pass' => '••••••••' );
 $mine  = zp_url( 'proxies' );
@@ -24,22 +25,23 @@ $guides = array(
 			array( $copy['screen'], $copy['cap'], array( array( 'IP address', $ex['ip'], 1 ), array( 'HTTP(S) port', $ex['http'], 1 ), array( 'Username', $ex['user'], 1 ), array( 'Password', $ex['pass'], 1 ) ), '' ),
 			array( 'Settings', 'Click the Start button, open Settings, then choose Network & internet.', array( array( 'System', '', 0 ), array( 'Bluetooth & devices', '', 0 ), array( 'Network & internet', '›', 1 ), array( 'Personalisation', '', 0 ) ), '' ),
 			array( 'Network & internet', 'Scroll down and click Proxy.', array( array( 'Wi-Fi', '', 0 ), array( 'VPN', '', 0 ), array( 'Proxy', '›', 1 ), array( 'Dial-up', '', 0 ) ), '' ),
-			array( 'Proxy', 'Under "Manual proxy setup" click Set up, then switch on "Use a proxy server".', array( array( 'Automatically detect settings', 'Off', 0 ), array( 'Use a proxy server', 'On', 1 ) ), 'Set up' ),
-			array( 'Edit proxy server', 'Type the IP address and the HTTP(S) port from My proxies, then click Save.', array( array( 'Proxy IP address', $ex['ip'], 1 ), array( 'Port', $ex['http'], 1 ) ), 'Save' ),
+			array( 'Proxy', 'Find "Manual proxy setup". Next to "Use a proxy server" click the Set up button.', array( array( 'Automatically detect settings', 'On', 0 ), array( 'Manual proxy setup', '', 0 ), array( 'Use a proxy server', 'Off', 1 ) ), 'Set up' ),
+			array( 'Edit proxy server', 'Switch "Use a proxy server" on. Type the IP address in "Proxy IP address" and the HTTP(S) port in "Port", then click Save.', array( array( 'Use a proxy server', 'On', 1 ), array( 'Proxy IP address', $ex['ip'], 1 ), array( 'Port', $ex['http'], 1 ) ), 'Save' ),
 			array( 'Sign in', 'Open your browser. A small box asks for a username and password: type the ones from My proxies.', array( array( 'Username', $ex['user'], 1 ), array( 'Password', $ex['pass'], 1 ) ), 'Sign in' ),
 			array( 'Check it works', 'Search "what is my IP" in your browser. It should show your proxy\'s IP address and country, not your own.', array( array( 'Your IP address', $ex['ip'], 1 ), array( 'Status', 'Connected through your proxy', 0 ) ), '' ),
 		),
 		'steps' => array(
 			'Open <strong>My proxies</strong> in your dashboard and copy the <strong>IP address</strong>, <strong>HTTP(S) port</strong>, <strong>username</strong> and <strong>password</strong>.',
 			'On your computer click <strong>Start</strong>, open <strong>Settings</strong>, then <strong>Network &amp; internet</strong>, then <strong>Proxy</strong>.',
-			'Under <strong>Manual proxy setup</strong> click <strong>Set up</strong> and switch on <strong>Use a proxy server</strong>.',
-			'Type the <strong>IP address</strong> and the <strong>HTTP(S) port</strong>, then click <strong>Save</strong>.',
+			'Under <strong>Manual proxy setup</strong>, next to <strong>Use a proxy server</strong>, click <strong>Set up</strong>.',
+			'Switch <strong>Use a proxy server</strong> on. Type the IP address in <strong>Proxy IP address</strong> and the HTTP(S) port in <strong>Port</strong>, then click <strong>Save</strong>.',
 			'Open your browser. When it asks, type the proxy <strong>username</strong> and <strong>password</strong>.',
 			'Search <strong>what is my IP</strong>. If you see the proxy\'s IP and country, you are connected.',
 		),
 		'notes' => array(
 			'Windows settings use the <strong>HTTP(S) port</strong>, not the SOCKS5 port.',
 			'To stop using the proxy, go back to the same page and switch <strong>Use a proxy server</strong> off.',
+			'<strong>Windows 10:</strong> the same page is in Settings, Network &amp; Internet, Proxy. Switch on <strong>Use a proxy server</strong>, type the IP in <strong>Address</strong> and the port in <strong>Port</strong>, then click <strong>Save</strong>.',
 			'Want the proxy in one browser only? Use the proxy settings of that browser or an extension instead.',
 		),
 	),
@@ -47,29 +49,30 @@ $guides = array(
 		'name'  => 'Android',
 		'icon'  => 'phone',
 		'kind'  => 'phone',
-		'intro' => 'Use the free Tun2Socks app. It works on Wi-Fi and on mobile data, for every app on the phone.',
+		'intro' => 'Use the Tun2Socks app. It works on Wi-Fi and on mobile data, for every app on the phone.',
 		'app'   => array( 'Tun2Socks', 'Search for "Tun2Socks" in the Google Play Store and install it.' ),
 		'need'  => array( 'IP address' => $ex['ip'], 'SOCKS5 port' => $ex['socks'], 'Username' => $ex['user'], 'Password' => $ex['pass'] ),
 		'slides' => array(
 			array( $copy['screen'], $copy['cap'], array( array( 'IP address', $ex['ip'], 1 ), array( 'SOCKS5 port', $ex['socks'], 1 ), array( 'Username', $ex['user'], 1 ), array( 'Password', $ex['pass'], 1 ) ), '' ),
-			array( 'Play Store', 'Open the Google Play Store, search for Tun2Socks and tap Install.', array( array( 'Search', 'Tun2Socks', 1 ), array( 'Tun2Socks', 'Install', 1 ) ), '' ),
-			array( 'Tun2Socks', 'Open the app. Choose SOCKS5 and type the IP address and the SOCKS5 port.', array( array( 'Type', 'SOCKS5', 0 ), array( 'Server', $ex['ip'], 1 ), array( 'Port', $ex['socks'], 1 ) ), '' ),
-			array( 'Tun2Socks', 'Type your proxy username and password, then save.', array( array( 'Username', $ex['user'], 1 ), array( 'Password', $ex['pass'], 1 ) ), 'Save' ),
-			array( 'Tun2Socks', 'Tap Start (or Connect). Android asks to allow a connection: tap OK.', array( array( 'Connection request', 'Tun2Socks wants to set up a connection', 0 ) ), 'OK' ),
-			array( 'Connected', 'A small key icon appears at the top of your screen. Your whole phone now uses the proxy.', array( array( 'Status', 'Connected', 1 ), array( 'Server', $ex['ip'], 0 ) ), '' ),
-			array( 'Check it works', 'Open your browser and search "what is my IP". It should show the proxy\'s IP and country.', array( array( 'Your IP address', $ex['ip'], 1 ) ), '' ),
+			array( 'Play Store', 'Open the Google Play Store, search for Tun2Socks and tap Install. Then open the app.', array( array( 'Search', 'Tun2Socks', 1 ), array( 'Tun2Socks', 'Install', 1 ) ), '' ),
+			array( 'Tun2Socks', 'In the box called "Socks host" type your proxy IP address. In "Port" type the SOCKS5 port.', array( array( 'Socks host', $ex['ip'], 1 ), array( 'Port', $ex['socks'], 1 ), array( 'Username', '', 0 ), array( 'Password', '', 0 ) ), '' ),
+			array( 'Tun2Socks', 'Now type your proxy username and password in the next two boxes.', array( array( 'Socks host', $ex['ip'], 0 ), array( 'Port', $ex['socks'], 0 ), array( 'Username', $ex['user'], 1 ), array( 'Password', $ex['pass'], 1 ) ), '' ),
+			array( 'Tun2Socks', 'Tap the "Start Connect" button at the bottom.', array( array( 'Socks host', $ex['ip'], 0 ), array( 'Port', $ex['socks'], 0 ) ), 'Start Connect' ),
+			array( 'Connection request', 'Android asks if Tun2Socks can set up a VPN connection. Tap OK. This is how the app sends your phone through the proxy.', array( array( 'Tun2Socks wants to set up a VPN connection', '', 1 ) ), 'OK' ),
+			array( 'Check it works', 'A key or VPN icon appears at the top of the screen. Open your browser and search "what is my IP": it should show the proxy\'s IP and country.', array( array( 'Your IP address', $ex['ip'], 1 ), array( 'Status', 'Connected', 0 ) ), '' ),
 		),
 		'steps' => array(
 			'Open <strong>My proxies</strong> and copy the <strong>IP address</strong>, <strong>SOCKS5 port</strong>, <strong>username</strong> and <strong>password</strong>.',
-			'Open the <strong>Google Play Store</strong>, search for <strong>Tun2Socks</strong> and install it.',
-			'Open the app. Choose <strong>SOCKS5</strong>, then type the <strong>IP address</strong> as the server and the <strong>SOCKS5 port</strong> as the port.',
-			'Type the proxy <strong>username</strong> and <strong>password</strong> and save.',
-			'Tap <strong>Start</strong> (or <strong>Connect</strong>). When Android asks to allow the connection, tap <strong>OK</strong>.',
-			'A <strong>key icon</strong> shows at the top of the screen. Search <strong>what is my IP</strong> to confirm the proxy\'s IP and country.',
+			'Open the <strong>Google Play Store</strong>, search for <strong>Tun2Socks</strong>, install it and open it.',
+			'In <strong>Socks host</strong> type the <strong>IP address</strong>. In <strong>Port</strong> type the <strong>SOCKS5 port</strong>.',
+			'In <strong>Username</strong> and <strong>Password</strong> type your proxy username and password.',
+			'Tap <strong>Start Connect</strong>. When Android asks to set up a VPN connection, tap <strong>OK</strong>.',
+			'A <strong>key or VPN icon</strong> shows at the top of the screen. Search <strong>what is my IP</strong> to confirm the proxy\'s IP and country.',
 		),
 		'notes' => array(
-			'The buttons in the app can be named a little differently from version to version, but the four details you type are always the same.',
-			'To stop using the proxy, open Tun2Socks and tap <strong>Stop</strong> (or <strong>Disconnect</strong>).',
+			'If the app shows a <strong>DNS</strong> box, you can leave it as it is, or type <strong>8.8.8.8</strong>.',
+			'Use the <strong>SOCKS5 port</strong> here, not the HTTP(S) port.',
+			'To stop using the proxy, open Tun2Socks and tap the same button again to disconnect.',
 			'<strong>Without an app (Wi-Fi only):</strong> open Settings, Wi-Fi, hold your network, choose Modify, set Proxy to Manual, then type the IP address and the HTTP(S) port.',
 		),
 	),
@@ -78,32 +81,38 @@ $guides = array(
 		'icon'  => 'phone',
 		'kind'  => 'phone',
 		'intro' => 'Use the Potatso app (many people call it the "Potato" app). It works on Wi-Fi and on mobile data.',
-		'app'   => array( 'Potatso', 'Search for "Potatso" in the App Store and install it.' ),
+		'app'   => array( 'Potatso', 'Search for "Potatso" in the App Store and install it. "Potatso Lite" works the same way.' ),
 		'need'  => array( 'IP address' => $ex['ip'], 'SOCKS5 port' => $ex['socks'], 'Username' => $ex['user'], 'Password' => $ex['pass'] ),
 		'slides' => array(
 			array( $copy['screen'], $copy['cap'], array( array( 'IP address', $ex['ip'], 1 ), array( 'SOCKS5 port', $ex['socks'], 1 ), array( 'Username', $ex['user'], 1 ), array( 'Password', $ex['pass'], 1 ) ), '' ),
-			array( 'App Store', 'Open the App Store, search for Potatso and tap Get.', array( array( 'Search', 'Potatso', 1 ), array( 'Potatso', 'Get', 1 ) ), '' ),
-			array( 'Potatso', 'Open the app and tap the + button to add a proxy. Choose SOCKS5 as the type.', array( array( 'Add proxy', '+', 1 ), array( 'Type', 'SOCKS5', 1 ) ), '' ),
-			array( 'Add proxy', 'Type the IP address as the host and the SOCKS5 port as the port.', array( array( 'Host', $ex['ip'], 1 ), array( 'Port', $ex['socks'], 1 ) ), '' ),
-			array( 'Add proxy', 'Type your proxy username and password, then tap Save.', array( array( 'Username', $ex['user'], 1 ), array( 'Password', $ex['pass'], 1 ) ), 'Save' ),
-			array( 'Potatso', 'Select your proxy and tap the Start button. iPhone asks to add a VPN setting: tap Allow.', array( array( '"Potatso" would like to add VPN configurations', '', 0 ) ), 'Allow' ),
-			array( 'Check it works', 'A VPN icon shows at the top. Open Safari and search "what is my IP" to see the proxy\'s IP and country.', array( array( 'Your IP address', $ex['ip'], 1 ), array( 'Status', 'Connected', 0 ) ), '' ),
+			array( 'App Store', 'Open the App Store, search for Potatso and tap Get. Then open the app.', array( array( 'Search', 'Potatso', 1 ), array( 'Potatso', 'Get', 1 ) ), '' ),
+			array( 'Potatso', 'On the first screen tap "Add a Proxy". Then, under "Manual Input", tap "Add".', array( array( 'Add a Proxy', '+', 1 ), array( 'Manual Input', 'Add', 1 ) ), '' ),
+			array( 'Proxy', 'Tap "Type" and choose SOCKS5. In "Host" type your proxy IP address. In "Port" type the SOCKS5 port.', array( array( 'Type', 'SOCKS5', 1 ), array( 'Host', $ex['ip'], 1 ), array( 'Port', $ex['socks'], 1 ) ), '' ),
+			array( 'Proxy', 'Set "Authentication" to Password. Type your proxy username in "User" and your password in "Password". Tap Save.', array( array( 'Authentication', 'Password', 1 ), array( 'User', $ex['user'], 1 ), array( 'Password', $ex['pass'], 1 ) ), 'Save' ),
+			array( 'Potatso', 'Back on the main screen, tap the Play button to connect. iPhone asks to add VPN configurations: tap Allow and enter your passcode.', array( array( '"Potatso" Would Like to Add VPN Configurations', '', 1 ) ), 'Allow' ),
+			array( 'Check it works', 'A VPN icon shows at the top of the screen. Open Safari and search "what is my IP": it should show the proxy\'s IP and country.', array( array( 'Your IP address', $ex['ip'], 1 ), array( 'Status', 'Connected', 0 ) ), '' ),
 		),
 		'steps' => array(
 			'Open <strong>My proxies</strong> and copy the <strong>IP address</strong>, <strong>SOCKS5 port</strong>, <strong>username</strong> and <strong>password</strong>.',
-			'Open the <strong>App Store</strong>, search for <strong>Potatso</strong> and install it.',
-			'Open the app and tap <strong>+</strong> to add a proxy. Choose <strong>SOCKS5</strong> as the type.',
-			'Type the <strong>IP address</strong> as the host, the <strong>SOCKS5 port</strong> as the port, then your <strong>username</strong> and <strong>password</strong>. Tap <strong>Save</strong>.',
-			'Select the proxy you just added and tap <strong>Start</strong>. When your iPhone asks to add a VPN setting, tap <strong>Allow</strong> and enter your passcode.',
+			'Open the <strong>App Store</strong>, search for <strong>Potatso</strong>, install it and open it.',
+			'Tap <strong>Add a Proxy</strong>. Under <strong>Manual Input</strong> tap <strong>Add</strong>.',
+			'Tap <strong>Type</strong> and choose <strong>SOCKS5</strong>. In <strong>Host</strong> type the IP address and in <strong>Port</strong> type the SOCKS5 port.',
+			'Set <strong>Authentication</strong> to <strong>Password</strong>. Type your username in <strong>User</strong> and your password in <strong>Password</strong>, then tap <strong>Save</strong>.',
+			'Tap the <strong>Play</strong> button to connect. When your iPhone asks to add VPN configurations, tap <strong>Allow</strong> and enter your passcode.',
 			'A <strong>VPN icon</strong> shows at the top of the screen. Search <strong>what is my IP</strong> in Safari to confirm the proxy\'s IP and country.',
 		),
 		'notes' => array(
-			'The buttons in the app can be named a little differently from version to version, but the four details you type are always the same.',
+			'Use the <strong>SOCKS5 port</strong> here, not the HTTP(S) port.',
 			'To stop using the proxy, open Potatso and tap the same button again to disconnect.',
 			'<strong>Without an app (Wi-Fi only):</strong> open Settings, Wi-Fi, tap the (i) next to your network, Configure Proxy, Manual. Type the IP address and the HTTP(S) port, switch on Authentication and type your username and password.',
 		),
 	),
 );
+// A real screen recording replaces the drawn walkthrough when one has been uploaded for that device.
+foreach ( $guides as $key => $g ) {
+	$guides[ $key ]['video'] = is_readable( ZP_DIR . 'assets/guides/' . $key . '.mp4' ) ? ZP_URL . 'assets/guides/' . $key . '.mp4?v=' . ZP_VERSION : '';
+	$guides[ $key ]['poster'] = is_readable( ZP_DIR . 'assets/guides/' . $key . '.jpg' ) ? ZP_URL . 'assets/guides/' . $key . '.jpg?v=' . ZP_VERSION : '';
+}
 $first = true;
 ?>
 <section class="zp-card zp-anim zp-setup" style="--d:2" id="connect" data-zp-setup>
@@ -126,6 +135,12 @@ $first = true;
 		<div class="zp-setup__pane" data-setup-pane="<?php echo esc_attr( $key ); ?>"<?php echo $first ? '' : ' hidden'; ?>>
 			<p class="zp-setup__intro"><?php echo esc_html( $g['intro'] ); ?></p>
 			<div class="zp-setup__grid">
+				<?php if ( $g['video'] ) : ?>
+				<div class="zp-realvid">
+					<video controls playsinline preload="metadata"<?php echo $g['poster'] ? ' poster="' . esc_url( $g['poster'] ) . '"' : ''; ?> src="<?php echo esc_url( $g['video'] ); ?>"></video>
+					<p><?php echo zp_icon( 'eye', 16 ); // phpcs:ignore ?>Real screen recording of the setup. Tap play and follow along.</p>
+				</div>
+				<?php else : ?>
 				<div class="zp-vid zp-vid--<?php echo esc_attr( $g['kind'] ); ?>" data-zp-vid>
 					<div class="zp-vid__stage">
 						<span class="zp-vid__badge"><i></i>Walkthrough</span>
@@ -155,6 +170,7 @@ $first = true;
 						<button type="button" data-vid="next" aria-label="Next step"><?php echo zp_icon( 'arrow', 18 ); // phpcs:ignore ?></button>
 					</div>
 				</div>
+				<?php endif; ?>
 
 				<div class="zp-setup__text">
 					<?php if ( ! empty( $g['app'] ) ) : ?>

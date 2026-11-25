@@ -1,0 +1,1 @@
+Put real screen recordings here as windows.mp4, android.mp4 and ios.mp4 (optional poster images: windows.jpg, android.jpg, ios.jpg). When a file exists it replaces the drawn walkthrough for that device.
