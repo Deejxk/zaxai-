@@ -172,6 +172,11 @@ class ZP_Resellers {
 			'emerald' => array( 'name' => 'Emerald', 'desc' => 'Deep green with lime accents. Bold fintech feel.', 'accent' => '#10b981' ),
 			'sunset'  => array( 'name' => 'Sunset', 'desc' => 'Warm, friendly and colourful. Easy for beginners.', 'accent' => '#d9480f' ),
 			'carbon'  => array( 'name' => 'Carbon', 'desc' => 'Black with neon lime. Technical, for developers.', 'accent' => '#65a30d' ),
+			'royal'   => array( 'name' => 'Royal', 'desc' => 'Navy and gold with elegant lettering. Premium feel.', 'accent' => '#a9781f' ),
+			'ocean'   => array( 'name' => 'Ocean', 'desc' => 'Fresh blue and white with a dashboard preview. Clean business look.', 'accent' => '#0b6bd6' ),
+			'nebula'  => array( 'name' => 'Nebula', 'desc' => 'Deep purple with glowing glass cards. Bold and modern.', 'accent' => '#9333ea' ),
+			'steel'   => array( 'name' => 'Steel', 'desc' => 'Light grey with sharp lines and an orange accent. Serious and direct.', 'accent' => '#c2410c' ),
+			'blossom' => array( 'name' => 'Blossom', 'desc' => 'Soft rose and cream with a phone preview. Warm and stylish.', 'accent' => '#be185d' ),
 		);
 	}
 
@@ -212,7 +217,7 @@ class ZP_Resellers {
 		if ( ! $own ) {
 			return null; // the design's own colours are already balanced
 		}
-		$bgs  = array( 'aurora' => '#080a13', 'minimal' => '#ffffff', 'emerald' => '#061613', 'sunset' => '#fff8f3', 'carbon' => '#0a0a0a' );
+		$bgs  = array( 'aurora' => '#080a13', 'minimal' => '#ffffff', 'emerald' => '#061613', 'sunset' => '#fff8f3', 'carbon' => '#0a0a0a', 'royal' => '#0b1026', 'ocean' => '#f5f9ff', 'nebula' => '#0d0718', 'steel' => '#f3f4f6', 'blossom' => '#fff7f8' );
 		$bg   = isset( $bgs[ $theme ] ) ? $bgs[ $theme ] : '#080a13';
 		$fill = zp_fit_contrast( $own, $bg, 2.2 );            // buttons and tiles stand out from the page
 		$ink  = zp_ink_on( $fill );                           // black or white text on them

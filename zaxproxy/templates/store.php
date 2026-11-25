@@ -84,6 +84,11 @@ $std_lead = array(
 	'emerald' => 'Dedicated proxies for social media, e-commerce, research and automation. Fund your wallet in ' . $cur . ' and start in minutes.',
 	'sunset'  => 'Pick a country, choose 30, 60 or 90 days and you are online. Friendly prices, fast setup, and a team that answers.',
 	'carbon'  => 'Dedicated IPv4, IPv6, ISP and mobile endpoints. HTTP(S) and SOCKS5, username or IP auth, exported in the format your tools expect.',
+	'royal'   => 'Private, dedicated proxies with a first-class service. Choose your location, pay in ' . $cur . ' and connect in minutes.',
+	'ocean'   => 'One simple dashboard for all your proxies. Fund your wallet, pick a country and your IPs are ready to use.',
+	'nebula'  => 'Fast private IPs across the globe. IPv4, IPv6, ISP and mobile, delivered automatically to your dashboard.',
+	'steel'   => 'Dedicated IPs, clear prices, no nonsense. Buy for 30, 60 or 90 days and renew whenever you like.',
+	'blossom' => 'Private proxies for your social media, shops and everyday browsing. Simple to buy, simple to connect.',
 );
 $std_head = array(
 	'aurora'  => 'Private proxies,<br><span class="zs-hl">ready in minutes.</span>',
@@ -91,6 +96,11 @@ $std_head = array(
 	'emerald' => 'Your gateway to a <span class="zs-hl">faster, private</span> internet.',
 	'sunset'  => 'Proxies made easy for everyone.',
 	'carbon'  => 'Proxies built for <span class="zs-hl">people who ship.</span>',
+	'royal'   => 'Premium proxies, <span class="zs-hl">privately yours.</span>',
+	'ocean'   => 'All your proxies in <span class="zs-hl">one calm place.</span>',
+	'nebula'  => 'Go anywhere online. <span class="zs-hl">Stay private.</span>',
+	'steel'   => 'Reliable proxies.<br><span class="zs-hl">Straight prices.</span>',
+	'blossom' => 'Browse, post and sell <span class="zs-hl">with confidence.</span>',
 );
 $h1       = '' !== $headline ? esc_html( $headline ) : $std_head[ $theme ];
 $lead     = '' !== $lead ? nl2br( esc_html( $lead ) ) : esc_html( $std_lead[ $theme ] );
@@ -112,7 +122,7 @@ $buttons  = '<div class="zs-cta-row"><a class="zs-btn zs-btn--primary zs-btn--lg
 <meta name="apple-mobile-web-app-title" content="<?php echo esc_attr( $brand ); ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@400;500;700&family=Archivo:wght@500;600;800&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo esc_url( zp_asset( 'css/store.css' ) ); ?>">
 <?php
 $pal = ZP_Resellers::store_palette( $store, $theme );
@@ -120,7 +130,7 @@ if ( $pal ) : // the store's own brand colour replaces the design's accent, with
 	?>
 <style>body.zs{--accent:<?php echo esc_html( $pal['accent'] ); ?>;--accent2:<?php echo esc_html( $pal['end'] ); ?>;--accent-t:<?php echo esc_html( $pal['text'] ); ?>;--ink:<?php echo esc_html( $pal['ink'] ); ?>;--grad:linear-gradient(135deg,<?php echo esc_html( $pal['accent'] ); ?>,<?php echo esc_html( $pal['end'] ); ?>)}
 body.zs .zs-hl{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:<?php echo esc_html( $pal['text'] ); ?>;-webkit-text-fill-color:currentColor}
-body.zs .zs-btn--primary,body.zs .zs-plan .badge,body.zs .zs-step b,body.zs .zs-brand i,body.zs .zs-tabbar a.fab span,body.zs .zs-seg3 span.on,body.zs .zs-core{background:var(--grad);border-color:transparent;color:<?php echo esc_html( $pal['ink'] ); ?>}
+body.zs .zs-btn--primary,body.zs .zs-plan .badge,body.zs .zs-step b,body.zs .zs-brand i,body.zs .zs-tabbar a.fab span,body.zs .zs-seg3 span.on,body.zs .zs-core,body.zs .zs-phone__ring,body.zs .zs-spec__head,body.zs .zs-dash__chart i:last-child{background:var(--grad);border-color:transparent;color:<?php echo esc_html( $pal['ink'] ); ?>}
 body.zs .zs-cta .zs-wrap>div,body.zs--sunset .zs-panel,body.zs--sunset .zs-panel p.lead,body.zs--sunset .zs-panel .zs-tag{color:<?php echo esc_html( $pal['ink'] ); ?>}
 body.zs--sunset .zs-panel .zs-btn--ghost{color:<?php echo esc_html( $pal['ink'] ); ?>;border-color:<?php echo esc_html( $pal['ink'] ); ?>}
 body.zs--sunset .zs-panel .zs-tag{background:transparent;border-color:currentColor}
@@ -214,6 +224,94 @@ body.zs--carbon .zs-strip strong{color:<?php echo esc_html( $pal['text'] ); ?>}<
 			<?php endforeach; ?>
 		</div>
 	</div></div></section>
+
+<?php elseif ( 'royal' === $theme ) : ?>
+	<section class="zs-hero"><div class="zs-wrap zs-split">
+		<div>
+			<span class="zs-tag zs-rise"><b></b>Private access · Since day one</span>
+			<h1 class="zs-rise" style="--d:1"><?php echo $h1; // phpcs:ignore ?></h1>
+			<p class="lead zs-rise" style="--d:2"><?php echo $lead; // phpcs:ignore ?></p>
+			<div class="zs-rise" style="--d:3"><?php echo $buttons; // phpcs:ignore ?></div>
+			<div class="zs-ticks zs-rise" style="--d:4"><span>One owner per IP</span><span>HTTP(S) &amp; SOCKS5</span><span>Extend any time</span></div>
+		</div>
+		<div class="zs-vip zs-rise" style="--d:2" aria-hidden="true">
+			<div class="zs-vip__top"><span><?php echo esc_html( $brand ); ?></span><em>Private pass</em></div>
+			<div class="zs-vip__chip"></div>
+			<strong class="zs-mono">205.120.31.217</strong>
+			<div class="zs-vip__row"><div><small>Network</small><?php echo esc_html( $first ? zp_type_label( $first ) : 'IPv4' ); ?></div><div><small>Period</small>30 days</div><div><small>From</small><?php echo esc_html( $first ? $from[ $first ]['price'] : 'Live price' ); ?></div></div>
+		</div>
+	</div></section>
+
+<?php elseif ( 'ocean' === $theme ) : ?>
+	<section class="zs-hero"><div class="zs-wrap zs-split">
+		<div>
+			<span class="zs-tag zs-rise"><b></b>Simple proxy dashboard</span>
+			<h1 class="zs-rise" style="--d:1"><?php echo $h1; // phpcs:ignore ?></h1>
+			<p class="lead zs-rise" style="--d:2"><?php echo $lead; // phpcs:ignore ?></p>
+			<div class="zs-rise" style="--d:3"><?php echo $buttons; // phpcs:ignore ?></div>
+			<div class="zs-ticks zs-rise" style="--d:4"><span>Instant delivery</span><span>Pay in <?php echo esc_html( $cur ); ?></span><span>Real support</span></div>
+		</div>
+		<div class="zs-dash zs-rise" style="--d:2" aria-hidden="true">
+			<div class="zs-dash__bar"><i></i><i></i><i></i><span>My proxies</span></div>
+			<div class="zs-dash__tiles"><div><small>Active</small><strong>12</strong></div><div><small>Locations</small><strong><?php echo $places ? (int) $places . '+' : '16+'; ?></strong></div><div><small>From</small><strong><?php echo esc_html( $first ? $from[ $first ]['price'] : 'Live price' ); ?></strong></div></div>
+			<div class="zs-dash__chart"><i style="--h:38%"></i><i style="--h:62%"></i><i style="--h:48%"></i><i style="--h:78%"></i><i style="--h:56%"></i><i style="--h:92%"></i><i style="--h:70%"></i></div>
+			<div class="zs-dash__line"><span class="zs-mono">205.120.31.217</span><em>Active</em></div>
+			<div class="zs-dash__line"><span class="zs-mono">185.81.112.210</span><em>Active</em></div>
+		</div>
+	</div></section>
+
+<?php elseif ( 'nebula' === $theme ) : ?>
+	<section class="zs-hero"><div class="zs-wrap">
+		<span class="zs-tag zs-rise"><b></b>IPv4 · IPv6 · ISP · Mobile</span>
+		<h1 class="zs-rise" style="--d:1"><?php echo $h1; // phpcs:ignore ?></h1>
+		<p class="lead zs-rise" style="--d:2"><?php echo $lead; // phpcs:ignore ?></p>
+		<div class="zs-rise" style="--d:3"><?php echo $buttons; // phpcs:ignore ?></div>
+		<div class="zs-glass zs-rise" style="--d:4" aria-hidden="true">
+			<div><small>United States · <?php echo esc_html( $first ? zp_type_label( $first ) : 'IPv4' ); ?></small><strong class="zs-mono">205.120.31.217</strong><em>Online</em></div>
+			<div><small>United Kingdom · Mobile</small><strong class="zs-mono">61.62.63.64</strong><em>Online</em></div>
+			<div><small>Germany · ISP</small><strong class="zs-mono">185.81.112.210</strong><em>Online</em></div>
+		</div>
+	</div></section>
+
+<?php elseif ( 'steel' === $theme ) : ?>
+	<section class="zs-hero"><div class="zs-wrap zs-split">
+		<div>
+			<span class="zs-tag zs-rise"><b></b>Dedicated proxies</span>
+			<h1 class="zs-rise" style="--d:1"><?php echo $h1; // phpcs:ignore ?></h1>
+			<p class="lead zs-rise" style="--d:2"><?php echo $lead; // phpcs:ignore ?></p>
+			<div class="zs-rise" style="--d:3"><?php echo $buttons; // phpcs:ignore ?></div>
+		</div>
+		<div class="zs-spec zs-rise" style="--d:2" aria-hidden="true">
+			<div class="zs-spec__head">What you get</div>
+			<dl>
+				<div><dt>Networks</dt><dd><?php echo count( $types ); ?></dd></div>
+				<div><dt>Locations</dt><dd><?php echo $places ? (int) $places . '+' : 'Global'; ?></dd></div>
+				<div><dt>Protocols</dt><dd>HTTP(S) · SOCKS5</dd></div>
+				<div><dt>Periods</dt><dd>30 · 60 · 90 days</dd></div>
+				<div><dt>Owner per IP</dt><dd>1</dd></div>
+				<div class="is-total"><dt>Price from</dt><dd><?php echo esc_html( $first ? $from[ $first ]['price'] : 'Live price' ); ?></dd></div>
+			</dl>
+		</div>
+	</div></section>
+
+<?php elseif ( 'blossom' === $theme ) : ?>
+	<section class="zs-hero"><div class="zs-wrap zs-split">
+		<div>
+			<span class="zs-tag zs-rise"><b></b>Friendly private proxies</span>
+			<h1 class="zs-rise" style="--d:1"><?php echo $h1; // phpcs:ignore ?></h1>
+			<p class="lead zs-rise" style="--d:2"><?php echo $lead; // phpcs:ignore ?></p>
+			<div class="zs-rise" style="--d:3"><?php echo $buttons; // phpcs:ignore ?></div>
+			<div class="zs-ticks zs-rise" style="--d:4"><span>Works on phone and computer</span><span>Step-by-step guides</span></div>
+		</div>
+		<div class="zs-phone zs-rise" style="--d:2" aria-hidden="true">
+			<div class="zs-phone__notch"></div>
+			<div class="zs-phone__ring"><span>ON</span></div>
+			<strong>Connected</strong>
+			<small>Your connection is private</small>
+			<div class="zs-phone__card"><span>Location</span><b>United States</b></div>
+			<div class="zs-phone__card"><span>IP address</span><b class="zs-mono">205.120.31.217</b></div>
+		</div>
+	</div></section>
 
 <?php else : ?>
 	<section class="zs-hero"><div class="zs-wrap zs-split">
