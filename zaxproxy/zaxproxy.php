@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ZaxProxy
  * Description: Standalone proxy store: customers buy, manage and extend IPv4 / IPv6 / ISP / mobile proxies (proxy-ipv4.com API) from a dedicated user panel, with a separate admin panel outside wp-admin.
- * Version: 1.7.7
+ * Version: 1.7.8
  * Requires PHP: 7.4
  * Requires at least: 5.8
  * Author: ZaxProxy
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ZP_VERSION', '1.7.7' );
+define( 'ZP_VERSION', '1.7.8' );
 define( 'ZP_FILE', __FILE__ );
 define( 'ZP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ZP_USER_BASE', 'panel' );
@@ -63,6 +63,47 @@ register_activation_hook( __FILE__, array( 'ZP_Install', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'ZP_Install', 'deactivate' ) );
 
 add_action( 'plugins_loaded', array( 'ZP_Install', 'maybe_upgrade' ) );
+
+/*
+ * Favicon everywhere: browsers and search engines also ask for /favicon.ico at the site root,
+ * and WordPress's own screens use the "site icon". Both now show the ZaxProxy shield.
+ */
+add_action(
+	'init',
+	function () {
+		if ( get_option( 'zp_favicon_ver' ) === ZP_VERSION ) {
+			return;
+		}
+		$src = ZP_DIR . 'assets/icons/favicon.ico';
+		$dst = ABSPATH . 'favicon.ico';
+		if ( is_readable( $src ) && wp_is_writable( ABSPATH ) ) {
+			@copy( $src, $dst ); // phpcs:ignore
+		}
+		update_option( 'zp_favicon_ver', ZP_VERSION, false );
+	},
+	5
+);
+add_filter(
+	'get_site_icon_url',
+	function ( $url, $size ) {
+		if ( ! empty( $GLOBALS['zp_domain_store'] ) ) {
+			return $url;
+		}
+		return ZP_URL . 'assets/icons/' . ( $size > 192 ? 'icon-512.png' : ( $size > 64 ? 'icon-192.png' : 'favicon-32.png' ) ) . '?v=' . ZP_VERSION;
+	},
+	10,
+	2
+);
+add_action(
+	'do_faviconico',
+	function () {
+		if ( empty( $GLOBALS['zp_domain_store'] ) ) {
+			wp_safe_redirect( ZP_URL . 'assets/icons/favicon.ico?v=' . ZP_VERSION );
+			exit;
+		}
+	},
+	1
+);
 add_action( 'init', array( 'ZP_Router', 'dispatch' ), 20 );
 add_action( 'zp_sync_cron', array( 'ZP_Orders', 'cron_sync' ) );
 add_filter( 'cron_schedules', array( 'ZP_Install', 'cron_schedules' ) );

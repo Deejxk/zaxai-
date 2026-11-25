@@ -321,9 +321,9 @@ class ZP_Router {
 				'theme_color'      => '#0b0d14',
 				'categories'       => array( 'business', 'utilities' ),
 				'icons'            => array(
-					array( 'src' => ZP_URL . 'assets/icons/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any' ),
-					array( 'src' => ZP_URL . 'assets/icons/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any' ),
-					array( 'src' => ZP_URL . 'assets/icons/maskable-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable' ),
+					array( 'src' => ZP_URL . 'assets/icons/icon-192.png?v=' . ZP_VERSION, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any' ),
+					array( 'src' => ZP_URL . 'assets/icons/icon-512.png?v=' . ZP_VERSION, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any' ),
+					array( 'src' => ZP_URL . 'assets/icons/maskable-512.png?v=' . ZP_VERSION, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable' ),
 				),
 				'shortcuts'        => array(
 					array( 'name' => 'Buy proxies', 'url' => zp_url( 'buy' ) ),
@@ -364,8 +364,9 @@ class ZP_Router {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?php echo esc_attr( $brand ); ?>">
-<link rel="apple-touch-icon" href="<?php echo esc_url( ZP_URL . 'assets/icons/apple-touch-icon.png' ); ?>">
+<link rel="apple-touch-icon" href="<?php echo esc_url( ZP_URL . 'assets/icons/apple-touch-icon.png?v=' . ZP_VERSION ); ?>">
 <?php if ( ! zp_reseller_ctx() ) : ?><link rel="icon" type="image/svg+xml" href="<?php echo esc_url( ZP_URL . 'assets/icons/favicon.svg?v=' . ZP_VERSION ); ?>">
+<link rel="shortcut icon" href="<?php echo esc_url( ZP_URL . 'assets/icons/favicon.ico?v=' . ZP_VERSION ); ?>">
 <link rel="icon" type="image/png" sizes="32x32" href="<?php echo esc_url( ZP_URL . 'assets/icons/favicon-32.png?v=' . ZP_VERSION ); ?>"><?php endif; ?>
 <link rel="icon" type="image/png" sizes="192x192" href="<?php echo esc_url( ZP_URL . 'assets/icons/icon-192.png?v=' . ZP_VERSION ); ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
