@@ -41,6 +41,8 @@ $export_url = add_query_arg( '_zpnonce', wp_create_nonce( 'zp_export' ), zp_url(
 endif;
 ?>
 
+<a class="zp-howto zp-anim" href="<?php echo esc_url( zp_url( 'help' ) ); ?>#connect"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?></span><div><strong>How to connect your proxy</strong><span>Step-by-step guides for Windows, Android and iPhone</span></div><b><?php echo zp_icon( 'arrow', 16 ); // phpcs:ignore ?></b></a>
+
 <div class="zp-bulk zp-anim" style="--d:1" id="zp-bulk">
 	<label class="zp-check"><input type="checkbox" id="zp-check-all"><span><b id="zp-sel-count">0</b> selected</span></label>
 	<div class="zp-bulk__actions">

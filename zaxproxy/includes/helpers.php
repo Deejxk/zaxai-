@@ -450,6 +450,7 @@ function zp_faqs() {
 	return array(
 		'How fast are proxies delivered?'            => 'Most orders are delivered to your dashboard within a few minutes of payment. During busy periods setup can take a little longer; the order shows as Processing until your proxies appear.',
 		'Which protocols are supported?'             => 'IPv4, ISP and mobile proxies work over both HTTP(S) and SOCKS5 using separate ports. For IPv6 you choose the protocol when ordering.',
+		'How do I connect a proxy to my phone or computer?' => 'Your dashboard has step-by-step guides with an animated walkthrough for Windows, Android and iPhone. On Android you can use the Tun2Socks app, and on iPhone the Potatso app: you only type the IP address, port, username and password shown on your proxy.',
 		'How do I authenticate?'                     => 'Choose username and password, or whitelist your own IPv4 address when ordering so no credentials are needed.',
 		'Are the proxies private?'                   => 'Yes. Each proxy is issued to a single customer for the whole rental period.',
 		'Can I extend a proxy before it expires?'    => 'Yes. Open My proxies, select the proxies and choose Extend. The new period is added to the current expiry date. IPv6 batches are renewed as a whole order.',

@@ -5,9 +5,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 $faqs = zp_faqs();
 ?>
 <section class="zp-helphero zp-anim">
-	<div><h2>How can we help?</h2><p>Quick answers and setup guides for your proxies.</p></div>
+	<div><h2>How can we help?</h2><p>Step-by-step guides to connect your proxy on Windows, Android and iPhone, plus quick answers.</p><a class="zp-btn zp-btn--light zp-btn--sm" href="#connect">Connect my proxy</a></div>
 	<div class="zp-helphero__art"><?php echo zp_illustration( 'support' ); // phpcs:ignore ?></div>
 </section>
+
+<?php include ZP_DIR . 'templates/user/setup-guide.php'; ?>
 
 <div class="zp-grid3">
 	<div class="zp-card zp-guide zp-anim" style="--d:1"><span class="zp-type__ico"><?php echo zp_icon( 'globe', 22 ); // phpcs:ignore ?></span><strong>Browser setup</strong><p>Open your browser or extension proxy settings, enter the IP and HTTP(S) port, then sign in with the proxy username and password.</p></div>

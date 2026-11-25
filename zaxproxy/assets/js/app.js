@@ -223,6 +223,43 @@
     });
   });
 
+  /* ---------- Setup guides: device tabs and the step-by-step walkthrough player ---------- */
+  $$('[data-zp-setup]').forEach(function (box) {
+    var players = [];
+    $$('[data-zp-vid]', box).forEach(function (v) {
+      var slides = $$('.zp-vid__slide', v), caps = $$('.zp-vid__caps p', v), bars = $$('.zp-vid__progress i', v), i = 0, timer = null, DUR = 5200;
+      function show(n) {
+        i = (n + slides.length) % slides.length;
+        slides.forEach(function (s, k) { s.classList.toggle('is-on', k === i); });
+        caps.forEach(function (c, k) { c.classList.toggle('is-on', k === i); });
+        bars.forEach(function (b, k) { b.classList.toggle('is-done', k < i); b.classList.remove('is-now'); });
+        void v.offsetWidth; if (v.classList.contains('is-playing')) bars[i].classList.add('is-now');
+      }
+      function stop() { clearInterval(timer); timer = null; v.classList.remove('is-playing'); bars.forEach(function (b) { b.classList.remove('is-now'); }); }
+      function play() { stop(); v.classList.add('is-playing'); show(i); timer = setInterval(function () { if (!document.body.contains(v)) { stop(); return; } if (i === slides.length - 1) { stop(); bars[i].classList.add('is-done'); return; } show(i + 1); }, DUR); }
+      v.style.setProperty('--dur', DUR + 'ms');
+      v.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-vid]'); if (!b) return;
+        var a = b.getAttribute('data-vid');
+        if (a === 'play') { if (timer) stop(); else { if (i === slides.length - 1) i = 0; play(); } }
+        else { stop(); show(i + (a === 'next' ? 1 : -1)); }
+      });
+      $$('.zp-vid__progress i', v).forEach(function (b, k) { b.addEventListener('click', function () { stop(); show(k); }); });
+      players.push({ el: v, stop: stop, reset: function () { stop(); show(0); } });
+    });
+    $$('[data-setup]', box).forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var key = tab.getAttribute('data-setup');
+        $$('[data-setup]', box).forEach(function (t) { t.classList.toggle('is-active', t === tab); });
+        $$('[data-setup-pane]', box).forEach(function (p) { p.hidden = p.getAttribute('data-setup-pane') !== key; });
+        players.forEach(function (p) { p.reset(); });
+      });
+    });
+    // Open the guide for the device being used.
+    var ua = navigator.userAgent, guess = /android/i.test(ua) ? 'android' : (/iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) ? 'ios' : 'windows';
+    var auto = box.querySelector('[data-setup="' + guess + '"]'); if (auto && !auto.classList.contains('is-active')) auto.click();
+  });
+
   /* ---------- Buy form ---------- */
   var buy = $('#zp-buy');
   if (buy) (function () {
