@@ -13,6 +13,8 @@ if ( ! $types ) {
 	return;
 }
 ?>
+<a class="zp-howto zp-anim" href="#connect"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?></span><div><strong>New to proxies? See how to connect</strong><span>Guides for Windows, Android and iPhone are at the bottom of this page</span></div><b><?php echo zp_icon( 'arrow', 16 ); // phpcs:ignore ?></b></a>
+
 <form method="post" class="zp-buy" id="zp-buy" data-type="<?php echo esc_attr( $active ); ?>" novalidate>
 	<?php zp_nonce_field( 'buy' ); ?>
 	<input type="hidden" name="type" value="<?php echo esc_attr( $active ); ?>">
@@ -106,3 +108,11 @@ if ( ! $types ) {
 		<button class="zp-btn zp-btn--primary" type="submit" id="zp-bar-btn" disabled>Pay from wallet</button>
 	</div>
 </form>
+
+<div class="zp-buyguide">
+	<?php
+	$zp_setup_only = true;
+	include ZP_DIR . 'templates/user/setup-guide.php';
+	?>
+	<p class="zp-buyguide__more">More help, account tips and common problems are in the <a href="<?php echo esc_url( zp_url( 'help' ) ); ?>#connect">Help center</a>.</p>
+</div>

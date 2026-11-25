@@ -107,8 +107,8 @@ $guides = array(
 $first = true;
 ?>
 <section class="zp-card zp-anim zp-setup" style="--d:2" id="connect" data-zp-setup>
-	<div class="zp-card__head"><h3><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Connect your proxy</h3><a href="<?php echo esc_url( $mine ); ?>">My proxies</a></div>
-	<p class="zp-setup__lead">Choose your device. Watch the short walkthrough, or follow the written steps below it. It takes about two minutes.</p>
+	<div class="zp-card__head"><h3><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?><?php echo ! empty( $zp_setup_only ) ? 'How to connect your proxy' : 'Connect your proxy'; ?></h3><a href="<?php echo esc_url( $mine ); ?>">My proxies</a></div>
+	<p class="zp-setup__lead"><?php echo ! empty( $zp_setup_only ) ? 'After you buy, this is how you put the proxy on your device. Choose your device, watch the short walkthrough or follow the written steps.' : 'Choose your device. Watch the short walkthrough, or follow the written steps below it. It takes about two minutes.'; ?></p>
 	<div class="zp-seg zp-setup__tabs" role="tablist">
 		<?php foreach ( $guides as $key => $g ) : ?>
 			<button type="button" role="tab" class="<?php echo $first ? 'is-active' : ''; ?>" data-setup="<?php echo esc_attr( $key ); ?>"><?php echo zp_icon( $g['icon'], 16 ); // phpcs:ignore ?><?php echo esc_html( $g['name'] ); ?></button>
@@ -182,6 +182,11 @@ $first = true;
 	?>
 </section>
 
+<?php
+if ( ! empty( $zp_setup_only ) ) {
+	return; // the buy page shows only the connection guide
+}
+?>
 <section class="zp-card zp-anim" style="--d:3">
 	<div class="zp-card__head"><h3>Using a proxy for your accounts</h3></div>
 	<p class="zp-setup__lead">Setting up a social media, shopping or any other account on a proxy? Follow these simple rules and your accounts stay safe.</p>

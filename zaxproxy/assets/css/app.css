@@ -1131,3 +1131,7 @@ a.zp-kpi{color:var(--zp-text)}a.zp-kpi:hover{text-decoration:none}
 .zp-howto{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;border:1px solid var(--zp-border);background:var(--zp-surface);color:var(--zp-text);box-shadow:var(--zp-shadow)}
 .zp-howto:hover{text-decoration:none;border-color:var(--zp-brand)}.zp-howto .zp-stat__ico{margin:0;flex:none}
 .zp-howto div{flex:1;min-width:0;display:flex;flex-direction:column}.zp-howto strong{font-size:14.5px}.zp-howto span:not(.zp-stat__ico){font-size:13px;color:var(--zp-text-2)}.zp-howto b{color:var(--zp-text-3)}
+.zp-buyguide{display:flex;flex-direction:column;gap:12px}
+.zp-buyguide__more{font-size:13.5px;color:var(--zp-text-2);text-align:center}
+#connect{scroll-margin-top:calc(var(--zp-top-h) + 14px)}
+@media (max-width:900px){.zp-buy{padding-bottom:0}.zp-buyguide{padding-bottom:104px}}
