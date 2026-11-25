@@ -846,14 +846,16 @@
     function place() {
       raf = 0;
       // iOS slides the whole page up under the keyboard; move the fixed header back to the top of what is visible.
-      var off = vv ? Math.max(0, Math.round(vv.offsetTop)) : 0;
-      top.style.transform = off ? 'translate3d(0,' + off + 'px,0)' : '';
       var small = vv ? vv.height < window.innerHeight - 140 : false;
+      // Only while the keyboard is really open. During normal scrolling the header is never moved:
+      // iOS reports small offsets while the page bounces, and following them made the header jump.
+      var off = (vv && typing && small) ? Math.max(0, Math.round(vv.offsetTop)) : 0;
+      top.style.transform = off ? 'translate3d(0,' + off + 'px,0)' : '';
       root.classList.toggle('zp-kb', (typing || small) && window.innerWidth <= 900);
     }
     function queue() { if (!raf) raf = requestAnimationFrame(place); }
-    if (vv) { vv.addEventListener('resize', queue); vv.addEventListener('scroll', queue); }
-    window.addEventListener('scroll', queue, { passive: true });
+    if (vv) { vv.addEventListener('resize', queue); vv.addEventListener('scroll', function () { if (typing || top.style.transform) queue(); }); }
+    window.addEventListener('scroll', function () { if (typing || top.style.transform) queue(); }, { passive: true });
     document.addEventListener('focusin', function (e) { if (isField(e.target) && e.target.tagName !== 'SELECT') { typing = true; queue(); setTimeout(queue, 350); } });
     document.addEventListener('focusout', function () { typing = false; setTimeout(queue, 120); setTimeout(queue, 500); });
   })();

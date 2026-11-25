@@ -846,7 +846,7 @@ a.zp-note:hover{background:var(--zp-surface-2);text-decoration:none}
 @media (max-width:440px){.zp-top__title{display:none}}
 
 /* keyboard open on phones: the header stays, the bottom bars step aside so they do not cover the field */
-.zp-shell .zp-top{will-change:transform}
+.zp-shell .zp-top{-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden}
 html.zp-kb .zp-tabbar,html.zp-kb .zp-buybar{opacity:0;pointer-events:none;transform:translateY(120%);transition:opacity .15s,transform .2s}
 .zp-loadfail{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 16px;border:1px dashed var(--zp-border-2);border-radius:14px;text-align:center}
 .zp-loadfail span{font-size:13.5px;color:var(--zp-text-2)}
