@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZaxProxy</title>
+<style>
+:root{--bg:#0b0d14;--surface:#141826;--surface2:#1b2032;--border:#2a3148;--text:#eef1f8;--muted:#a4adc4;--brand:#6d5efc;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;min-height:100vh}
+.wrap{max-width:560px;margin:0 auto;padding:22px 18px 40px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.top h1{flex:1;margin:0;font:700 22px Georgia,"Times New Roman",serif;letter-spacing:-.01em}
+.logo{width:36px;height:36px;flex:none}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;color:#fff}
+.btn{height:46px;padding:0 18px;background:linear-gradient(135deg,#6d5efc,#2563eb);font-weight:700;width:100%}
+.btn:disabled{opacity:.6;cursor:default}
+.btn.stop{background:#b91c1c}
+.ghost{height:38px;padding:0 13px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13.5px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:10px}
+.card.on{border-color:var(--brand);background:#1a1f3a}
+.hero{border-radius:22px;padding:22px;margin-bottom:14px;background:linear-gradient(135deg,#3b32b8,#4f46e5 50%,#2563eb);transition:background .3s}
+.hero.on{background:linear-gradient(135deg,#047857,#059669 50%,#0e7490)}
+.hero small{display:inline-block;padding:4px 11px;border-radius:20px;background:rgba(0,0,0,.24);font-size:12.5px}
+.hero h2{margin:12px 0 2px;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.hero p{margin:0;font-size:14.5px}
+.hero .btn{margin-top:16px}
+h3{margin:22px 0 10px;font-size:16.5px}
+.row{display:flex;align-items:center;gap:12px}
+.flag{width:44px;height:44px;flex:none;border-radius:12px;background:var(--surface2);display:grid;place-items:center;font-size:22px}
+.row .main{flex:1;min-width:0}
+.row strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .addr{font:13px ui-monospace,Consolas,monospace;color:var(--muted)}
+.left{font-size:12.5px;font-weight:700;color:var(--ok);white-space:nowrap}
+.left.expiring{color:var(--warn)}
+.card .btn{margin-top:12px;height:42px}
+input{width:100%;height:50px;margin-bottom:12px;padding:0 15px;border-radius:13px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:inherit;outline:0}
+input:focus{border-color:var(--brand)}
+.err{margin:0 0 12px;padding:11px 13px;border-radius:12px;background:rgba(248,113,113,.12);color:var(--bad);font-size:14px}
+.muted{color:var(--muted);font-size:13.5px}
+.center{text-align:center}
+.login{max-width:380px;margin:40px auto 0;text-align:center}
+.login .logo{width:76px;height:76px}
+.login h1{font:700 30px Georgia,serif;margin:10px 0 2px}
+.login p{margin:0 0 26px;color:var(--muted)}
+a{color:#b3aaff}
+.note{margin-top:18px;padding:13px 15px;border-radius:14px;border:1px dashed var(--border);color:var(--muted);font-size:13px;line-height:1.55}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b7bff"/><stop offset=".5" stop-color="#5b46e8"/><stop offset="1" stop-color="#3b2fc4"/></linearGradient>
+<symbol id="mark" viewBox="0 0 64 64"><path d="M32 4 9 12.5v17.2C9 44.6 18.8 55.3 32 60c13.2-4.700 23-15.400 23-30.300V12.500L32 4Z" fill="url(#g)"/><path d="M40.500 19.500H27.200l-1.700 12.600c2.100-1.900 4.700-2.800 7.600-2.800 5.400 0 9.200 3.600 9.200 8.500 0 5.100-4.200 8.900-9.900 8.900-3.900 0-7-1.500-8.900-4" fill="none" stroke="#fff" stroke-width="5.600" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <section id="login" class="login" hidden>
+    <svg class="logo"><use href="#mark"/></svg>
+    <h1>ZaxProxy</h1>
+    <p>Sign in to connect your proxies on this PC</p>
+    <div id="lerr" class="err" hidden></div>
+    <form id="lform">
+      <input id="lmail" type="text" placeholder="Email or username" autocomplete="username" required>
+      <input id="lpass" type="password" placeholder="Password" autocomplete="current-password" required>
+      <button class="btn" id="lbtn" type="submit">Sign in</button>
+    </form>
+    <p class="muted" style="margin-top:20px">New here? <a href="https://zaxproxy.cloud/panel/register/" target="_blank" rel="noopener">Create an account</a></p>
+  </section>
+
+  <section id="main" hidden>
+    <div class="top">
+      <svg class="logo"><use href="#mark"/></svg>
+      <h1>ZaxProxy</h1>
+      <button class="ghost" id="refresh">Refresh</button>
+      <button class="ghost" id="logout">Sign out</button>
+    </div>
+    <div class="hero" id="hero">
+      <small id="hello"></small>
+      <h2 id="st">Not connected</h2>
+      <p id="stsub">Choose a proxy below and click Connect</p>
+      <button class="btn stop" id="stop" hidden>Disconnect</button>
+    </div>
+    <div id="err" class="err" hidden></div>
+    <h3>Your proxies</h3>
+    <div id="list"></div>
+    <div id="empty" class="card center" hidden><strong>No active proxies yet</strong><div class="muted">Buy a proxy on the website and click Refresh.</div></div>
+    <button class="ghost" style="width:100%;height:46px;margin-top:6px" onclick="window.open('https://zaxproxy.cloud/panel/buy/','_blank')">Buy proxies</button>
+    <div class="note">While connected, your browsers and most programs on this PC use the proxy. ZaxProxy stays in the tray (near the clock): right-click its icon to disconnect or quit. Closing this page does not disconnect you. <a href="#" id="quit">Quit ZaxProxy</a></div>
+    <p class="muted center" id="ver"></p>
+  </section>
+</div>
+
+<script>
+(function () {
+  var key = (location.hash.match(/k=([a-f0-9]+)/) || [])[1] || sessionStorage.getItem('zk') || '';
+  if (key) { sessionStorage.setItem('zk', key); history.replaceState(null, '', '/'); }
+  var $ = function (id) { return document.getElementById(id); }, busy = 0;
+  function call(path, body) {
+    return fetch('/api/' + path, { method: body === undefined ? 'GET' : 'POST', headers: { 'X-Key': key, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
+      .then(function (r) { return r.json(); });
+  }
+  function fail(el, text) { el.textContent = text; el.hidden = !text; }
+  function draw(s) {
+    if (!s || s.ok === false && s.signedIn === undefined) { return; }
+    $('login').hidden = !!s.signedIn; $('main').hidden = !s.signedIn;
+    if (!s.signedIn) return;
+    $('hello').textContent = s.name ? 'Hello, ' + s.name : 'ZaxProxy';
+    $('ver').textContent = 'Version ' + s.version;
+    var on = null; (s.proxies || []).forEach(function (p) { if (p.id === s.connected) on = p; });
+    $('hero').className = 'hero' + (on ? ' on' : '');
+    $('st').textContent = on ? 'Connected' : (busy ? 'Connecting…' : 'Not connected');
+    $('stsub').textContent = on ? on.flag + ' ' + on.title + ' · ' + on.address : (busy ? '' : 'Choose a proxy below and click Connect');
+    $('stop').hidden = !on;
+    var list = $('list'); list.textContent = '';
+    $('empty').hidden = (s.proxies || []).length > 0;
+    (s.proxies || []).forEach(function (p) {
+      var c = document.createElement('div'); c.className = 'card' + (p.id === s.connected ? ' on' : '');
+      var row = document.createElement('div'); row.className = 'row';
+      var f = document.createElement('div'); f.className = 'flag'; f.textContent = p.flag;
+      var m = document.createElement('div'); m.className = 'main';
+      var t = document.createElement('strong'); t.textContent = p.title;
+      var ad = document.createElement('div'); ad.className = 'addr'; ad.textContent = p.address;
+      var l = document.createElement('div'); l.className = 'left' + (p.state === 'expiring' ? ' expiring' : ''); l.textContent = p.left;
+      m.appendChild(t); m.appendChild(ad); row.appendChild(f); row.appendChild(m); row.appendChild(l); c.appendChild(row);
+      var b = document.createElement('button');
+      if (p.id === s.connected) { b.className = 'btn stop'; b.textContent = 'Disconnect'; b.onclick = disconnect; }
+      else { b.className = 'btn'; b.textContent = busy === p.id ? 'Connecting…' : 'Connect'; b.disabled = !!busy; b.onclick = function () { connect(p.id); }; }
+      c.appendChild(b); list.appendChild(c);
+    });
+  }
+  var last = null;
+  function show(s) { if (s && s.signedIn !== undefined) { last = s; } draw(last); }
+  function connect(id) {
+    busy = id; fail($('err'), ''); draw(last);
+    call('connect', { id: id }).then(function (s) { busy = 0; if (s.ok === false) fail($('err'), s.error); show(s); }).catch(function () { busy = 0; fail($('err'), 'ZaxProxy is not responding. Open it again from the tray icon.'); draw(last); });
+  }
+  function disconnect() { call('disconnect', {}).then(show); }
+  $('stop').onclick = disconnect;
+  $('refresh').onclick = function () { fail($('err'), ''); call('refresh', {}).then(function (s) { if (s.ok === false) fail($('err'), s.error); show(s); }); };
+  $('logout').onclick = function () { call('logout', {}).then(show); };
+  $('quit').onclick = function (e) { e.preventDefault(); call('quit', {}).then(function () { document.body.innerHTML = '<p style="text-align:center;margin-top:80px;color:#a4adc4">ZaxProxy has closed. You can close this tab.</p>'; }); };
+  $('lform').onsubmit = function (e) {
+    e.preventDefault(); fail($('lerr'), ''); $('lbtn').disabled = true; $('lbtn').textContent = 'Signing in…';
+    call('login', { login: $('lmail').value.trim(), password: $('lpass').value }).then(function (s) {
+      $('lbtn').disabled = false; $('lbtn').textContent = 'Sign in';
+      if (s.ok === false) { fail($('lerr'), s.error); return; }
+      $('lpass').value = ''; show(s);
+    }).catch(function () { $('lbtn').disabled = false; $('lbtn').textContent = 'Sign in'; fail($('lerr'), 'ZaxProxy is not responding. Open it again from the tray icon.'); });
+  };
+  function poll() { call('state').then(function (s) { if (s.ok === false) { document.body.innerHTML = '<p style="text-align:center;margin-top:80px;color:#a4adc4">This page has expired. Open ZaxProxy again from the tray icon near the clock.</p>'; return; } show(s); }).catch(function () {}); }
+  poll(); setInterval(function () { if (!busy && !document.hidden) poll(); }, 4000);
+})();
+</script>
+</body>
+</html>

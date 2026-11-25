@@ -128,22 +128,28 @@ class ZP_App {
 	}
 
 	/** Is the Android app offered to this visitor? Staff always; customers once the owner switches it on. */
-	public static function offered() {
-		return is_readable( ZP_DIR . 'assets/app/ZaxProxy.apk' ) && ( zp_get( 'app_public' ) || current_user_can( 'manage_options' ) );
+	const FILES = array(
+		'android' => array( 'ZaxProxy.apk', 'ZaxProxy.apk', 'application/vnd.android.package-archive' ),
+		'windows' => array( 'ZaxProxy-Windows.exe', 'ZaxProxy.exe', 'application/vnd.microsoft.portable-executable' ),
+	);
+
+	public static function offered( $os = 'android' ) {
+		return isset( self::FILES[ $os ] ) && is_readable( ZP_DIR . 'assets/app/' . self::FILES[ $os ][0] ) && ( zp_get( 'app_public' ) || current_user_can( 'manage_options' ) );
 	}
 
-	public static function download_url() {
-		return zp_route_url( 'zp-app', 'download' );
+	public static function download_url( $os = 'android' ) {
+		return zp_route_url( 'zp-app', 'download', 'android' === $os ? array() : array( 'os' => $os ) );
 	}
 
 	private static function download() {
-		$file = ZP_DIR . 'assets/app/ZaxProxy.apk';
-		if ( ! self::offered() ) {
+		$os = sanitize_key( zp_query( 'os', 'android' ) );
+		if ( ! self::offered( $os ) ) {
 			ZP_Shield::not_found();
 		}
+		$file = ZP_DIR . 'assets/app/' . self::FILES[ $os ][0];
 		nocache_headers();
-		header( 'Content-Type: application/vnd.android.package-archive' );
-		header( 'Content-Disposition: attachment; filename="ZaxProxy.apk"' );
+		header( 'Content-Type: ' . self::FILES[ $os ][2] );
+		header( 'Content-Disposition: attachment; filename="' . self::FILES[ $os ][1] . '"' );
 		header( 'Content-Length: ' . filesize( $file ) );
 		header( 'X-Content-Type-Options: nosniff' );
 		readfile( $file ); // phpcs:ignore

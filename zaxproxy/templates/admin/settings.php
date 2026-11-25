@@ -72,7 +72,7 @@ $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 			<label class="zp-field"><span>Support email (ticket alerts, contact form)</span><div class="zp-input"><input type="email" name="support_email" value="<?php echo esc_attr( $s['support_email'] ); ?>"></div></label>
 		</div>
 		<?php $toggle( 'registration', 'Allow new sign-ups', 'Turn off to close registration.' ); ?>
-		<?php $toggle( 'app_public', 'Show the Android app to customers', 'Adds a download button for the ZaxProxy Android app in the customer panel. While this is off, only administrators see the download.' ); ?>
+		<?php $toggle( 'app_public', 'Show the Android and Windows apps to customers', 'Adds download buttons for the ZaxProxy apps in the customer panel. While this is off, only administrators see the downloads.' ); ?>
 		<?php $toggle( 'landing', 'Public website', 'Serve the ZaxProxy home, pricing, FAQ, contact and legal pages instead of the default site theme.' ); ?>
 	</section>
 
