@@ -245,6 +245,17 @@ class ZP_Shield {
 			return;
 		}
 		update_option( 'zp_shield_ver', ZP_VERSION, false ); // set first: the check below calls this site again
+		// A robots.txt file left in the site folder lists internal folders: replace it with a neutral one.
+		$robots = ABSPATH . 'robots.txt';
+		if ( file_exists( $robots ) && wp_is_writable( $robots ) ) {
+			$txt = (string) file_get_contents( $robots ); // phpcs:ignore
+			if ( false !== stripos( $txt, 'wp-' ) ) {
+				if ( ! file_exists( $robots . '.zp-backup' ) ) {
+					@file_put_contents( $robots . '.zp-backup', $txt ); // phpcs:ignore
+				}
+				@file_put_contents( $robots, self::robots() ); // phpcs:ignore
+			}
+		}
 		$file  = ABSPATH . '.htaccess';
 		$rules = self::rules();
 		$state = 'off';
