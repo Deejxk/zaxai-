@@ -260,6 +260,15 @@
     var auto = box.querySelector('[data-setup="' + guess + '"]'); if (auto && !auto.classList.contains('is-active')) auto.click();
   });
 
+  /* ---------- Fold-out sections ---------- */
+  $$('[data-zp-openfold]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var f = document.getElementById(a.getAttribute('data-zp-openfold')); if (!f) return;
+      e.preventDefault(); f.open = true;
+      setTimeout(function () { var y = f.getBoundingClientRect().top + window.pageYOffset - 76; window.scrollTo({ top: y, behavior: 'smooth' }); }, 30);
+    });
+  });
+
   /* ---------- Buy form ---------- */
   var buy = $('#zp-buy');
   if (buy) (function () {

@@ -13,7 +13,7 @@ if ( ! $types ) {
 	return;
 }
 ?>
-<a class="zp-howto zp-anim" href="#connect"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?></span><div><strong>New to proxies? See how to connect</strong><span>Guides for Windows, Android and iPhone are at the bottom of this page</span></div><b><?php echo zp_icon( 'arrow', 16 ); // phpcs:ignore ?></b></a>
+<a class="zp-howto zp-anim" href="#zp-guide-fold" data-zp-openfold="zp-guide-fold"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?></span><div><strong>New to proxies? See how to connect</strong><span>Tap to open the guide for Windows, Android and iPhone</span></div><b><?php echo zp_icon( 'arrow', 16 ); // phpcs:ignore ?></b></a>
 
 <form method="post" class="zp-buy" id="zp-buy" data-type="<?php echo esc_attr( $active ); ?>" novalidate>
 	<?php zp_nonce_field( 'buy' ); ?>
@@ -109,10 +109,11 @@ if ( ! $types ) {
 	</div>
 </form>
 
-<div class="zp-buyguide">
+<details class="zp-buyguide zp-fold" id="zp-guide-fold">
+	<summary><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?></span><div><strong>How to connect your proxy</strong><span>Windows, Android and iPhone. Tap to open or close.</span></div><b class="zp-fold__chev"><?php echo zp_icon( 'arrow', 18 ); // phpcs:ignore ?></b></summary>
 	<?php
 	$zp_setup_only = true;
 	include ZP_DIR . 'templates/user/setup-guide.php';
 	?>
 	<p class="zp-buyguide__more">More help, account tips and common problems are in the <a href="<?php echo esc_url( zp_url( 'help' ) ); ?>#connect">Help center</a>.</p>
-</div>
+</details>
