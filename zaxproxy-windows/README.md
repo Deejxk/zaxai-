@@ -1,4 +1,4 @@
-# ZaxProxy for Windows
+# ZaxProxy Connect for Windows
 
 Sign in with a ZaxProxy account, pick a proxy and click **Connect**.
 
@@ -13,7 +13,7 @@ Windows account (DPAPI). The account password is never stored.
 
 ## Build (from any system with Go)
 
-    GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-H=windowsgui" -o ZaxProxy.exe .
+    GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-H=windowsgui" -o ZaxProxy-Connect.exe .
 
 ## Test the logic without Windows
 

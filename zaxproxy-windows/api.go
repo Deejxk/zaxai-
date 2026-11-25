@@ -16,7 +16,8 @@ type apiResult struct {
 		Name  string `json:"name"`
 		Email string `json:"email"`
 	} `json:"user"`
-	Proxies []Proxy `json:"proxies"`
+	Proxies []Proxy   `json:"proxies"`
+	Expired []Expired `json:"expired"`
 }
 
 // The website is always called directly, never through the Windows proxy setting, so signing in
@@ -39,7 +40,7 @@ func apiCall(method, url, token string, body any) (apiResult, int, error) {
 		return out, 0, err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "ZaxProxy-Windows/"+version)
+	req.Header.Set("User-Agent", "ZaxProxyConnect-Windows/"+version)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	}

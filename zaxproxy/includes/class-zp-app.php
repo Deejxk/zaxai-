@@ -129,8 +129,8 @@ class ZP_App {
 
 	/** Is the Android app offered to this visitor? Staff always; customers once the owner switches it on. */
 	const FILES = array(
-		'android' => array( 'ZaxProxy.apk', 'ZaxProxy.apk', 'application/vnd.android.package-archive' ),
-		'windows' => array( 'ZaxProxy-Windows.exe', 'ZaxProxy.exe', 'application/vnd.microsoft.portable-executable' ),
+		'android' => array( 'ZaxProxy-Connect.apk', 'ZaxProxy-Connect.apk', 'application/vnd.android.package-archive' ),
+		'windows' => array( 'ZaxProxy-Connect.exe', 'ZaxProxy-Connect.exe', 'application/vnd.microsoft.portable-executable' ),
 	);
 
 	public static function offered( $os = 'android' ) {
@@ -185,20 +185,65 @@ class ZP_App {
 		self::out( array( 'ok' => true, 'token' => $user->ID . '.' . $secret ) + self::payload( $user ) );
 	}
 
+	/**
+	 * City and state/region of a proxy IP, from a public IP-location directory.
+	 *
+	 * Looked up once per IP and remembered. Only the proxy's IP address is sent to the directory;
+	 * nothing about the customer. Locations from such directories are approximate.
+	 *
+	 * @param int $budget how many new look-ups this request may still make (passed by reference).
+	 * @return array [ city, region ] (empty strings when unknown)
+	 */
+	public static function geo( $ip, &$budget ) {
+		static $map = null;
+		if ( null === $map ) {
+			$map = get_option( 'zp_geo' );
+			$map = is_array( $map ) ? $map : array();
+		}
+		$ip = (string) $ip;
+		if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+			return array( '', '' );
+		}
+		$hit = isset( $map[ $ip ] ) ? $map[ $ip ] : null;
+		if ( $hit && ( '' !== $hit[0] . $hit[1] || $hit[2] > time() - DAY_IN_SECONDS ) ) {
+			return array( $hit[0], $hit[1] ); // known, or tried within the last day
+		}
+		if ( $budget <= 0 ) {
+			return array( '', '' );
+		}
+		--$budget;
+		$url  = apply_filters( 'zaxproxy_geo_url', 'https://ipwho.is/' . rawurlencode( $ip ) . '?fields=success,city,region', $ip );
+		$res  = wp_remote_get( $url, array( 'timeout' => 4, 'redirection' => 0 ) );
+		$data = is_wp_error( $res ) ? null : json_decode( (string) wp_remote_retrieve_body( $res ), true );
+		$city = is_array( $data ) && ! empty( $data['city'] ) ? mb_substr( sanitize_text_field( (string) $data['city'] ), 0, 60 ) : '';
+		$reg  = is_array( $data ) && ! empty( $data['region'] ) ? mb_substr( sanitize_text_field( (string) $data['region'] ), 0, 60 ) : '';
+		$map[ $ip ] = array( $city, $reg, time() );
+		if ( count( $map ) > 3000 ) {
+			$map = array_slice( $map, -2500, null, true );
+		}
+		update_option( 'zp_geo', $map, false );
+		return array( $city, $reg );
+	}
+
 	private static function payload( $user ) {
-		$store = ZP_Resellers::of_user( $user->ID );
-		$rows  = array();
+		$store  = ZP_Resellers::of_user( $user->ID );
+		$rows   = array();
+		$budget = 6; // new location look-ups per request; the rest fill in on the next refresh
 		foreach ( ZP_Orders::user_proxies( $user->ID, array( 'state' => 'active' ) ) as $p ) {
 			if ( '' === (string) $p->ip || '' === (string) $p->socks5_port ) {
 				continue; // the app connects over SOCKS5
 			}
 			$end    = $p->date_end ? strtotime( $p->date_end . ' UTC' ) : 0;
+			$geo    = self::geo( $p->ip, $budget );
 			$rows[] = array(
 				'id'       => (int) $p->id,
 				'type'     => zp_type_label( $p->proxy_type ),
 				'country'  => zp_country_name( $p->country ),
 				'flag'     => zp_flag( $p->country ),
 				'ip'       => (string) $p->ip,
+				'city'     => $geo[0],
+				'region'   => $geo[1],
+				'place'    => implode( ', ', array_filter( array( $geo[0], $geo[1] !== $geo[0] ? $geo[1] : '' ) ) ),
 				'port'     => (int) $p->socks5_port,
 				'username' => (string) $p->login,
 				'password' => (string) $p->password,
@@ -208,7 +253,28 @@ class ZP_App {
 				'note'     => (string) $p->note,
 			);
 		}
+		// Proxies that ran out in the last 30 days: listed so the customer can see them, never connectable.
+		$gone = array();
+		$none = 0;
+		foreach ( ZP_Orders::user_proxies( $user->ID, array( 'state' => 'expired' ) ) as $p ) {
+			$end = $p->date_end ? strtotime( $p->date_end . ' UTC' ) : 0;
+			if ( '' === (string) $p->ip || $end < time() - 30 * DAY_IN_SECONDS || count( $gone ) >= 20 ) {
+				continue;
+			}
+			$geo    = self::geo( $p->ip, $none ); // only what is already known
+			$gone[] = array(
+				'id'      => (int) $p->id,
+				'type'    => zp_type_label( $p->proxy_type ),
+				'country' => zp_country_name( $p->country ),
+				'flag'    => zp_flag( $p->country ),
+				'ip'      => (string) $p->ip,
+				'place'   => implode( ', ', array_filter( array( $geo[0], $geo[1] !== $geo[0] ? $geo[1] : '' ) ) ),
+				'ended'   => zp_date( $p->date_end, false ),
+			);
+		}
 		return array(
+			'expired' => $gone,
+			'renew_url' => zp_route_url( ZP_USER_BASE, 'proxies' ),
 			'user'    => array( 'name' => $user->display_name ? $user->display_name : $user->user_login, 'email' => $user->user_email ),
 			'brand'   => $store ? (string) $store->brand : (string) zp_get( 'brand' ),
 			'buy_url' => zp_route_url( ZP_USER_BASE, 'buy' ),

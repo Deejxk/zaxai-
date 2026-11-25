@@ -3,74 +3,110 @@
     android:id="@+id/row"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    android:background="@drawable/bg_card"
-    android:orientation="vertical"
-    android:padding="14dp">
+    android:layout_marginBottom="9dp"
+    android:background="@drawable/bg_row"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingLeft="13dp"
+    android:paddingTop="12dp"
+    android:paddingRight="13dp"
+    android:paddingBottom="12dp">
+
+    <TextView
+        android:id="@+id/flag"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_flag"
+        android:gravity="center"
+        android:textSize="22sp" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:layout_marginLeft="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
 
         <TextView
-            android:id="@+id/flag"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_flag"
-            android:gravity="center"
-            android:textSize="22sp" />
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/text"
+            android:textSize="15.5sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/sub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/muted"
+            android:textSize="12.5sp" />
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/title"
+                android:id="@+id/type"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:singleLine="true"
-                android:textColor="@color/text"
-                android:textSize="16sp"
+                android:background="@drawable/bg_chip"
+                android:paddingLeft="9dp"
+                android:paddingTop="2dp"
+                android:paddingRight="9dp"
+                android:paddingBottom="2dp"
+                android:textColor="@color/muted"
+                android:textSize="11.5sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/sub"
+                android:id="@+id/left"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:ellipsize="end"
-                android:fontFamily="monospace"
-                android:singleLine="true"
-                android:textColor="@color/muted"
-                android:textSize="13sp" />
+                android:layout_marginLeft="6dp"
+                android:background="@drawable/bg_chip_ok"
+                android:paddingLeft="9dp"
+                android:paddingTop="2dp"
+                android:paddingRight="9dp"
+                android:paddingBottom="2dp"
+                android:textColor="@color/ok"
+                android:textSize="11.5sp"
+                android:textStyle="bold" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/left"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="8dp"
-            android:textColor="@color/ok"
-            android:textSize="12.5sp"
-            android:textStyle="bold" />
     </LinearLayout>
 
-    <Button
-        android:id="@+id/action"
-        android:layout_width="match_parent"
-        android:layout_height="46dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/bg_btn"
-        android:stateListAnimator="@null"
-        android:text="@string/connect"
-        android:textAllCaps="false"
-        android:textColor="@color/white"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/mark"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@drawable/dot_off"
+            android:contentDescription="@null"
+            android:padding="4dp" />
+
+        <TextView
+            android:id="@+id/state"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/muted"
+            android:textSize="10.5sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 </LinearLayout>

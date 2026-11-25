@@ -58,7 +58,7 @@ final class Api {
             c.setReadTimeout(25000);
             c.setInstanceFollowRedirects(false);
             c.setRequestProperty("Accept", "application/json");
-            c.setRequestProperty("User-Agent", "ZaxProxy-Android/" + BuildConfig.VERSION_NAME);
+            c.setRequestProperty("User-Agent", "ZaxProxyConnect-Android/" + BuildConfig.VERSION_NAME);
             if (token != null) {
                 c.setRequestProperty("X-ZP-Token", token);
             }

@@ -91,7 +91,7 @@ public class TunnelService extends VpnService {
         Builder b = new Builder();
         b.setBlocking(false);
         b.setMtu(MTU);
-        b.setSession("ZaxProxy");
+        b.setSession("ZaxProxy Connect");
         b.addAddress("198.18.0.1", 32);
         b.addRoute("0.0.0.0", 0);
         b.addAddress("fc00::1", 128);
@@ -140,7 +140,7 @@ public class TunnelService extends VpnService {
         conf.setReadable(true, true);
 
         TProxyStartService(conf.getAbsolutePath(), tun.getFd());
-        writeState(this, id + "|" + (label == null ? "" : label));
+        writeState(this, id + "|" + (label == null ? "" : label.replace("|", " ")) + "|" + System.currentTimeMillis());
         showNotification(label == null ? host : label);
         announce();
     }

@@ -1,4 +1,4 @@
-# ZaxProxy for Android
+# ZaxProxy Connect for Android
 
 Sign in with a ZaxProxy account, pick one of your proxies and tap **Connect**. The whole phone then
 uses that proxy (a local VPN that forwards traffic to the proxy over SOCKS5) until you tap Disconnect.

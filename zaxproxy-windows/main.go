@@ -32,7 +32,7 @@ import (
 const (
 	uiAddr    = "127.0.0.1:47821"
 	relayAddr = "127.0.0.1:47822"
-	version   = "1.0.1"
+	version   = "1.1.0"
 )
 
 //go:embed ui.html
@@ -45,11 +45,23 @@ type Proxy struct {
 	Country  string `json:"country"`
 	Flag     string `json:"flag"`
 	IP       string `json:"ip"`
+	Place    string `json:"place"`
 	Port     int    `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Left     string `json:"left"`
 	State    string `json:"state"`
+}
+
+// Expired is a proxy that has run out: shown for information, never connectable.
+type Expired struct {
+	ID      int64  `json:"id"`
+	Type    string `json:"type"`
+	Country string `json:"country"`
+	Flag    string `json:"flag"`
+	IP      string `json:"ip"`
+	Place   string `json:"place"`
+	Ended   string `json:"ended"`
 }
 
 type app struct {
@@ -58,7 +70,10 @@ type app struct {
 	token     string
 	name      string
 	proxies   []Proxy
+	expired   []Expired
+	notice    string
 	connected int64
+	since     int64 // when the current connection started (unix seconds)
 	relay     *relay
 	site      string
 }
@@ -71,11 +86,11 @@ func main() {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("crash: %v\n%s", r, debug.Stack())
-			alert("ZaxProxy had a problem", fmt.Sprintf("ZaxProxy could not start.\n\nDetails: %v\n\nA log was saved here:\n%s\n\nPlease send that file to support.", r, logPath()), true)
+			alert("ZaxProxy Connect had a problem", fmt.Sprintf("ZaxProxy Connect could not start.\n\nDetails: %v\n\nA log was saved here:\n%s\n\nPlease send that file to support.", r, logPath()), true)
 			os.Exit(1)
 		}
 	}()
-	log.Printf("ZaxProxy %s starting", version)
+	log.Printf("ZaxProxy Connect %s starting", version)
 	a.site = strings.TrimRight(envOr("ZAX_SITE", "https://zaxproxy.cloud"), "/")
 
 	// Already running? Ask that copy to show its window and leave.
@@ -89,7 +104,7 @@ func main() {
 			return
 		}
 		log.Printf("cannot listen on %s: %v", uiAddr, err)
-		alert("ZaxProxy cannot start", "Another program on this computer is using the address ZaxProxy needs ("+uiAddr+").\n\nClose that program, or restart your computer, and open ZaxProxy again.", true)
+		alert("ZaxProxy Connect cannot start", "Another program on this computer is using the address ZaxProxy needs ("+uiAddr+").\n\nClose that program, or restart your computer, and open ZaxProxy Connect again.", true)
 		return
 	}
 
@@ -120,14 +135,17 @@ func main() {
 	}))
 	go func() { _ = http.Serve(ln, mux) }()
 
-	if a.token != "" {
-		go func() { _ = a.refresh() }()
-	}
+	go func() {
+		for {
+			_ = a.refresh()
+			time.Sleep(5 * time.Minute)
+		}
+	}()
 	log.Printf("window address: http://%s", uiAddr)
 	if os.Getenv("ZAX_NO_BROWSER") == "" {
 		go func() {
 			// A plain message first, so it is obvious the program is running and where to find it.
-			alert("ZaxProxy is running", "ZaxProxy is now running on this computer.\n\nWhen you click OK, the ZaxProxy window opens in your web browser. Sign in there and click Connect on a proxy.\n\nYou can reopen it any time from the shield icon near the clock (click the small ^ arrow if you do not see it).", false)
+			alert("ZaxProxy Connect is running", "ZaxProxy Connect is now running on this computer.\n\nWhen you click OK, the ZaxProxy Connect window opens in your web browser. Sign in there and click Connect on a proxy.\n\nYou can reopen it any time from the shield icon near the clock (click the small ^ arrow if you do not see it).", false)
 			openUI()
 		}()
 	}
@@ -147,7 +165,7 @@ func uiURL() string { return "http://" + uiAddr + "/#k=" + a.key }
 func openUI() {
 	if err := openBrowser(uiURL()); err != nil {
 		log.Printf("could not open the browser: %v", err)
-		alert("Open ZaxProxy in your browser", "ZaxProxy could not open your web browser by itself.\n\nOpen your browser and type this address:\n\n"+uiURL(), false)
+		alert("Open ZaxProxy Connect in your browser", "ZaxProxy Connect could not open your web browser by itself.\n\nOpen your browser and type this address:\n\n"+uiURL(), false)
 	}
 }
 
@@ -186,7 +204,7 @@ func localHost(r *http.Request) bool { return r.Host == uiAddr || r.Host == "loc
 func guard(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !localHost(r) || r.Header.Get("X-Key") != a.key {
-			writeJSON(w, 403, map[string]any{"ok": false, "error": "Please reopen ZaxProxy from the tray icon."})
+			writeJSON(w, 403, map[string]any{"ok": false, "error": "Please reopen ZaxProxy Connect from the shield icon near the clock."})
 			return
 		}
 		if o := r.Header.Get("Origin"); o != "" && o != "http://"+uiAddr {
@@ -214,9 +232,11 @@ func readBody(r *http.Request, v any) error {
 
 type publicProxy struct {
 	ID      int64  `json:"id"`
-	Title   string `json:"title"`
+	Country string `json:"country"`
+	Type    string `json:"type"`
+	Place   string `json:"place"`
 	Flag    string `json:"flag"`
-	Address string `json:"address"`
+	IP      string `json:"ip"`
 	Left    string `json:"left"`
 	State   string `json:"state"`
 }
@@ -226,9 +246,13 @@ func (x *app) snapshot() map[string]any {
 	defer x.mu.Unlock()
 	list := make([]publicProxy, 0, len(x.proxies))
 	for _, p := range x.proxies { // passwords stay inside the program; the page never receives them
-		list = append(list, publicProxy{p.ID, p.Country + " · " + p.Type, p.Flag, fmt.Sprintf("%s:%d", p.IP, p.Port), p.Left, p.State})
+		list = append(list, publicProxy{p.ID, p.Country, p.Type, p.Place, p.Flag, p.IP, p.Left, p.State})
 	}
-	return map[string]any{"ok": true, "signedIn": x.token != "", "name": x.name, "proxies": list, "connected": x.connected, "version": version}
+	old := x.expired
+	if old == nil {
+		old = []Expired{}
+	}
+	return map[string]any{"ok": true, "signedIn": x.token != "", "name": x.name, "proxies": list, "expired": old, "notice": x.notice, "connected": x.connected, "since": x.since, "version": version}
 }
 
 func handleState(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, a.snapshot()) }
@@ -250,7 +274,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.mu.Lock()
-	a.token, a.name, a.proxies = res.Token, res.User.Name, res.Proxies
+	a.token, a.name, a.proxies, a.expired, a.notice = res.Token, res.User.Name, res.Proxies, res.Expired, ""
 	a.mu.Unlock()
 	a.save()
 	writeJSON(w, 200, a.snapshot())
@@ -300,8 +324,20 @@ func (x *app) refresh() error {
 		return fmt.Errorf("%s", orText(res.Error, "Could not load your proxies."))
 	}
 	x.mu.Lock()
-	x.proxies, x.name = res.Proxies, res.User.Name
+	x.proxies, x.expired, x.name = res.Proxies, res.Expired, res.User.Name
+	gone := x.connected != 0
+	for _, p := range res.Proxies {
+		if p.ID == x.connected {
+			gone = false
+		}
+	}
 	x.mu.Unlock()
+	if gone { // the proxy in use has run out or was removed: stop using it
+		x.disconnect()
+		x.mu.Lock()
+		x.notice = "The proxy you were using has expired, so you were disconnected. Renew it on the website or choose another location."
+		x.mu.Unlock()
+	}
 	x.save()
 	return nil
 }
@@ -339,9 +375,14 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	a.mu.Lock()
-	a.relay, a.connected = rl, chosen.ID
+	a.notice = ""
+	a.relay, a.connected, a.since = rl, chosen.ID, time.Now().Unix()
 	a.mu.Unlock()
-	trayStatus(true, chosen.Country+" · "+chosen.IP)
+	where := chosen.Country
+	if chosen.Place != "" {
+		where = chosen.Place + ", " + chosen.Country
+	}
+	trayStatus(true, where+" · "+chosen.IP)
 	writeJSON(w, 200, a.snapshot())
 }
 
@@ -354,7 +395,7 @@ func (x *app) disconnect() {
 	x.mu.Lock()
 	rl := x.relay
 	was := x.connected
-	x.relay, x.connected = nil, 0
+	x.relay, x.connected, x.since = nil, 0, 0
 	x.mu.Unlock()
 	if was != 0 || rl != nil {
 		restoreSystemProxy()

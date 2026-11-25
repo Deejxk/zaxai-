@@ -174,15 +174,15 @@ var (
 func runTray() {
 	systray.Run(func() {
 		systray.SetIcon(iconICO)
-		systray.SetTitle("ZaxProxy")
-		systray.SetTooltip("ZaxProxy: not connected")
-		open := systray.AddMenuItem("Open ZaxProxy", "Show the ZaxProxy window")
+		systray.SetTitle("ZaxProxy Connect")
+		systray.SetTooltip("ZaxProxy Connect: not connected")
+		open := systray.AddMenuItem("Open ZaxProxy Connect", "Show the ZaxProxy Connect window")
 		trayState = systray.AddMenuItem("Not connected", "")
 		trayState.Disable()
 		trayStop = systray.AddMenuItem("Disconnect", "Stop using the proxy")
 		trayStop.Disable()
 		systray.AddSeparator()
-		exit := systray.AddMenuItem("Quit", "Disconnect and close ZaxProxy")
+		exit := systray.AddMenuItem("Quit", "Disconnect and close ZaxProxy Connect")
 		go func() {
 			for {
 				select {
@@ -206,10 +206,10 @@ func trayStatus(on bool, label string) {
 	if on {
 		trayState.SetTitle("Connected: " + label)
 		trayStop.Enable()
-		systray.SetTooltip("ZaxProxy: connected, " + label)
+		systray.SetTooltip("ZaxProxy Connect: connected, " + label)
 	} else {
 		trayState.SetTitle("Not connected")
 		trayStop.Disable()
-		systray.SetTooltip("ZaxProxy: not connected")
+		systray.SetTooltip("ZaxProxy Connect: not connected")
 	}
 }

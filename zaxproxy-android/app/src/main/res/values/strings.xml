@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">ZaxProxy</string>
+    <string name="app_name">ZaxProxy Connect</string>
+    <string name="brand">ZaxProxy</string>
+    <string name="brand_sub">Connect</string>
     <string name="tagline">Private proxies, one tap away</string>
     <string name="email">Email or username</string>
     <string name="password">Password</string>
@@ -18,11 +20,30 @@
     <string name="refresh">Refresh</string>
     <string name="sign_out">Sign out</string>
     <string name="buy">Buy proxies</string>
-    <string name="empty_title">No active proxies yet</string>
-    <string name="empty_sub">Buy a proxy on the website and it will show up here.</string>
+    <string name="empty_title">No active proxies</string>
+    <string name="empty_sub">You have no active proxy on this account. Buy one on the website and it will appear here.</string>
     <string name="notif_channel">Connection</string>
-    <string name="notif_title">ZaxProxy is connected</string>
+    <string name="notif_title">ZaxProxy Connect is on</string>
     <string name="offline">No internet connection. Please try again.</string>
     <string name="vpn_denied">Android needs your permission to connect. Tap Connect and choose OK.</string>
     <string name="hello">Hello, %1$s</string>
+    <string name="protected_title">Protected</string>
+    <string name="tap_connect">Tap to connect</string>
+    <string name="tap_disconnect">Tap to disconnect</string>
+    <string name="selected_location">Selected location</string>
+    <string name="locations">Your locations</string>
+    <string name="search_hint">Search country, city or IP</string>
+    <string name="state_connected">Connected</string>
+    <string name="state_selected">Selected</string>
+    <string name="switching">Switching to %1$s…</string>
+    <string name="choose_first">Choose a location first</string>
+    <string name="your_ip">Your IP is now</string>
+    <string name="not_protected">Your real IP is visible</string>
+    <string name="none_found">No location matches your search.</string>
+    <string name="count_fmt">%1$d</string>
+    <string name="expired_head">Expired (%1$d)</string>
+    <string name="expired_on">Expired %1$s</string>
+    <string name="state_expired">Expired</string>
+    <string name="expired_hint">This proxy has expired. Renew it on the website to use it again.</string>
+    <string name="expired_now">The proxy you were using has expired, so you were disconnected. Renew it on the website or choose another location.</string>
 </resources>
