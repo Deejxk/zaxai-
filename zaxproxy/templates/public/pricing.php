@@ -28,7 +28,7 @@ $perks  = array(
 					<p><?php echo esc_html( $t['desc'] ); ?></p>
 					<div class="zp-pplan__price">
 						<?php if ( isset( $prices[ $slug ] ) ) : ?>
-							<span>from</span><strong><?php echo esc_html( zp_money( $prices[ $slug ]['price'] ) ); ?></strong><span>per proxy / <?php echo (int) $prices[ $slug ]['days']; ?> days</span>
+							<span>from</span><strong><?php echo esc_html( zp_money( $prices[ $slug ]['price'] ) ); ?></strong><span>per proxy / <?php echo (int) $prices[ $slug ]['days']; ?> days<?php echo ! empty( $prices[ $slug ]['where'] ) ? esc_html( ' · lowest: ' . $prices[ $slug ]['where'] ) : ''; ?></span>
 						<?php else : ?>
 							<strong class="zp-pplan__live">Live pricing</strong><span>shown at checkout</span>
 						<?php endif; ?>
@@ -41,7 +41,7 @@ $perks  = array(
 				</div>
 			<?php endforeach; ?>
 		</div>
-		<p class="zp-muted zp-center" style="margin-top:22px">"From" prices are per proxy for a standard location. Your exact price is calculated live before you pay.</p>
+		<p class="zp-muted zp-center" style="margin-top:22px">"From" prices are per proxy for a standard location. Mobile proxy prices depend on the country and the mobile network you choose, so the "from" price is the lowest one available. Your exact price is always shown before you pay.</p>
 	</div>
 </section>
 

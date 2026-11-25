@@ -558,11 +558,69 @@ class ZP_Orders {
 		return count( $remote );
 	}
 
+	/**
+	 * The lowest provider price (USD) for one mobile proxy for 30 days.
+	 *
+	 * Mobile prices differ a lot between countries and carriers, so one fixed country is not a fair
+	 * "from" price. This checks the carriers the provider lists and remembers the cheapest for 12 hours.
+	 *
+	 * @param int $max_calls how many price checks this call may make (0 = only use what is remembered).
+	 * @return array|null [ amount, country, operator, rotation, calls, complete, time ]
+	 */
+	public static function mobile_floor( $max_calls = 0 ) {
+		$saved = get_option( 'zp_mobile_floor' );
+		$saved = is_array( $saved ) && ! empty( $saved['amount'] ) ? $saved : null;
+		$fresh = $saved && $saved['time'] > time() - 12 * HOUR_IN_SECONDS;
+		if ( $max_calls <= 0 || ( $fresh && ( ! empty( $saved['complete'] ) || $max_calls <= (int) $saved['calls'] ) ) ) {
+			return $saved;
+		}
+		$tariffs = ZP_API::tariffs();
+		if ( is_wp_error( $tariffs ) || empty( $tariffs['tariffs'] ) ) {
+			return $saved;
+		}
+		$days = 30;
+		$best = null;
+		$n    = 0;
+		$all  = true;
+		foreach ( (array) $tariffs['tariffs'] as $t ) {
+			foreach ( (array) $t['mobileOperator'] as $op ) {
+				if ( $n >= $max_calls ) {
+					$all = false;
+					break 2;
+				}
+				$rot = isset( $op['rotationTime'][0] ) ? (int) $op['rotationTime'][0] : 0;
+				$res = ZP_API::order_price(
+					array( 'proxyType' => 'mobile', 'days' => $days, 'goal' => 'instagram', 'country' => (string) $t['country'], 'count' => 1, 'mobileOperator' => (string) $op['name'], 'rotationTime' => $rot )
+				);
+				++$n;
+				if ( is_wp_error( $res ) || empty( $res['amount'] ) ) {
+					continue;
+				}
+				if ( null === $best || (float) $res['amount'] < $best['amount'] ) {
+					$best = array( 'amount' => (float) $res['amount'], 'country' => strtoupper( (string) $t['country'] ), 'operator' => (string) $op['name'], 'rotation' => $rot );
+				}
+			}
+		}
+		if ( ! $best ) {
+			return $saved;
+		}
+		if ( ! $all && $saved && $fresh && $saved['amount'] < $best['amount'] ) {
+			return $saved; // a wider check already found something cheaper
+		}
+		$best += array( 'calls' => $n, 'complete' => $all, 'time' => time(), 'days' => $days );
+		update_option( 'zp_mobile_floor', $best, false );
+		delete_transient( 'zp_public_prices' );
+		return $best;
+	}
+
 	public static function cron_sync() {
 		ZP_Resellers::bill_due();
 		ZP_Notify::prune();
 		if ( '' === trim( (string) zp_get( 'api_key' ) ) ) {
 			return;
+		}
+		if ( isset( zp_enabled_types()['mobile'] ) ) {
+			self::mobile_floor( 120 ); // full check, at most twice a day
 		}
 		foreach ( array_keys( zp_enabled_types() ) as $type ) {
 			if ( self::lock() ) {

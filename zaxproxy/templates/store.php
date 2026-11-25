@@ -354,7 +354,7 @@ body.zs--carbon .zs-strip strong{color:<?php echo esc_html( $pal['text'] ); ?>}<
 					<p><?php echo esc_html( $t['desc'] ); ?></p>
 					<div class="zs-price">
 						<?php if ( isset( $from[ $slug ] ) ) : ?>
-							<small>from</small><strong><?php echo esc_html( $from[ $slug ]['price'] ); ?></strong><small>per proxy / <?php echo (int) $from[ $slug ]['days']; ?> days</small>
+							<small>from</small><strong><?php echo esc_html( $from[ $slug ]['price'] ); ?></strong><small>per proxy / <?php echo (int) $from[ $slug ]['days']; ?> days<?php echo 'mobile' === $slug ? ' · varies by country' : ''; ?></small>
 						<?php else : ?>
 							<small>price</small><strong class="zs-price__live">At checkout</strong><small>calculated live</small>
 						<?php endif; ?>

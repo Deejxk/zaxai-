@@ -468,7 +468,7 @@ function zp_public_prices() {
 	$cached = get_transient( 'zp_public_prices' );
 	if ( is_array( $cached ) ) {
 		foreach ( $cached as $row ) {
-			if ( ! isset( $row['wholesale'] ) || ! in_array( (int) $row['days'], zp_allowed_days(), true ) ) {
+			if ( ! isset( $row['wholesale'] ) || ! isset( $row['v'] ) || ! in_array( (int) $row['days'], zp_allowed_days(), true ) ) {
 				$cached = false;
 				break;
 			}
@@ -493,9 +493,19 @@ function zp_public_prices() {
 				$params['mobileOperator'] = $opts['tariffs'][ $country ][0]['name'];
 				$params['rotationTime']   = $opts['tariffs'][ $country ][0]['rotation'] ? $opts['tariffs'][ $country ][0]['rotation'][0] : 0;
 			}
-			$res = ZP_API::order_price( $params );
+			if ( 'mobile' === $type ) {
+				// Mobile prices vary widely by country and carrier: show the real lowest one, not one fixed country.
+				$floor = ZP_Orders::mobile_floor( 10 );
+				$res   = $floor ? array( 'amount' => $floor['amount'] ) : new WP_Error( 'zp_api', 'No mobile price yet' );
+				$days  = 30;
+			} else {
+				$res = ZP_API::order_price( $params );
+			}
 			if ( ! is_wp_error( $res ) && ! empty( $res['amount'] ) ) {
-				$out[ $type ] = array( 'price' => ZP_Orders::markup( (float) $res['amount'], $type ) / $qty, 'wholesale' => ZP_Orders::markup( (float) $res['amount'], $type, true ) / $qty, 'days' => $days, 'countries' => count( $codes ) );
+				$out[ $type ] = array( 'price' => ZP_Orders::markup( (float) $res['amount'], $type ) / $qty, 'wholesale' => ZP_Orders::markup( (float) $res['amount'], $type, true ) / $qty, 'days' => $days, 'countries' => count( $codes ), 'v' => 2 );
+				if ( 'mobile' === $type && ! empty( $floor['country'] ) ) {
+					$out[ $type ]['where'] = zp_country_name( $floor['country'] );
+				}
 			}
 		}
 	}
