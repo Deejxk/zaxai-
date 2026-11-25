@@ -29,13 +29,44 @@ $cta_txt = $mine ? 'Buy proxies' : 'Create account';
 $types   = zp_enabled_types();
 $base    = zp_public_prices();
 $cur     = zp_get( 'currency_code' );
-$emoji   = array( 'ipv4' => '🖥', 'ipv6' => '🧬', 'isp' => '🏠', 'mobile' => '📱' );
-$perks   = array(
-	'ipv4'   => array( 'HTTP(S) and SOCKS5', 'Login or IP whitelist', 'One owner per IP' ),
-	'ipv6'   => array( 'Batches of 10 or more', 'Lowest cost per IP', 'Choose your protocol' ),
-	'isp'    => array( 'Real provider networks', 'High trust score', 'Extend any time' ),
-	'mobile' => array( 'Choose your operator', 'Rotate on demand', 'HTTP(S) and SOCKS5' ),
+$ic      = array(
+	'ipv4'    => '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+	'ipv6'    => '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+	'isp'     => '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.500"/><path d="M9 20v-5h6v5"/>',
+	'mobile'  => '<rect x="7" y="2.500" width="10" height="19" rx="2.500"/><path d="M11 18h2"/>',
+	'shield'  => '<path d="M12 3 5 6v5.500c0 4.400 2.900 8 7 9.500 4.100-1.500 7-5.100 7-9.500V6z"/><path d="m9 12 2.200 2.200L15 10.300"/>',
+	'bolt'    => '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+	'swap'    => '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
+	'key'     => '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3M14 9l2 2"/>',
+	'clock'   => '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+	'chat'    => '<path d="M4 5h16v11H9l-5 4z"/>',
+	'globe'   => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.800 3 2.800 15 0 18M12 3c-2.800 3-2.800 15 0 18"/>',
+	'cart'    => '<path d="M4 7h16l-1.500 11a2 2 0 0 1-2 1.700h-9a2 2 0 0 1-2-1.700z"/><path d="M8.500 7a3.500 3.500 0 0 1 7 0"/>',
+	'search'  => '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+	'users'   => '<circle cx="9" cy="8" r="3.500"/><path d="M2.500 20a6.500 6.500 0 0 1 13 0"/><path d="M16 4.800a3.500 3.500 0 0 1 0 6.400M18 14.500a6.500 6.500 0 0 1 3.500 5.500"/>',
+	'code'    => '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.500 5l-3 14"/>',
+	'eye'     => '<path d="M2 12s3.600-7 10-7 10 7 10 7-3.600 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+	'wallet'  => '<rect x="3" y="6" width="18" height="13" rx="2.500"/><path d="M3 10.500h18M16 15h2"/>',
+	'user'    => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+	'plug'    => '<path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/>',
+	'file'    => '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/>',
+	'check'   => '<path d="m5 12.500 4.500 4.500L19 7.500"/>',
 );
+$perks   = array(
+	'ipv4'   => array( 'HTTP(S) and SOCKS5', 'Login or IP whitelist', 'One owner per IP', 'Works on every website' ),
+	'ipv6'   => array( 'Batches of 10 or more', 'Lowest cost per IP', 'Choose your protocol', 'For IPv6-ready sites' ),
+	'isp'    => array( 'Real provider networks', 'High trust score', 'Static, long sessions', 'Extend any time' ),
+	'mobile' => array( 'Choose your operator', 'Rotate on demand', 'HTTP(S) and SOCKS5', 'Real 4G / LTE IPs' ),
+);
+$best    = array(
+	'ipv4'   => 'Everyday use, social media, shopping',
+	'ipv6'   => 'Bulk tasks on IPv6-ready sites',
+	'isp'    => 'Accounts that need high trust',
+	'mobile' => 'Social apps and strict platforms',
+);
+$source  = array( 'ipv4' => 'Data centre', 'ipv6' => 'Data centre', 'isp' => 'Internet provider', 'mobile' => 'Mobile operator' );
+$sold    = array( 'ipv4' => 'Per IP', 'ipv6' => 'Batches of 10+', 'isp' => 'Per IP', 'mobile' => 'Per IP' );
+$tg      = zp_telegram_url();
 $from    = array(); // store price per proxy, by type
 $places  = 0;
 foreach ( $base as $slug => $row ) {
@@ -102,7 +133,7 @@ body.zs--carbon .zs-strip strong{color:<?php echo esc_html( $pal['text'] ); ?>}<
 <header class="zs-head">
 	<div class="zs-wrap">
 		<a class="zs-brand" href="<?php echo esc_url( $home ); ?>"><?php echo $mark; // phpcs:ignore ?><?php echo esc_html( $brand ); ?></a>
-		<nav class="zs-nav" aria-label="Main"><a href="#plans">Plans</a><a href="#how">How it works</a><a href="#faq">FAQ</a></nav>
+		<nav class="zs-nav" aria-label="Main"><a href="#plans">Plans</a><a href="#compare">Compare</a><a href="#features">Features</a><a href="#how">How it works</a><a href="#faq">FAQ</a></nav>
 		<div class="zs-actions">
 			<?php if ( $mine ) : ?>
 				<a class="zs-btn zs-btn--primary zs-btn--sm" href="<?php echo esc_url( $panel ); ?>">Dashboard</a>
@@ -141,7 +172,7 @@ body.zs--carbon .zs-strip strong{color:<?php echo esc_html( $pal['text'] ); ?>}<
 		<div class="zs-order zs-rise" style="--d:2" aria-hidden="true">
 			<h3>Build your order</h3>
 			<label>Proxy type</label><div class="zs-field"><?php echo esc_html( $first ? zp_type_label( $first ) . ' · Dedicated' : 'IPv4 · Dedicated' ); ?><span>⌄</span></div>
-			<label>Location</label><div class="zs-field">🇺🇸 United States<span>⌄</span></div>
+			<label>Location</label><div class="zs-field">United States<span>⌄</span></div>
 			<label>Period</label><div class="zs-seg3"><span class="on">30 days</span><span>60 days</span><span>90 days</span></div>
 			<div class="zs-total"><span>From</span><strong><?php echo esc_html( $first ? $from[ $first ]['price'] : 'Live price' ); ?></strong></div>
 			<a class="zs-btn zs-btn--primary" style="width:100%" href="<?php echo esc_url( $cta ); ?>">Continue</a>
@@ -159,14 +190,14 @@ body.zs--carbon .zs-strip strong{color:<?php echo esc_html( $pal['text'] ); ?>}<
 		</div>
 		<div class="zs-orbit zs-rise" style="--d:2" aria-hidden="true">
 			<div class="zs-core"><span><b><?php echo count( $types ); ?></b>proxy<br>networks</span></div>
-			<div class="zs-chip">🇺🇸 IPv4 · USA</div><div class="zs-chip">📱 Mobile 4G</div><div class="zs-chip">🏠 ISP · Germany</div><div class="zs-chip">⚡ SOCKS5</div>
+			<div class="zs-chip">IPv4 · USA</div><div class="zs-chip">Mobile 4G</div><div class="zs-chip">ISP · Germany</div><div class="zs-chip">SOCKS5</div>
 		</div>
 	</div></section>
 
 <?php elseif ( 'sunset' === $theme ) : ?>
 	<section class="zs-hero"><div class="zs-wrap"><div class="zs-panel">
 		<div>
-			<span class="zs-tag zs-rise"><b></b>New here? Welcome 👋</span>
+			<span class="zs-tag zs-rise"><b></b>New here? Welcome</span>
 			<h1 class="zs-rise" style="--d:1"><?php echo $h1; // phpcs:ignore ?></h1>
 			<p class="lead zs-rise" style="--d:2"><?php echo $lead; // phpcs:ignore ?></p>
 			<div class="zs-rise" style="--d:3"><?php echo $buttons; // phpcs:ignore ?></div>
@@ -204,14 +235,14 @@ body.zs--carbon .zs-strip strong{color:<?php echo esc_html( $pal['text'] ); ?>}<
 <?php endif; ?>
 
 	<section class="zs-strip"><div class="zs-wrap">
-		<div><strong><?php echo $places ? (int) $places . '+' : 'Global'; ?></strong><span>Locations to choose from</span></div>
-		<div><strong><?php echo count( $types ); ?></strong><span>Proxy networks</span></div>
-		<div><strong>30·60·90</strong><span>Day plans, extend any time</span></div>
-		<div><strong>24/7</strong><span>Automatic delivery</span></div>
+		<div><i><?php echo $svg( $ic['globe'] ); // phpcs:ignore ?></i><strong><?php echo $places ? (int) $places . '+' : 'Global'; ?></strong><span>Locations to choose from</span></div>
+		<div><i><?php echo $svg( $ic['swap'] ); // phpcs:ignore ?></i><strong><?php echo count( $types ); ?></strong><span>Proxy networks</span></div>
+		<div><i><?php echo $svg( $ic['clock'] ); // phpcs:ignore ?></i><strong>30·60·90</strong><span>Day plans, extend any time</span></div>
+		<div><i><?php echo $svg( $ic['bolt'] ); // phpcs:ignore ?></i><strong>24/7</strong><span>Automatic delivery</span></div>
 	</div></section>
 
 	<section class="zs-sec" id="plans"><div class="zs-wrap">
-		<div class="zs-title"><span>Plans</span><h2>Pick the network you need</h2><p>Prices in <?php echo esc_html( $cur ); ?>. Pay only for what you rent: 30, 60 or 90 days.</p></div>
+		<div class="zs-title"><span>Plans</span><h2>Pick the network you need</h2><p>Every proxy is private to you for the whole rental. Prices are in <?php echo esc_html( $cur ); ?> per proxy, and you choose 30, 60 or 90 days at checkout.</p></div>
 		<div class="zs-plans">
 			<?php
 			$n = 0;
@@ -219,51 +250,127 @@ body.zs--carbon .zs-strip strong{color:<?php echo esc_html( $pal['text'] ); ?>}<
 				$pop = 0 === $n++;
 				?>
 				<div class="zs-plan<?php echo $pop ? ' pop' : ''; ?>">
-					<?php echo $pop ? '<span class="badge">Most popular</span>' : ''; ?>
-					<span class="ico"><?php echo esc_html( $emoji[ $slug ] ); ?></span>
+					<?php echo $pop ? '<span class="badge">Popular</span>' : ''; ?>
+					<span class="ico"><?php echo $svg( $ic[ $slug ] ); // phpcs:ignore ?></span>
 					<h3><?php echo esc_html( $t['label'] ); ?></h3>
 					<p><?php echo esc_html( $t['desc'] ); ?></p>
 					<div class="zs-price">
 						<?php if ( isset( $from[ $slug ] ) ) : ?>
 							<small>from</small><strong><?php echo esc_html( $from[ $slug ]['price'] ); ?></strong><small>per proxy / <?php echo (int) $from[ $slug ]['days']; ?> days</small>
 						<?php else : ?>
-							<small>price</small><strong style="font-size:22px">Shown at checkout</strong><small>calculated live</small>
+							<small>price</small><strong class="zs-price__live">At checkout</strong><small>calculated live</small>
 						<?php endif; ?>
 					</div>
+					<div class="zs-best"><small>Best for</small><?php echo esc_html( $best[ $slug ] ); ?></div>
 					<ul><?php foreach ( $perks[ $slug ] as $perk ) : ?><li><?php echo esc_html( $perk ); ?></li><?php endforeach; ?></ul>
 					<a class="zs-btn <?php echo $pop ? 'zs-btn--primary' : 'zs-btn--ghost'; ?>" href="<?php echo esc_url( $mine ? zp_route_url( ZP_USER_BASE, 'buy', array( 'type' => $slug ) ) : $signup ); ?>">Buy <?php echo esc_html( $t['label'] ); ?></a>
 				</div>
 			<?php endforeach; ?>
 		</div>
+		<p class="zs-note"><?php echo $svg( $ic['shield'] ); // phpcs:ignore ?>The price you see at checkout is the price you pay. No setup fee and no automatic renewal: you extend only when you want to.</p>
 	</div></section>
 
-	<section class="zs-sec zs-sec--alt" id="how"><div class="zs-wrap">
-		<div class="zs-title"><span>How it works</span><h2>Three steps to your first proxy</h2></div>
+	<section class="zs-sec zs-sec--alt" id="compare"><div class="zs-wrap">
+		<div class="zs-title"><span>Compare</span><h2>Which proxy is right for you?</h2><p>Not sure where to start? Here is how the networks differ.</p></div>
+		<div class="zs-table"><table>
+			<thead><tr><th>Network</th><th>Best for</th><th>IP comes from</th><th>Sold</th><th>Protocols</th><th>From</th></tr></thead>
+			<tbody>
+			<?php foreach ( $types as $slug => $t ) : ?>
+				<tr>
+					<th><span class="ico"><?php echo $svg( $ic[ $slug ] ); // phpcs:ignore ?></span><?php echo esc_html( $t['label'] ); ?></th>
+					<td><?php echo esc_html( $best[ $slug ] ); ?></td>
+					<td><?php echo esc_html( $source[ $slug ] ); ?></td>
+					<td><?php echo esc_html( $sold[ $slug ] ); ?></td>
+					<td><?php echo 'ipv6' === $slug ? 'HTTP(S) or SOCKS5' : 'HTTP(S) + SOCKS5'; ?></td>
+					<td><strong><?php echo esc_html( isset( $from[ $slug ] ) ? $from[ $slug ]['price'] : 'At checkout' ); ?></strong></td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table></div>
+		<p class="zs-swipe">Swipe the table sideways to see more →</p>
+	</div></section>
+
+	<section class="zs-sec" id="features"><div class="zs-wrap">
+		<div class="zs-title"><span>Why <?php echo esc_html( $brand ); ?></span><h2>Everything you need, nothing you don't</h2><p>Simple tools that make buying and managing proxies easy, on your phone or your computer.</p></div>
+		<div class="zs-grid zs-grid--3">
+			<div class="zs-card"><i><?php echo $svg( $ic['shield'] ); // phpcs:ignore ?></i><h3>Private to you</h3><p>Your proxy is rented to you alone for the whole period. Nobody else shares it.</p></div>
+			<div class="zs-card"><i><?php echo $svg( $ic['bolt'] ); // phpcs:ignore ?></i><h3>Fast delivery</h3><p>Orders are set up automatically and appear in your dashboard, usually within minutes.</p></div>
+			<div class="zs-card"><i><?php echo $svg( $ic['swap'] ); // phpcs:ignore ?></i><h3>HTTP(S) and SOCKS5</h3><p>Use the protocol your browser, phone or tool expects. Both are supported.</p></div>
+			<div class="zs-card"><i><?php echo $svg( $ic['key'] ); // phpcs:ignore ?></i><h3>Two ways to log in</h3><p>Connect with a username and password, or whitelist your own IP address.</p></div>
+			<div class="zs-card"><i><?php echo $svg( $ic['clock'] ); // phpcs:ignore ?></i><h3>Extend any time</h3><p>Keep the same IP for as long as you need. Renew from your dashboard before it expires.</p></div>
+			<div class="zs-card"><i><?php echo $svg( $ic['file'] ); // phpcs:ignore ?></i><h3>Copy or export</h3><p>Copy one proxy with a tap, or download your whole list in the format your tool needs.</p></div>
+		</div>
+	</div></section>
+
+	<section class="zs-sec zs-sec--alt" id="uses"><div class="zs-wrap">
+		<div class="zs-title"><span>Use cases</span><h2>What people use our proxies for</h2></div>
+		<div class="zs-grid zs-grid--uses">
+			<div class="zs-use"><i><?php echo $svg( $ic['users'] ); // phpcs:ignore ?></i><h3>Social media</h3><p>Manage several accounts, each on its own clean IP.</p></div>
+			<div class="zs-use"><i><?php echo $svg( $ic['cart'] ); // phpcs:ignore ?></i><h3>E-commerce</h3><p>Run stores and check prices in other countries.</p></div>
+			<div class="zs-use"><i><?php echo $svg( $ic['search'] ); // phpcs:ignore ?></i><h3>SEO and research</h3><p>See search results exactly as locals see them.</p></div>
+			<div class="zs-use"><i><?php echo $svg( $ic['code'] ); // phpcs:ignore ?></i><h3>Automation</h3><p>Connect bots, scripts and tools with stable IPs.</p></div>
+			<div class="zs-use"><i><?php echo $svg( $ic['eye'] ); // phpcs:ignore ?></i><h3>Ad checking</h3><p>Confirm your adverts show correctly in each region.</p></div>
+			<div class="zs-use"><i><?php echo $svg( $ic['globe'] ); // phpcs:ignore ?></i><h3>Private browsing</h3><p>Browse from another location and keep your own IP private.</p></div>
+		</div>
+	</div></section>
+
+	<section class="zs-sec" id="how"><div class="zs-wrap">
+		<div class="zs-title"><span>How it works</span><h2>From sign-up to connected in four steps</h2><p>No technical knowledge needed. If you can copy and paste, you can use a proxy.</p></div>
 		<div class="zs-steps">
-			<div class="zs-step"><b>1</b><h3>Create your account</h3><p>Sign up with your name and email in under a minute.</p></div>
-			<div class="zs-step"><b>2</b><h3>Fund your wallet</h3><p>Pay by bank transfer<?php echo $store->telegram ? ' and send your receipt on Telegram' : ''; ?>. Your wallet is credited once it is confirmed.</p></div>
-			<div class="zs-step"><b>3</b><h3>Choose and connect</h3><p>Pick a type, country and period, then copy your proxy details into your browser or tool.</p></div>
+			<div class="zs-step"><b>1</b><h3>Create your account</h3><p>Sign up with your name and email. It takes less than a minute and it is free.</p></div>
+			<div class="zs-step"><b>2</b><h3>Fund your wallet</h3><p>Pay in <?php echo esc_html( $cur ); ?> by bank transfer<?php echo $tg ? ', then send your receipt on Telegram' : ''; ?>. Your wallet is credited once payment is confirmed.</p></div>
+			<div class="zs-step"><b>3</b><h3>Choose your proxy</h3><p>Pick a network, a country and 30, 60 or 90 days. You see the total before you pay.</p></div>
+			<div class="zs-step"><b>4</b><h3>Copy and connect</h3><p>Your proxy details appear in your dashboard. Paste them into your browser, phone or tool.</p></div>
+		</div>
+	</div></section>
+
+	<section class="zs-sec zs-sec--alt" id="pay"><div class="zs-wrap zs-pay">
+		<div>
+			<div class="zs-title"><span>Payment</span><h2>Pay in <?php echo esc_html( $cur ); ?>, the easy way</h2><p>Top up your wallet once and use the balance for any order or renewal.</p></div>
+			<ul class="zs-checks">
+				<li><?php echo $svg( $ic['check'] ); // phpcs:ignore ?><span><strong>Bank transfer.</strong> Our account details are shown in your wallet with a copy button.</span></li>
+				<li><?php echo $svg( $ic['check'] ); // phpcs:ignore ?><span><strong>Wallet balance.</strong> Unused money stays in your wallet for your next order.</span></li>
+				<li><?php echo $svg( $ic['check'] ); // phpcs:ignore ?><span><strong>Clear records.</strong> Every deposit and purchase is listed in your transaction history.</span></li>
+				<li><?php echo $svg( $ic['check'] ); // phpcs:ignore ?><span><strong>Fair refunds.</strong> If an order cannot be delivered, the money goes straight back to your wallet.</span></li>
+			</ul>
+		</div>
+		<div class="zs-help">
+			<i><?php echo $svg( $ic['chat'] ); // phpcs:ignore ?></i>
+			<h3>Need help choosing?</h3>
+			<p>Tell us what you want to use the proxy for and we will point you to the right plan. Real people answer.</p>
+			<?php if ( $tg ) : ?>
+				<a class="zs-btn zs-btn--primary" href="<?php echo esc_attr( $tg ); ?>" target="_blank" rel="noopener">Chat on Telegram</a>
+			<?php endif; ?>
+			<a class="zs-btn zs-btn--ghost" href="<?php echo esc_url( $mine ? zp_route_url( ZP_USER_BASE, 'tickets' ) : $signup ); ?>"><?php echo $mine ? 'Open a support ticket' : 'Create a free account'; ?></a>
 		</div>
 	</div></section>
 
 	<section class="zs-sec" id="faq"><div class="zs-wrap">
-		<div class="zs-title"><span>FAQ</span><h2>Good to know</h2></div>
+		<div class="zs-title"><span>FAQ</span><h2>Questions, answered</h2><p>The things customers ask us most often.</p></div>
 		<div class="zs-faq">
-			<?php foreach ( array_slice( zp_faqs(), 0, 5, true ) as $q => $a ) : ?>
+			<?php foreach ( array_slice( zp_faqs(), 0, 8, true ) as $q => $a ) : ?>
 				<details><summary><?php echo esc_html( $q ); ?></summary><p><?php echo esc_html( $a ); ?></p></details>
 			<?php endforeach; ?>
 		</div>
 	</div></section>
 
 	<section class="zs-cta"><div class="zs-wrap"><div>
-		<div><h2>Ready when you are.</h2><p>Create a free account and buy your first proxy today.</p></div>
+		<div><h2>Ready when you are.</h2><p>Create a free account, fund your wallet and get your first proxy today.</p></div>
 		<a class="zs-btn zs-btn--lg" href="<?php echo esc_url( $cta ); ?>"><?php echo esc_html( $cta_txt ); ?> →</a>
 	</div></div></section>
 </main>
 
 <footer class="zs-foot"><div class="zs-wrap">
-	<span>© <?php echo esc_html( gmdate( 'Y' ) . ' ' . $brand ); ?>. All rights reserved.</span>
-	<span><a href="<?php echo esc_url( ZP_Resellers::store_url( $store, 'privacy' ) ); ?>">Privacy Policy</a> · <a href="<?php echo esc_url( ZP_Resellers::store_url( $store, 'refund' ) ); ?>">Refund Policy</a> · <a href="<?php echo esc_url( $mine ? $panel : $login ); ?>"><?php echo $mine ? 'Dashboard' : 'Sign in'; ?></a></span>
+	<div class="zs-foot__grid">
+		<div class="zs-foot__brand">
+			<a class="zs-brand" href="<?php echo esc_url( $home ); ?>"><?php echo $mark; // phpcs:ignore ?><?php echo esc_html( $brand ); ?></a>
+			<p>Private IPv4, IPv6, ISP and mobile proxies. Pay in <?php echo esc_html( $cur ); ?> and manage everything from one simple dashboard.</p>
+		</div>
+		<div><h4>Shop</h4><a href="#plans">Plans and prices</a><a href="#compare">Compare networks</a><a href="#uses">Use cases</a></div>
+		<div><h4>Help</h4><a href="#how">How it works</a><a href="#faq">FAQ</a><?php if ( $tg ) : ?><a href="<?php echo esc_attr( $tg ); ?>" target="_blank" rel="noopener">Telegram support</a><?php endif; ?></div>
+		<div><h4>Account</h4><a href="<?php echo esc_url( $mine ? $panel : $login ); ?>"><?php echo $mine ? 'Dashboard' : 'Sign in'; ?></a><?php if ( ! $mine ) : ?><a href="<?php echo esc_url( $signup ); ?>">Create account</a><?php endif; ?><a href="<?php echo esc_url( ZP_Resellers::store_url( $store, 'privacy' ) ); ?>">Privacy Policy</a><a href="<?php echo esc_url( ZP_Resellers::store_url( $store, 'refund' ) ); ?>">Refund Policy</a></div>
+	</div>
+	<div class="zs-foot__base"><span>© <?php echo esc_html( gmdate( 'Y' ) . ' ' . $brand ); ?>. All rights reserved.</span><span>Proxies must be used lawfully and in line with our policies.</span></div>
 </div></footer>
 
 <nav class="zs-tabbar" aria-label="Quick navigation">
