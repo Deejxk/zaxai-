@@ -11,11 +11,12 @@ import (
 	"os/signal"
 )
 
-func setSystemProxy(addr string) error { log.Println("[test] system proxy ->", addr); return nil }
-func restoreSystemProxy()              { log.Println("[test] system proxy restored") }
-func recoverSystemProxy(c config)      {}
-func openBrowser(url string)           { log.Println("[test] open", url) }
-func protect(s string) (string, error) { return s, nil }
+func setSystemProxy(addr string) error       { log.Println("[test] system proxy ->", addr); return nil }
+func restoreSystemProxy()                    { log.Println("[test] system proxy restored") }
+func recoverSystemProxy(c config)            {}
+func openBrowser(url string) error           { log.Println("[test] open", url); return nil }
+func alert(title, text string, isError bool) { log.Println("[test] message:", title) }
+func protect(s string) (string, error)       { return s, nil }
 func unprotect(s string) (string, error) {
 	return s, nil
 }

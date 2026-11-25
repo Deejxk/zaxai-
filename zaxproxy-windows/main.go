@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -31,7 +32,7 @@ import (
 const (
 	uiAddr    = "127.0.0.1:47821"
 	relayAddr = "127.0.0.1:47822"
-	version   = "1.0.0"
+	version   = "1.0.1"
 )
 
 //go:embed ui.html
@@ -65,15 +66,30 @@ type app struct {
 var a = &app{}
 
 func main() {
+	setupLog()
+	// Nothing fails silently: any unexpected error is written to the log and shown in a message box.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("crash: %v\n%s", r, debug.Stack())
+			alert("ZaxProxy had a problem", fmt.Sprintf("ZaxProxy could not start.\n\nDetails: %v\n\nA log was saved here:\n%s\n\nPlease send that file to support.", r, logPath()), true)
+			os.Exit(1)
+		}
+	}()
+	log.Printf("ZaxProxy %s starting", version)
 	a.site = strings.TrimRight(envOr("ZAX_SITE", "https://zaxproxy.cloud"), "/")
 
 	// Already running? Ask that copy to show its window and leave.
 	ln, err := net.Listen("tcp", uiAddr)
 	if err != nil {
 		c := http.Client{Timeout: 3 * time.Second}
-		if r, e := c.Get("http://" + uiAddr + "/open"); e == nil {
+		r, e := c.Get("http://" + uiAddr + "/open")
+		if e == nil && r.StatusCode == 204 {
 			r.Body.Close()
+			log.Print("already running: asked the first copy to show its window")
+			return
 		}
+		log.Printf("cannot listen on %s: %v", uiAddr, err)
+		alert("ZaxProxy cannot start", "Another program on this computer is using the address ZaxProxy needs ("+uiAddr+").\n\nClose that program, or restart your computer, and open ZaxProxy again.", true)
 		return
 	}
 
@@ -107,8 +123,13 @@ func main() {
 	if a.token != "" {
 		go func() { _ = a.refresh() }()
 	}
+	log.Printf("window address: http://%s", uiAddr)
 	if os.Getenv("ZAX_NO_BROWSER") == "" {
-		openUI()
+		go func() {
+			// A plain message first, so it is obvious the program is running and where to find it.
+			alert("ZaxProxy is running", "ZaxProxy is now running on this computer.\n\nWhen you click OK, the ZaxProxy window opens in your web browser. Sign in there and click Connect on a proxy.\n\nYou can reopen it any time from the shield icon near the clock (click the small ^ arrow if you do not see it).", false)
+			openUI()
+		}()
 	}
 	runTray() // blocks until Quit
 	quit()
@@ -123,7 +144,21 @@ func envOr(k, d string) string {
 
 func uiURL() string { return "http://" + uiAddr + "/#k=" + a.key }
 
-func openUI() { openBrowser(uiURL()) }
+func openUI() {
+	if err := openBrowser(uiURL()); err != nil {
+		log.Printf("could not open the browser: %v", err)
+		alert("Open ZaxProxy in your browser", "ZaxProxy could not open your web browser by itself.\n\nOpen your browser and type this address:\n\n"+uiURL(), false)
+	}
+}
+
+func logPath() string { return filepath.Join(filepath.Dir(configPath()), "log.txt") }
+
+func setupLog() {
+	f, err := os.OpenFile(logPath(), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err == nil {
+		log.SetOutput(io.MultiWriter(f, os.Stderr))
+	}
+}
 
 func quit() {
 	a.disconnect()

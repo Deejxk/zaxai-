@@ -22,8 +22,8 @@ type apiResult struct {
 // The website is always called directly, never through the Windows proxy setting, so signing in
 // and refreshing keep working whether or not a proxy is connected.
 var apiClient = &http.Client{
-	Timeout:   30 * time.Second,
-	Transport: &http.Transport{Proxy: nil, TLSHandshakeTimeout: 15 * time.Second, ResponseHeaderTimeout: 25 * time.Second},
+	Timeout:       30 * time.Second,
+	Transport:     &http.Transport{Proxy: nil, TLSHandshakeTimeout: 15 * time.Second, ResponseHeaderTimeout: 25 * time.Second},
 	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 }
 

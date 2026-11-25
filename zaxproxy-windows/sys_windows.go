@@ -104,10 +104,38 @@ func recoverSystemProxy(c config) {
 	}
 }
 
-func openBrowser(url string) {
+// openBrowser asks Windows to open the address with the default browser, trying three ways.
+func openBrowser(url string) error {
+	verb, _ := windows.UTF16PtrFromString("open")
+	target, _ := windows.UTF16PtrFromString(url)
+	err := windows.ShellExecute(0, verb, target, nil, nil, windows.SW_SHOWNORMAL)
+	if err == nil {
+		return nil
+	}
 	cmd := exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	_ = cmd.Start()
+	if e := cmd.Start(); e == nil {
+		return nil
+	}
+	cmd = exec.Command("cmd", "/c", "start", "", url)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	if e := cmd.Start(); e == nil {
+		return nil
+	}
+	return err
+}
+
+// alert shows an ordinary Windows message box, always on top so it cannot hide behind other windows.
+func alert(title, text string, isError bool) {
+	t, _ := windows.UTF16PtrFromString(title)
+	m, _ := windows.UTF16PtrFromString(text)
+	flags := uint32(windows.MB_OK | windows.MB_SETFOREGROUND | windows.MB_TOPMOST)
+	if isError {
+		flags |= windows.MB_ICONERROR
+	} else {
+		flags |= windows.MB_ICONINFORMATION
+	}
+	_, _ = windows.MessageBox(0, m, t, flags)
 }
 
 /* ---------- Keep the sign-in token readable by this Windows account only (DPAPI) ---------- */
