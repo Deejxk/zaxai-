@@ -137,7 +137,7 @@ class ZP_Notify {
 				'read'  => (int) $n->is_read,
 			);
 		}
-		return array( 'unread' => self::unread( $user_id ), 'items' => $items, 'push' => self::public_key() );
+		return array( 'unread' => self::unread( $user_id ), 'items' => $items, 'push' => self::public_key(), 'ajax' => wp_create_nonce( 'zp_ajax' ), 'nonce' => wp_create_nonce( 'zp_notify' ) );
 	}
 
 	/* ---------- Endpoint: /zp-notify/ ---------- */

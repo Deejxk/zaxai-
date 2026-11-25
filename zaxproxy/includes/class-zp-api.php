@@ -83,6 +83,14 @@ class ZP_API {
 		if ( ! is_wp_error( $res ) ) {
 			unset( $res['balance'], $res['user'] );
 			set_transient( $tkey, $res, 3 * HOUR_IN_SECONDS );
+			update_option( 'zp_last_' . $name, $res, false ); // kept as a fallback for when the provider is slow or down
+			return $res;
+		}
+		// The provider did not answer: show the last list we know rather than an empty page.
+		$last = get_option( 'zp_last_' . $name );
+		if ( is_array( $last ) && 'zp_config' !== $res->get_error_code() ) {
+			set_transient( $tkey, $last, 5 * MINUTE_IN_SECONDS );
+			return $last;
 		}
 		return $res;
 	}

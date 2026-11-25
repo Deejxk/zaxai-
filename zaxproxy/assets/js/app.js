@@ -127,8 +127,20 @@
     // Location and period lists rarely change: keep them for a few minutes so the buy page opens instantly.
     var ck = (act === 'options' || act === 'extend_days') ? 'zpo:' + (ZP.uid || 0) + ':' + act + ':' + JSON.stringify(params || {}) : null;
     if (ck) { try { var hit = JSON.parse(sessionStorage.getItem(ck) || 'null'); if (hit && Date.now() - hit.t < 300000) return Promise.resolve(hit.d); } catch (e) {} }
-    return fetch(url, opt).then(function (r) { return r.json(); }).then(function (j) {
+    return fetch(url, opt).then(function (r) {
+      // The app can stay open for days on a phone: when the security token has aged out, get a fresh one and try once more.
+      if (r.status === 403 && !api.retrying && ZP.notify) {
+        api.retrying = true;
+        return fetch(ZP.notify.url, { credentials: 'same-origin', headers: { Accept: 'application/json' } }).then(function (x) { return x.json(); }).then(function (d) {
+          if (d && d.ajax) ZP.nonce = d.ajax;
+          return api(act, params, body);
+        }).then(function (v) { api.retrying = false; return { ok: true, data: v, again: true }; }, function (e) { api.retrying = false; throw e; });
+      }
+      return r.json();
+    }).then(function (j) {
+      if (j.again) return j.data;
       if (!j.ok) throw new Error(j.error || 'Something went wrong');
+      if (ck && act === 'options' && !(j.data.countries || []).length) ck = null;
       if (ck) { try { sessionStorage.setItem(ck, JSON.stringify({ t: Date.now(), d: j.data })); } catch (e) {} }
       return j.data;
     });
@@ -195,14 +207,22 @@
       $('#zp-days').innerHTML = '';
       setReady(false); setTotal('—'); $('#zp-sum-unit').textContent = '—';
       setNote('Loading available locations…');
-      api('options', { type: type }).then(function (data) {
-        if (f.type.value !== type) return;
-        opts = data; renderCountries(''); renderDays();
-        setNote('Choose a location and period to see your price.');
-      }).catch(function (e) {
-        $('#zp-countries').innerHTML = '';
-        setNote(e.message, true);
-      });
+      var tries = 0;
+      (function fetchOptions() {
+        api('options', { type: type }).then(function (data) {
+          if (f.type.value !== type) return;
+          opts = data; renderCountries($('#zp-country-search').value.trim().toLowerCase()); renderDays();
+          setNote('Choose a location and period to see your price.');
+        }).catch(function (e) {
+          if (f.type.value !== type) return;
+          if (++tries < 3) { setTimeout(fetchOptions, 1200 * tries); return; } // a slow connection gets two more quiet attempts
+          var box = $('#zp-countries');
+          box.innerHTML = '<div class="zp-loadfail"><strong>Locations could not be loaded</strong><span></span><button type="button" class="zp-btn zp-btn--soft zp-btn--sm">Try again</button></div>';
+          box.querySelector('span').textContent = e.message || 'Check your connection and try again.';
+          box.querySelector('button').addEventListener('click', function () { loadType(type); });
+          setNote(e.message, true);
+        });
+      })();
     }
 
     function renderCountries(filter) {
@@ -666,6 +686,8 @@
         }
         setLast(top);
       }
+      if (d.ajax) ZP.nonce = d.ajax;
+      if (d.nonce) N.nonce = d.nonce;
       if (!panel.hidden && unread) { unread = 0; post({ do: 'read' }); }
       draw();
     }
@@ -748,5 +770,26 @@
     // First visit on this device: remember where we are without ringing for old items.
     fetchNow(getLast() === 0).then(function () { if (getLast() === 0) setLast(items.length ? items[0].id : 1); });
     schedule();
+  })();
+
+  /* ---------- Keyboard open on phones: keep the top header in view ---------- */
+  (function () {
+    var top = document.querySelector('.zp-shell .zp-top'), vv = window.visualViewport, root = document.documentElement;
+    if (!top) return;
+    var typing = false, raf = 0;
+    function isField(el) { return el && (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|file|range|color|hidden)$/i.test(el.type))); }
+    function place() {
+      raf = 0;
+      // iOS slides the whole page up under the keyboard; move the fixed header back to the top of what is visible.
+      var off = vv ? Math.max(0, Math.round(vv.offsetTop)) : 0;
+      top.style.transform = off ? 'translate3d(0,' + off + 'px,0)' : '';
+      var small = vv ? vv.height < window.innerHeight - 140 : false;
+      root.classList.toggle('zp-kb', (typing || small) && window.innerWidth <= 900);
+    }
+    function queue() { if (!raf) raf = requestAnimationFrame(place); }
+    if (vv) { vv.addEventListener('resize', queue); vv.addEventListener('scroll', queue); }
+    window.addEventListener('scroll', queue, { passive: true });
+    document.addEventListener('focusin', function (e) { if (isField(e.target) && e.target.tagName !== 'SELECT') { typing = true; queue(); setTimeout(queue, 350); } });
+    document.addEventListener('focusout', function () { typing = false; setTimeout(queue, 120); setTimeout(queue, 500); });
   })();
 })();
