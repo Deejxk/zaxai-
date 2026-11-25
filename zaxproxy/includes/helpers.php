@@ -548,6 +548,7 @@ function zp_faq_groups() {
 			'What does ' . $brand . ' sell?'                 => 'We rent private IPv4, IPv6, ISP and mobile proxies for 30, 60 or 90 days. Each proxy is issued to one customer only and is delivered to your dashboard with its IP, port and login details.',
 			'Which proxy type should I choose?'              => 'IPv4 is the everyday choice and works everywhere. IPv6 is the cheapest per IP and suits large volumes on IPv6-ready sites. ISP proxies look like ordinary home connections and suit accounts that need extra trust. Mobile proxies come from 4G carriers and are trusted most by apps and social platforms.',
 			'Do I need technical knowledge?'                 => 'No. You copy the IP, port, username and password from your dashboard into your browser, phone or tool. Our Help center explains the steps.',
+			'How do I connect a proxy to my phone or computer?' => 'Your dashboard has step-by-step guides with an animated walkthrough for Windows, Android and iPhone. On Android you can use the Tun2Socks app and on iPhone the Potatso app: you only type the IP address, port, username and password shown on your proxy.',
 			'Are the proxies private?'                       => 'Yes. Each proxy is issued to a single customer for the whole rental period.',
 		),
 		'Orders and delivery'  => array(
