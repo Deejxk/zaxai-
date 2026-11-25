@@ -122,6 +122,7 @@ public class MainActivity extends Activity {
         list = findViewById(R.id.list);
 
         btnLogin.setOnClickListener(v -> signIn());
+        eye(inPass);
         inPass.setOnEditorActionListener((v, action, e) -> {
             if (action == EditorInfo.IME_ACTION_DONE) {
                 signIn();
@@ -219,6 +220,8 @@ public class MainActivity extends Activity {
                     btnLogin.setText(R.string.sign_in);
                     if (r.ok()) {
                         inPass.setText("");
+                        inPass.setTransformationMethod(android.text.method.PasswordTransformationMethod.getInstance());
+                        inPass.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye, 0);
                         prefs.edit().putString("token", r.json.optString("token")).apply();
                         store(r.json);
                         render();
@@ -636,6 +639,24 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** Puts an eye at the end of a password box: tap it to see what was typed, tap again to hide it. */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private void eye(final EditText box) {
+        box.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_eye, 0);
+        box.setOnTouchListener((v, e) -> {
+            float zone = 52 * getResources().getDisplayMetrics().density; // the eye and the space around it
+            if (e.getX() < box.getWidth() - zone) return false;
+            if (e.getAction() == android.view.MotionEvent.ACTION_UP) {
+                boolean hidden = box.getTransformationMethod() instanceof android.text.method.PasswordTransformationMethod;
+                int at = box.getSelectionEnd();
+                box.setTransformationMethod(hidden ? android.text.method.HideReturnsTransformationMethod.getInstance() : android.text.method.PasswordTransformationMethod.getInstance());
+                box.setCompoundDrawablesWithIntrinsicBounds(0, 0, hidden ? R.drawable.ic_eye_off : R.drawable.ic_eye, 0);
+                box.setSelection(Math.max(0, Math.min(at, box.getText().length())));
+            }
+            return true;
+        });
+    }
+
     private TextView sectionHead(String text) {
         TextView head = new TextView(this);
         head.setText(text);
@@ -707,6 +728,7 @@ public class MainActivity extends Activity {
         }
         final EditText host = d.findViewById(R.id.m_host), port = d.findViewById(R.id.m_port), user = d.findViewById(R.id.m_user), pass = d.findViewById(R.id.m_pass), name = d.findViewById(R.id.m_name);
         final TextView error = d.findViewById(R.id.m_error);
+        eye(pass);
         final Button save = d.findViewById(R.id.m_save);
         host.setOnFocusChangeListener((v, has) -> {
             if (!has) spread(host, port, user, pass);

@@ -116,6 +116,12 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
 .empty .primary{width:auto;height:44px;padding:0 22px;margin-top:16px;font-size:14px}
 .tip{padding:10px 24px 14px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px;display:flex;gap:10px;align-items:center}
 .tip b{flex:1;font-weight:400}
+.pw{position:relative}.pw .field{padding-right:48px}
+.pw input::-ms-reveal,.pw input::-ms-clear{display:none}
+.eye{position:absolute;right:6px;top:0;width:38px;height:50px;display:grid;place-items:center;color:var(--faint)}
+.modal .eye{height:44px}
+.eye:hover{color:var(--text)}.eye svg{width:20px;height:20px}.eye .slash{display:none}
+.eye.on{color:#b3aaff}.eye.on .slash{display:block}
 .addbtn{height:38px;padding:0 14px;border-radius:11px;background:var(--surface);border:1px solid var(--line);color:#cfc9ff;font-size:13px;font-weight:700;white-space:nowrap;transition:border-color .2s}
 .addbtn:hover{border-color:var(--brand)}
 .rm{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--faint);font-size:18px;line-height:1;border:1px solid transparent}
@@ -172,7 +178,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
         <label for="lmail">Email or username</label>
         <input class="field" id="lmail" type="text" autocomplete="username" required>
         <label for="lpass">Password</label>
-        <input class="field" id="lpass" type="password" autocomplete="current-password" required>
+        <div class="pw"><input class="field" id="lpass" type="password" autocomplete="current-password" required><button type="button" class="eye" tabindex="-1" title="Show password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linejoin="round" stroke-linecap="round"><path d="M2 12c2.500-4.500 6-6.500 10-6.500s7.500 2 10 6.500c-2.500 4.500-6 6.500-10 6.500S4.500 16.500 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="slash" d="M4 4l16 16"/></svg></button></div>
         <label class="check"><input type="checkbox" id="lauto" checked>Connect automatically after signing in</label>
         <button class="primary" id="lbtn" type="submit">Sign in</button>
       </form>
@@ -227,7 +233,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
     <div class="two"><div><label for="mhost">IP address or host</label><input class="field" id="mhost" type="text" placeholder="185.12.34.56" spellcheck="false"></div>
     <div><label for="mport">SOCKS5 port</label><input class="field" id="mport" type="text" inputmode="numeric" placeholder="1080" maxlength="5"></div></div>
     <div class="two eq"><div><label for="muser">Username</label><input class="field" id="muser" type="text" spellcheck="false"></div>
-    <div><label for="mpass">Password</label><input class="field" id="mpass" type="password"></div></div>
+    <div><label for="mpass">Password</label><div class="pw"><input class="field" id="mpass" type="password"><button type="button" class="eye" tabindex="-1" title="Show password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linejoin="round" stroke-linecap="round"><path d="M2 12c2.500-4.500 6-6.500 10-6.500s7.500 2 10 6.500c-2.500 4.500-6 6.500-10 6.500S4.500 16.500 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="slash" d="M4 4l16 16"/></svg></button></div></div></div>
     <label for="mname">Name (optional)</label><input class="field" id="mname" type="text" maxlength="40" placeholder="e.g. Work proxy">
     <div class="btns"><button class="ghost" type="button" id="mcancel">Cancel</button><button class="primary" type="submit" id="msave">Save and connect</button></div>
   </form>
@@ -345,10 +351,16 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
     var p = pick(); if (!p) { fail($('err'), 'Buy a proxy on the website and click the refresh button, or click "Add manually".'); return; }
     connect(p.id);
   };
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.eye'); if (!b) return;
+    var i = b.parentNode.querySelector('input'), show = i.type === 'password';
+    i.type = show ? 'text' : 'password'; b.classList.toggle('on', show); b.title = show ? 'Hide password' : 'Show password'; i.focus();
+  });
+  function hidePw() { [].forEach.call(document.querySelectorAll('.pw input'), function (i) { i.type = 'password'; }); [].forEach.call(document.querySelectorAll('.eye'), function (b) { b.classList.remove('on'); }); }
   $('search').oninput = draw;
   /* add a proxy by hand */
   function openAdd() { fail($('merr'), ''); $('mform').reset(); $('veil').hidden = false; $('mhost').focus(); }
-  function closeAdd() { $('veil').hidden = true; $('mpass').value = ''; }
+  function closeAdd() { $('veil').hidden = true; $('mpass').value = ''; hidePw(); }
   $('add').onclick = openAdd; $('add2').onclick = openAdd; $('mcancel').onclick = closeAdd;
   $('veil').onmousedown = function (e) { if (e.target === this) closeAdd(); };
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('veil').hidden) closeAdd(); });
@@ -379,7 +391,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
     call('login', { login: $('lmail').value.trim(), password: $('lpass').value }).then(function (s) {
       $('lbtn').disabled = false; $('lbtn').textContent = 'Sign in';
       if (s.ok === false) { fail($('lerr'), s.error); return; }
-      $('lpass').value = ''; show(s);
+      $('lpass').value = ''; hidePw(); show(s);
       // Signed in: connect straight away to the last location used, or the first one in the list.
       if ($('lauto').checked && !s.connected) { var p = pick(); if (p) connect(p.id); }
     }).catch(function () { $('lbtn').disabled = false; $('lbtn').textContent = 'Sign in'; fail($('lerr'), 'ZaxProxy Connect is not responding. Close it and open it again.'); });
