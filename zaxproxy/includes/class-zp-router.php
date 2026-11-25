@@ -357,7 +357,8 @@ class ZP_Router {
 		$brand = zp_get( 'brand' );
 		?>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<script>(function(){var d=document,stop=function(e){e.preventDefault()};['gesturestart','gesturechange','gestureend'].forEach(function(n){d.addEventListener(n,stop,{passive:false})});d.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});var last=0;d.addEventListener('touchend',function(e){var now=Date.now(),t=e.target;if(now-last<320&&!(t&&t.closest&&t.closest('a,button,input,textarea,select,label,summary,[role=button],[data-zp-copy],.zp-country,.zp-typepick__item')))e.preventDefault();last=now},{passive:false});d.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault()},{passive:false})})();</script>
 <title><?php echo esc_html( $title . ' · ' . $brand ); ?></title>
 <?php if ( $description ) : ?><meta name="description" content="<?php echo esc_attr( $description ); ?>"><?php endif; ?>
 <?php echo $index ? '' : '<meta name="robots" content="noindex">' . "\n"; // phpcs:ignore ?>

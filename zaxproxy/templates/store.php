@@ -114,7 +114,8 @@ $buttons  = '<div class="zs-cta-row"><a class="zs-btn zs-btn--primary zs-btn--lg
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<script>(function(){var d=document,stop=function(e){e.preventDefault()};['gesturestart','gesturechange','gestureend'].forEach(function(n){d.addEventListener(n,stop,{passive:false})});d.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});var last=0;d.addEventListener('touchend',function(e){var now=Date.now(),t=e.target;if(now-last<320&&!(t&&t.closest&&t.closest('a,button,input,textarea,select,label,summary,[role=button],[data-zp-copy],.zp-country,.zp-typepick__item')))e.preventDefault();last=now},{passive:false});d.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault()},{passive:false})})();</script>
 <title><?php echo esc_html( $brand . ' · Private proxies' ); ?></title>
 <meta name="description" content="<?php echo esc_attr( 'Buy private IPv4, IPv6, ISP and mobile proxies from ' . $brand . '. Pay in ' . $cur . ' and get instant delivery.' ); ?>">
 <link rel="manifest" href="<?php echo esc_url( zp_route_url( 'zp-manifest' ) ); ?>">
