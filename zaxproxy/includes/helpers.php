@@ -428,7 +428,7 @@ function zp_wordmark() {
 	if ( preg_match( '/^(.+?)(proxy)$/i', $brand, $m ) ) {
 		return '<span class="zp-wordmark">' . esc_html( $m[1] ) . '<b>' . esc_html( $m[2] ) . '</b></span>';
 	}
-	return '<span class="zp-wordmark">' . esc_html( $brand ) . '</span>';
+	return '<span class="zp-wordmark' . ( zp_reseller_ctx() ? ' zp-wordmark--store' : '' ) . '">' . esc_html( $brand ) . '</span>';
 }
 
 /** Animated illustrations used on landing, auth and empty states. */

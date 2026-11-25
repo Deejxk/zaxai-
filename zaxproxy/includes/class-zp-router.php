@@ -365,10 +365,12 @@ class ZP_Router {
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?php echo esc_attr( $brand ); ?>">
 <link rel="apple-touch-icon" href="<?php echo esc_url( ZP_URL . 'assets/icons/apple-touch-icon.png' ); ?>">
-<link rel="icon" type="image/png" sizes="192x192" href="<?php echo esc_url( ZP_URL . 'assets/icons/icon-192.png' ); ?>">
+<?php if ( ! zp_reseller_ctx() ) : ?><link rel="icon" type="image/svg+xml" href="<?php echo esc_url( ZP_URL . 'assets/icons/favicon.svg?v=' . ZP_VERSION ); ?>">
+<link rel="icon" type="image/png" sizes="32x32" href="<?php echo esc_url( ZP_URL . 'assets/icons/favicon-32.png?v=' . ZP_VERSION ); ?>"><?php endif; ?>
+<link rel="icon" type="image/png" sizes="192x192" href="<?php echo esc_url( ZP_URL . 'assets/icons/icon-192.png?v=' . ZP_VERSION ); ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@700;800&family=Source+Serif+4:opsz,wght@8..60,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script>(function(){try{var t=localStorage.getItem('zp-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 <?php if ( ! empty( $GLOBALS['zp_reseller_ctx'] ) ) { self::$no_splash = true; } ?>
 <?php if ( self::$no_splash ) : ?><script>try{sessionStorage.setItem('zp-splash','1')}catch(e){}</script><?php endif; ?>
