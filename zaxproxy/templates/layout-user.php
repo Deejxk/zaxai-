@@ -26,7 +26,7 @@ $nav = array(
 	'profile'   => array( 'Account', 'user' ),
 );
 $tabs = array(
-	'dashboard' => array( 'Home', 'home' ),
+	'dashboard' => array( 'Dashboard', 'home' ),
 	'proxies'   => array( 'Proxies', 'globe' ),
 	'buy'       => array( 'Buy', 'plus' ),
 	'wallet'    => array( 'Wallet', 'wallet' ),

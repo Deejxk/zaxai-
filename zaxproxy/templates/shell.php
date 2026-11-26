@@ -132,7 +132,7 @@ if ( $zp_rs ) :
 	);
 	?>
 <nav class="zp-tabbar zp-tabbar--rs" aria-label="Reseller menu">
-	<a class="zp-tab zp-tab--home" href="<?php echo esc_url( zp_url( 'dashboard' ) ); ?>"><span class="zp-tab__ico"><?php echo zp_icon( 'home', 22 ); // phpcs:ignore ?></span><span class="zp-tab__label">Home</span></a>
+	<a class="zp-tab zp-tab--home" href="<?php echo esc_url( zp_url( 'dashboard' ) ); ?>"><span class="zp-tab__ico"><?php echo zp_icon( 'home', 22 ); // phpcs:ignore ?></span><span class="zp-tab__label">Dashboard</span></a>
 	<?php foreach ( $zp_rs_tabs as $slug => $item ) : ?>
 		<a class="zp-tab<?php echo $slug === $zp_rs_tab ? ' is-active' : ''; ?>" data-rs-tab="<?php echo esc_attr( $slug ); ?>" href="<?php echo esc_url( $zp_rs_url( $slug ) ); ?>">
 			<span class="zp-tab__ico"><?php echo zp_icon( $item[1], 22 ); // phpcs:ignore ?><b class="zp-tab__badge"<?php echo $item[2] ? '' : ' hidden'; ?>><?php echo (int) $item[2]; ?></b></span><span class="zp-tab__label"><?php echo esc_html( $item[0] ); ?></span>

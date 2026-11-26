@@ -142,8 +142,64 @@ class ZP_Notify {
 
 	/* ---------- Endpoint: /zp-notify/ ---------- */
 
+	/** The visitor's own address as the server sees it (shown back to them only; never used for security). */
+	private static function visitor_ip() {
+		$ok = function ( $ip ) {
+			return (bool) filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
+		};
+		$ip = zp_client_ip();
+		if ( $ok( $ip ) ) {
+			return $ip;
+		}
+		// Behind a local relay the real address arrives in a header instead.
+		foreach ( array( 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR' ) as $h ) {
+			$first = isset( $_SERVER[ $h ] ) ? trim( explode( ',', sanitize_text_field( wp_unslash( $_SERVER[ $h ] ) ) )[0] ) : '';
+			if ( $ok( $first ) ) {
+				return $first;
+			}
+		}
+		return '';
+	}
+
+	/** "Where am I": the address this device is browsing from, and roughly where that address is. */
+	private static function whereami() {
+		$ip  = self::visitor_ip();
+		$out = array( 'ok' => true, 'ip' => $ip, 'place' => '', 'country' => '', 'isp' => '' );
+		if ( '' === $ip || ! is_user_logged_in() ) {
+			return $out;
+		}
+		$key = 'zp_here_' . md5( $ip );
+		$hit = get_transient( $key );
+		if ( ! is_array( $hit ) ) {
+			if ( zp_throttled( 'whereami', 40, HOUR_IN_SECONDS ) ) {
+				return $out;
+			}
+			$res  = wp_remote_get( apply_filters( 'zaxproxy_here_url', 'https://ipwho.is/' . rawurlencode( $ip ) . '?fields=success,city,region,country,connection', $ip ), array( 'timeout' => 4, 'redirection' => 0 ) );
+			$data = is_wp_error( $res ) ? null : json_decode( (string) wp_remote_retrieve_body( $res ), true );
+			$get  = function ( $v ) {
+				return is_string( $v ) ? mb_substr( sanitize_text_field( $v ), 0, 60 ) : '';
+			};
+			$hit  = array( '', '', '' );
+			if ( is_array( $data ) && ! empty( $data['success'] ) ) {
+				$city = $get( isset( $data['city'] ) ? $data['city'] : '' );
+				$reg  = $get( isset( $data['region'] ) ? $data['region'] : '' );
+				$hit  = array(
+					implode( ', ', array_unique( array_filter( array( $city, $reg ) ) ) ),
+					$get( isset( $data['country'] ) ? $data['country'] : '' ),
+					$get( isset( $data['connection']['isp'] ) ? $data['connection']['isp'] : '' ),
+				);
+			}
+			set_transient( $key, $hit, '' === $hit[1] ? 10 * MINUTE_IN_SECONDS : 6 * HOUR_IN_SECONDS );
+		}
+		list( $out['place'], $out['country'], $out['isp'] ) = $hit;
+		return $out;
+	}
+
 	public static function endpoint() {
 		nocache_headers();
+		if ( isset( $_GET['do'] ) && 'whereami' === $_GET['do'] ) { // phpcs:ignore
+			wp_send_json( self::whereami() );
+		}
 		if ( ! is_user_logged_in() ) {
 			wp_send_json( array( 'ok' => false ), 401 );
 		}

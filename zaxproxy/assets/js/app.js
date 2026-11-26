@@ -158,6 +158,40 @@
     });
   });
 
+  /* ---------- Where am I: current IP, its location, and the device's GPS ---------- */
+  $$('[data-zp-here]').forEach(function (box) {
+    var q = function (k) { return box.querySelector('[data-here="' + k + '"]'); };
+    if (ZP.notify && ZP.notify.url) {
+      fetch(ZP.notify.url + (ZP.notify.url.indexOf('?') < 0 ? '?' : '&') + 'do=whereami&t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); }).then(function (d) {
+          q('ip').textContent = d.ip || 'Not available';
+          q('place').textContent = [d.place, d.country].filter(Boolean).join(', ') || 'Not available';
+          q('isp').textContent = d.isp || '';
+        }).catch(function () { q('ip').textContent = 'Not available'; q('place').textContent = 'Not available'; });
+    }
+    var btn = q('gpsbtn'), gps = q('gps'), note = q('gpsnote');
+    function locate() {
+      if (!navigator.geolocation) { gps.textContent = 'Not supported'; note.textContent = 'This browser cannot share its location.'; btn.hidden = true; return; }
+      btn.disabled = true; btn.textContent = 'Finding…';
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        var la = pos.coords.latitude.toFixed(6), lo = pos.coords.longitude.toFixed(6);
+        gps.textContent = la + ', ' + lo;
+        note.textContent = 'Accurate to about ' + Math.round(pos.coords.accuracy) + ' m · ';
+        var a = document.createElement('a'); a.href = 'https://www.google.com/maps?q=' + la + ',' + lo; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = 'Open in Maps'; note.appendChild(a);
+        btn.disabled = false; btn.textContent = 'Refresh';
+      }, function (err) {
+        gps.textContent = 'Not available';
+        note.textContent = err && err.code === 1 ? 'Location is blocked for this site. Allow it in your browser or phone settings, then tap Show.' : 'Could not get a GPS fix. Turn on location on this device and try again.';
+        btn.disabled = false; btn.textContent = 'Show';
+      }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    }
+    btn.addEventListener('click', locate);
+    // Already allowed earlier? Show it straight away, without a prompt.
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then(function (p) { if (p.state === 'granted') locate(); }).catch(function () {});
+    }
+  });
+
   /* ---------- Count-up numbers ---------- */
   $$('[data-zp-count]').forEach(function (el) {
     var target = parseFloat(el.getAttribute('data-zp-count')) || 0;

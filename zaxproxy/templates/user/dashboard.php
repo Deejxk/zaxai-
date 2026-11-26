@@ -82,6 +82,11 @@ $pct     = function ( $n ) use ( $active ) {
 		<a class="zp-btn zp-btn--light" href="<?php echo esc_url( zp_url( 'buy' ) ); ?>"><?php echo zp_icon( 'cart', 18 ); // phpcs:ignore ?>Buy proxies</a>
 		<a class="zp-btn zp-btn--glass" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>"><?php echo zp_icon( 'plus', 18 ); // phpcs:ignore ?>Add funds</a>
 	</div>
+	<div class="zp-here" data-zp-here>
+		<div class="zp-here__item"><span class="zp-here__ico"><?php echo zp_icon( 'globe', 18 ); // phpcs:ignore ?></span><div><span>Your current IP</span><strong class="zp-mono" data-here="ip">Checking…</strong></div></div>
+		<div class="zp-here__item"><span class="zp-here__ico"><?php echo zp_icon( 'server', 18 ); // phpcs:ignore ?></span><div><span>IP location</span><strong data-here="place">Checking…</strong><small data-here="isp"></small></div></div>
+		<div class="zp-here__item"><span class="zp-here__ico"><?php echo zp_icon( 'phone', 18 ); // phpcs:ignore ?></span><div><span>Device GPS</span><strong class="zp-mono" data-here="gps">Not shown yet</strong><small data-here="gpsnote">Uses this device's location. It stays on your device.</small></div><button type="button" class="zp-here__btn" data-here="gpsbtn">Show</button></div>
+	</div>
 	<div class="zp-rhero__today">
 		<div><span>Wallet balance</span><strong data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>"><?php echo esc_html( zp_money( $balance ) ); ?></strong></div>
 		<div><span>Active proxies</span><strong data-zp-count="<?php echo (int) $active; ?>"><?php echo (int) $active; ?></strong></div>

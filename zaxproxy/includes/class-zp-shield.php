@@ -37,7 +37,7 @@ class ZP_Shield {
 			header( 'X-Content-Type-Options: nosniff' );
 			header( 'X-Frame-Options: SAMEORIGIN' );
 			header( 'Referrer-Policy: strict-origin-when-cross-origin' );
-			header( 'Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()' );
+			header( 'Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=()' );
 			if ( is_ssl() ) {
 				header( 'Strict-Transport-Security: max-age=15552000' );
 			}
