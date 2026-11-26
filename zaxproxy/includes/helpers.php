@@ -9,6 +9,8 @@ function zp_defaults() {
 	return array(
 		'brand'               => 'ZaxProxy',
 		'api_key'             => '',
+		'provider'            => 'proxyipv4',
+		'ps_api_key'          => '',
 		'types'               => array( 'ipv4', 'ipv6', 'isp', 'mobile' ),
 		'markup_ipv4'         => 30,
 		'markup_ipv6'         => 30,
@@ -503,7 +505,7 @@ function zp_public_prices() {
 		return is_array( $last ) ? $last : array(); // someone else is already refreshing the prices
 	}
 	set_transient( 'zp_public_prices_busy', 1, 90 );
-	if ( '' !== trim( (string) zp_get( 'api_key' ) ) ) {
+	if ( ZP_API::connected() ) {
 		foreach ( array_keys( zp_enabled_types() ) as $type ) {
 			$opts = ZP_Orders::options( $type );
 			if ( is_wp_error( $opts ) || ! $opts['countries'] || ! $opts['days'] ) {

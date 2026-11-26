@@ -182,6 +182,7 @@ class ZP_Admin_Actions {
 		$types = isset( $_POST['types'] ) ? array_map( 'sanitize_key', (array) wp_unslash( $_POST['types'] ) ) : array(); // phpcs:ignore
 		$new   = array(
 			'brand'               => zp_post( 'brand', 'ZaxProxy' ),
+			'provider'            => isset( ZP_API::PROVIDERS[ zp_post( 'provider' ) ] ) ? zp_post( 'provider' ) : ZP_API::provider(),
 			'types'               => array_values( array_intersect( array_keys( zp_types() ), $types ) ),
 			'registration'        => zp_post( 'registration' ) ? 1 : 0,
 			'landing'             => zp_post( 'landing' ) ? 1 : 0,
@@ -201,26 +202,32 @@ class ZP_Admin_Actions {
 			'support_email'       => sanitize_email( zp_post( 'support_email' ) ),
 		);
 		// Secrets are write-only: an empty field keeps the stored value.
-		foreach ( array( 'api_key', 'paystack_secret', 'hostinger_token' ) as $secret ) {
+		foreach ( array( 'api_key', 'ps_api_key', 'paystack_secret', 'hostinger_token' ) as $secret ) {
 			$val = trim( zp_post( $secret ) );
 			if ( '' !== $val ) {
 				$new[ $secret ] = $val;
 			}
 		}
-		$key_changed = isset( $new['api_key'] ) && $new['api_key'] !== zp_get( 'api_key' );
+		$key_changed = ( isset( $new['api_key'] ) && $new['api_key'] !== zp_get( 'api_key' ) ) || ( isset( $new['ps_api_key'] ) && $new['ps_api_key'] !== zp_get( 'ps_api_key' ) );
+		$switched    = $new['provider'] !== ZP_API::provider();
 		zp_update_settings( $new );
 		delete_transient( 'zp_public_prices' );
-		if ( $key_changed ) {
+		if ( $key_changed || $switched ) {
 			ZP_API::flush_cache();
+		}
+		if ( $switched ) {
+			// Prices come from the new supplier from now on: forget what was worked out from the old one.
+			delete_option( 'zp_mobile_floor' );
+			delete_transient( 'zp_public_prices_busy' );
 		}
 		if ( 'test' === zp_post( 'zp_then' ) ) {
 			$res = ZP_API::balance();
 			if ( is_wp_error( $res ) ) {
-				$hint = 'zp_config' === $res->get_error_code() ? 'Paste your proxy-ipv4.com API key first.' : $res->get_error_message();
+				$hint = 'zp_config' === $res->get_error_code() ? 'Paste the ' . ZP_API::PROVIDERS[ ZP_API::provider() ] . ' API key first.' : $res->get_error_message();
 				zp_flash( 'Settings saved, but the provider connection failed: ' . $hint, 'error' );
 			} else {
 				delete_option( 'zaxproxy_last_api_error' );
-				zp_flash( sprintf( 'Settings saved. Connected as %s. Provider balance: %s %s.', $res['user'], number_format( (float) $res['balance'], 2 ), $res['currency'] ) );
+				zp_flash( sprintf( 'Settings saved. Connected to %s (%s). Provider balance: %s %s.', ZP_API::PROVIDERS[ ZP_API::provider() ], $res['user'], number_format( (float) $res['balance'], 2 ), $res['currency'] ) );
 			}
 			return;
 		}

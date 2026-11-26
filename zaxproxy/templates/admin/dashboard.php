@@ -14,7 +14,7 @@ $users    = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . $wpdb->users );
 $active   = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . zp_table( 'proxies' ) . ' WHERE date_end > %s', zp_now() ) );
 $wallets  = (float) $wpdb->get_var( 'SELECT COALESCE(SUM(balance),0) FROM ' . zp_table( 'wallets' ) );
 $recent   = $wpdb->get_results( "SELECT * FROM $o ORDER BY id DESC LIMIT 8" ); // phpcs:ignore
-$has_key  = '' !== trim( (string) zp_get( 'api_key' ) );
+$has_key  = ZP_API::connected();
 $upstream = $has_key ? ZP_API::balance() : null;
 $last_err = get_option( 'zaxproxy_last_api_error' );
 $days     = array();
@@ -29,7 +29,7 @@ foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT DATE(created_at) d, SUM($r
 $max = max( 1, max( $days ) );
 ?>
 <?php if ( ! $has_key ) : ?>
-	<div class="zp-alert zp-alert--info"><?php echo zp_icon( 'settings', 18 ); // phpcs:ignore ?><span>Connect your proxy-ipv4.com API key to start selling.</span><a class="zp-btn zp-btn--sm zp-btn--primary" href="<?php echo esc_url( zp_admin_url( 'settings' ) ); ?>">Open settings</a></div>
+	<div class="zp-alert zp-alert--info"><?php echo zp_icon( 'settings', 18 ); // phpcs:ignore ?><span>Connect your proxy supplier API key to start selling.</span><a class="zp-btn zp-btn--sm zp-btn--primary" href="<?php echo esc_url( zp_admin_url( 'settings' ) ); ?>">Open settings</a></div>
 <?php elseif ( is_wp_error( $upstream ) ) : ?>
 	<div class="zp-alert zp-alert--error"><?php echo zp_icon( 'x', 18 ); // phpcs:ignore ?><span>Provider API error: <?php echo esc_html( $upstream->get_error_message() ); ?></span><a class="zp-btn zp-btn--sm zp-btn--soft" href="<?php echo esc_url( zp_admin_url( 'settings' ) ); ?>">Check settings</a></div>
 <?php elseif ( is_array( $last_err ) ) : ?>

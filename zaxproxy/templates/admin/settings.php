@@ -3,7 +3,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 $s       = zp_settings();
-$has_key = '' !== trim( (string) $s['api_key'] );
+$has_key = ZP_API::connected();
+$has_v4  = '' !== trim( (string) $s['api_key'] );
+$has_ps  = '' !== trim( (string) $s['ps_api_key'] );
+$active  = ZP_API::provider();
 $server  = isset( $_SERVER['SERVER_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_ADDR'] ) ) : '';
 $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 	echo '<label class="zp-prefs"><div><strong>' . esc_html( $label ) . '</strong><span>' . esc_html( $hint ) . '</span></div><span class="zp-check"><input type="checkbox" name="' . esc_attr( $name ) . '" value="1" ' . checked( ! empty( $s[ $name ] ), true, false ) . '></span></label>';
@@ -14,7 +17,17 @@ $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 	<div class="zp-grid2">
 		<section class="zp-card zp-anim">
 			<div class="zp-card__head"><h3>Provider connection</h3><?php echo zp_badge( $has_key ? 'active' : 'pending' ); // phpcs:ignore ?></div>
-			<label class="zp-field"><span>proxy-ipv4.com API key</span><div class="zp-input"><?php echo zp_icon( 'lock', 18 ); // phpcs:ignore ?><input type="password" name="api_key" autocomplete="off" placeholder="<?php echo $has_key ? 'Saved. Enter a new key to replace it.' : 'Paste your API key'; ?>"></div>
+			<p class="zp-muted" style="margin-bottom:12px">Choose where new orders are bought. You can save a key for both and switch at any time: proxies already sold stay with the supplier they came from and can still be renewed while its key is saved.</p>
+			<div class="zp-field"><span>Active supplier</span>
+				<div class="zp-row" style="gap:10px;flex-wrap:wrap">
+					<?php foreach ( ZP_API::PROVIDERS as $pslug => $plabel ) : ?>
+						<label class="zp-check" style="padding:10px 14px;border:1px solid var(--zp-border);border-radius:12px"><input type="radio" name="provider" value="<?php echo esc_attr( $pslug ); ?>" <?php checked( $active, $pslug ); ?>><span><strong><?php echo esc_html( $plabel ); ?></strong><?php echo ( 'proxyseller' === $pslug ? $has_ps : $has_v4 ) ? ' · key saved' : ' · no key yet'; ?></span></label>
+					<?php endforeach; ?>
+				</div>
+			</div>
+			<label class="zp-field"><span>Proxy-Seller API key</span><div class="zp-input"><?php echo zp_icon( 'lock', 18 ); // phpcs:ignore ?><input type="password" name="ps_api_key" autocomplete="off" placeholder="<?php echo $has_ps ? 'Saved. Enter a new key to replace it.' : 'Paste your API key'; ?>"></div>
+				<small>Find it in your Proxy-Seller account under API. Orders are paid from your Proxy-Seller balance, so keep it topped up. If you limit API access by IP there, allow this server<?php echo $server ? ': ' . esc_html( $server ) : ''; ?>.</small></label>
+			<label class="zp-field"><span>proxy-ipv4.com API key</span><div class="zp-input"><?php echo zp_icon( 'lock', 18 ); // phpcs:ignore ?><input type="password" name="api_key" autocomplete="off" placeholder="<?php echo $has_v4 ? 'Saved. Enter a new key to replace it.' : 'Paste your API key'; ?>"></div>
 				<small>Find it in your proxy-ipv4.com account under API. If the provider restricts API access by IP, allow this server<?php echo $server ? ': ' . esc_html( $server ) : ''; ?>.</small></label>
 			<label class="zp-field"><span>Proxy types on sale</span></label>
 			<div class="zp-row">

@@ -6,7 +6,7 @@ $s       = zp_settings();
 $types   = zp_types();
 $type    = sanitize_key( zp_query( 'type', 'ipv4' ) );
 $type    = isset( $types[ $type ] ) ? $type : 'ipv4';
-$has_key = '' !== trim( (string) $s['api_key'] );
+$has_key = ZP_API::connected();
 $opts    = $has_key ? ZP_Orders::options( $type ) : new WP_Error( 'zp_config', 'Add your API key in Settings to load live provider prices.' );
 $country = strtoupper( preg_replace( '/[^A-Za-z]/', '', zp_query( 'country' ) ) );
 $rows    = array();
@@ -19,7 +19,7 @@ if ( ! $error && $opts['countries'] ) {
 	if ( ! in_array( $country, $codes, true ) ) {
 		$country = in_array( 'USA', $codes, true ) ? 'USA' : $codes[0];
 	}
-	$cache_key = 'zp_pricelist3_' . md5( $type . $country . $s['api_key'] );
+	$cache_key = 'zp_pricelist3_' . md5( $type . $country . ZP_API::provider() . $s['api_key'] . $s['ps_api_key'] );
 	$costs     = isset( $_GET['refresh'] ) ? false : get_transient( $cache_key ); // phpcs:ignore
 	if ( ! is_array( $costs ) ) {
 		$costs = array();
@@ -122,6 +122,6 @@ if ( ! $error && $opts['countries'] ) {
 			<?php endforeach; ?>
 			</tbody>
 		</table></div>
-		<p class="zp-muted" style="font-size:13px;margin-top:12px">Provider prices are fetched live from the proxy-ipv4.com API and cached for 30 minutes. Bulk orders may be discounted by the provider; customers are always quoted from the live price for their exact order.</p>
+		<p class="zp-muted" style="font-size:13px;margin-top:12px">Provider prices are fetched live from <?php echo esc_html( ZP_API::PROVIDERS[ ZP_API::provider() ] ); ?> and cached for 30 minutes. Bulk orders may be discounted by the provider; customers are always quoted from the live price for their exact order.</p>
 	<?php endif; ?>
 </section>

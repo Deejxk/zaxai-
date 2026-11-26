@@ -644,7 +644,7 @@ class ZP_Orders {
 	public static function cron_sync() {
 		ZP_Resellers::bill_due();
 		ZP_Notify::prune();
-		if ( '' === trim( (string) zp_get( 'api_key' ) ) ) {
+		if ( ! ZP_API::connected() ) {
 			return;
 		}
 		if ( isset( zp_enabled_types()['mobile'] ) ) {
