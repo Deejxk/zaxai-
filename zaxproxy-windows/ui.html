@@ -140,12 +140,113 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
 .modal .btns .primary{flex:1;height:46px;margin:0;font-size:14.5px}
 .modal .btns .ghost{height:46px;padding:0 18px;font-size:14px}
 .or{margin-top:14px;text-align:center;color:var(--faint);font-size:12.5px}
+/* ---------- GPS map ---------- */
+.tabs{display:flex;padding:3px;border-radius:13px;background:var(--surface);border:1px solid var(--line);margin-right:6px}
+.tabs button{height:32px;padding:0 14px;border-radius:10px;font-size:13px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:7px;transition:background .2s,color .2s}
+.tabs button.on{background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
+.tabs svg{width:15px;height:15px}
+.gtile{cursor:pointer;width:100%;transition:border-color .2s}.gtile:hover{border-color:#3a4366}
+.gtile .gico{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#8b7bff,#2563eb);position:relative}
+.gtile .gico svg{width:20px;height:20px}
+.gtile.on .gico{background:linear-gradient(135deg,#34d399,#047857)}
+.gtile.on .gico::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid #34d399;animation:ring 1.8s ease-out infinite}
+.gtile.on strong{color:var(--ok)}
+.gtile em{margin-left:auto;font-style:normal;font-size:12px;font-weight:700;color:#b3aaff;flex:none}
+@keyframes ring{from{transform:scale(1);opacity:.9}to{transform:scale(1.9);opacity:0}}
+.gpsview{position:relative;z-index:0;isolation:isolate;flex:1;min-height:0;margin:0 16px 16px;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#aad3df}
+#gmap{position:absolute;inset:0;z-index:0}
+.leaflet-container{font:inherit}
+.leaflet-control-attribution{font-size:10px;background:rgba(255,255,255,.78)!important}
+.gsearch{position:absolute;z-index:500;left:14px;top:14px;width:340px;max-width:calc(100% - 90px)}
+.gsearch input{width:100%;height:46px;padding:0 16px 0 44px;border-radius:15px;border:1px solid var(--line);background:rgba(17,20,31,.96);color:var(--text);outline:0;font-size:14.5px;box-shadow:0 12px 30px -10px rgba(0,0,0,.6);user-select:text;-webkit-user-select:text}
+.gsearch input:focus{border-color:var(--brand)}
+.gsearch>svg{position:absolute;left:14px;top:13px;width:20px;height:20px;color:var(--faint);pointer-events:none}
+.gresults{margin-top:6px;max-height:300px;overflow-y:auto;border-radius:15px;background:rgba(17,20,31,.98);border:1px solid var(--line);box-shadow:0 20px 40px -12px rgba(0,0,0,.7);animation:pop .2s ease-out}
+.gresults button{display:block;width:100%;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line)}
+.gresults button:last-child{border-bottom:0}.gresults button:hover{background:var(--surface2)}
+.gresults b{display:block;font-size:14px}.gresults span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gresults p{margin:0;padding:14px;color:var(--muted);text-align:center;font-size:13.5px}
+.gzoom{position:absolute;z-index:450;right:14px;top:14px;display:flex;flex-direction:column;gap:6px}
+.gzoom button{width:40px;height:40px;border-radius:13px;background:rgba(17,20,31,.96);border:1px solid var(--line);display:grid;place-items:center;font-size:20px;box-shadow:0 10px 24px -10px rgba(0,0,0,.6)}
+.gzoom button:hover{border-color:var(--brand)}.gzoom svg{width:18px;height:18px}
+.gpanel{position:absolute;z-index:460;left:14px;bottom:14px;width:340px;max-width:calc(100% - 28px);max-height:calc(100% - 84px);overflow-y:auto;padding:14px;border-radius:20px;background:rgba(17,20,31,.97);border:1px solid var(--line);box-shadow:0 24px 50px -16px rgba(0,0,0,.8);animation:pop .3s ease-out}
+.gstatus{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.gstatus i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.gstatus.on{color:var(--ok)}.gstatus.on i{background:var(--ok);box-shadow:0 0 0 4px rgba(52,211,153,.18)}
+.gstatus b{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gstatus span{font-family:ui-monospace,Consolas,monospace}
+.gplace{display:flex;align-items:center;gap:11px;margin:10px 0;padding:10px 12px;border-radius:15px;background:var(--surface);border:1px solid var(--line)}
+.gplace .flag{font-size:19px}
+.gplace .flag svg{width:20px;height:20px;color:#b3aaff}
+.gplace div{min-width:0}
+.gplace small{display:block;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.gplace strong{display:block;font-size:15px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.gplace span{display:block;font-size:12px;color:var(--muted);font-family:ui-monospace,Consolas,monospace}
+.ggo{width:100%;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--brand2));font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 14px 28px -14px rgba(109,94,252,.9);transition:transform .12s}
+.ggo:hover{transform:translateY(-1px)}.ggo svg{width:19px;height:19px}
+.ggo.off{background:linear-gradient(135deg,#ef4444,#b91c1c);box-shadow:0 14px 28px -14px rgba(239,68,68,.8)}
+.ggo[disabled]{opacity:.5;transform:none}
+.ggo.pulse{animation:glow 1.8s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 14px 34px -8px rgba(109,94,252,1),0 0 0 5px rgba(109,94,252,.18)}}
+.grow{display:flex;gap:8px;margin-top:8px}.grow .ghost{flex:1}
+.gopt{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-size:13px}
+.gopt div{flex:1;min-width:0}.gopt b{display:block;font-size:13.5px}.gopt span{display:block;font-size:12px;color:var(--muted)}
+.sw{flex:none;position:relative;width:42px;height:24px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);transition:background .2s}
+.sw::after{content:"";position:absolute;left:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+.sw.on{background:var(--brand);border-color:var(--brand)}.sw.on::after{transform:translateX(18px)}
+.gext{display:flex;align-items:center;gap:9px;margin-top:8px;padding:9px 12px;border-radius:14px;border:1px dashed var(--line);font-size:12.5px;color:var(--muted)}
+.gext i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.gext.ok{border-style:solid}.gext.ok i{background:var(--ok)}
+.gext b{flex:1;font-weight:400}
+.gext button{flex:none;height:30px;padding:0 11px;border-radius:9px;background:var(--surface2);border:1px solid var(--line);font-size:12px;font-weight:700;color:#cfc9ff}
+.ghead{display:flex;align-items:center;justify-content:space-between;margin:12px 2px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.ghead button{font-size:12px;letter-spacing:0;text-transform:none;font-weight:700;color:#b3aaff}
+.gstrip{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px}
+.gstrip::-webkit-scrollbar{height:6px}.gstrip::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.gcard{flex:none;display:flex;align-items:center;gap:9px;width:190px;padding:8px 10px;border-radius:13px;background:var(--surface);border:1px solid var(--line);text-align:left;animation:pop .3s ease-out backwards}
+.gcard:hover{border-color:#3a4366}.gcard.sel{border-color:var(--brand);background:#1a1f3d}.gcard.live{border-color:#10b981;background:#0f241e}
+.gcard i{flex:none;width:32px;height:32px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font-style:normal;font-size:15px}
+.gcard div{min-width:0}.gcard b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gcard span{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pin{position:relative;width:34px;height:44px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35))}
+.pin svg{width:34px;height:44px;display:block}
+.pin.live::before{content:"";position:absolute;left:50%;bottom:-6px;width:24px;height:24px;margin-left:-12px;border-radius:50%;background:rgba(16,185,129,.45);animation:pring 1.6s ease-out infinite}
+@keyframes pring{from{transform:scale(.4);opacity:.9}to{transform:scale(2.6);opacity:0}}
+.pxywrap{width:0!important;height:0!important}
+.pxy{display:flex;align-items:center;gap:5px;height:28px;padding:0 9px 0 4px;border-radius:15px;background:#11141f;border:2px solid var(--brand);color:#fff;font-size:11.5px;font-weight:700;white-space:nowrap;box-shadow:0 6px 14px -4px rgba(0,0,0,.5);transform:translate(-50%,6px);width:max-content;cursor:pointer}
+.pxy i{font-style:normal;width:18px;height:18px;border-radius:50%;background:var(--surface2);display:grid;place-items:center;font-size:10px}
+.pxy.sel{background:var(--brand)}
+.steps{list-style:none;margin:0 0 14px;padding:0;counter-reset:s}
+.steps li{position:relative;padding:10px 12px 10px 48px;margin-bottom:7px;border-radius:13px;background:var(--surface);border:1px solid var(--line);font-size:13.5px;color:var(--muted)}
+.steps li b{color:var(--text)}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:11px;top:10px;width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:800;display:grid;place-items:center;font-size:13px}
+.steps code{display:inline-block;margin-top:4px;padding:3px 8px;border-radius:7px;background:var(--surface2);border:1px solid var(--line);color:#cfc9ff;font-family:ui-monospace,Consolas,monospace;font-size:12px;user-select:text;-webkit-user-select:text;overflow-wrap:anywhere}
+.steps li button{display:inline-block;margin-top:7px;height:32px;padding:0 12px;border-radius:9px;background:var(--surface2);border:1px solid var(--line);font-weight:700;font-size:12.5px;color:#cfc9ff}
+.modal.wide{max-width:540px}
+.art{margin:-4px auto 2px;max-width:300px}.art svg{width:100%;display:block}
+.art .lands{animation:spinland 16s linear infinite}
+@keyframes spinland{to{transform:translateX(-322px)}}
+.art .orbit{transform-origin:160px 112px;animation:tilt 7s ease-in-out infinite alternate}
+@keyframes tilt{from{transform:rotate(-14deg)}to{transform:rotate(10deg)}}
+.art .sat{offset-path:path("M42 112a118 34 0 1 0 236 0a118 34 0 1 0 -236 0");animation:fly 7s linear infinite}
+@keyframes fly{from{offset-distance:0%}to{offset-distance:100%}}
+.art .pinb{animation:bounce 1.8s cubic-bezier(.3,.6,.4,1) infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-22px)}}
+.art .rip{animation:rip 2s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.art .d2 .rip{animation-delay:.9s}
+@keyframes rip{from{transform:scale(1);opacity:.9}to{transform:scale(4.500);opacity:0}}
+.intro{text-align:center}
+.feat{display:flex;align-items:center;gap:11px;text-align:left;padding:9px 12px;margin-bottom:7px;border-radius:13px;background:var(--surface);border:1px solid var(--line)}
+.feat i{flex:none;width:34px;height:34px;border-radius:11px;background:var(--surface2);display:grid;place-items:center;font-style:normal;font-size:17px}
+.feat b{display:block;font-size:13.5px}.feat span{display:block;font-size:12px;color:var(--muted)}
+@media (max-height:800px){.gopt span{display:none}.gplace{margin:8px 0}.gpanel{padding:12px}}
+@media (max-width:980px){.tabs button{padding:0 10px}.gpanel,.gsearch{width:300px}}
 /* short or narrow windows: shrink the power button and the side panel so nothing is cut off */
 .power{zoom:var(--pz,1)}
 @media (max-height:780px){.power{--pz:.8}.stage h2{margin-top:10px;font-size:22px}.tiles{margin-top:12px}}
 @media (max-height:680px){.power{--pz:.62}.tile{padding:8px 12px}.left{padding-top:14px;padding-bottom:12px}}
 @media (max-width:980px){.shell{grid-template-columns:320px minmax(0,1fr)}.bar .search{width:170px}.chips .chip:first-child{display:none}.addbtn{padding:0 10px}.bar,.scroll{padding-left:16px;padding-right:16px}.act{min-width:84px}}
 </style>
+<link rel="stylesheet" href="/leaflet/leaflet.css">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute"><defs>
@@ -202,6 +303,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
         <div class="tile wide"><div class="flag" id="selflag">🌐</div><div style="min-width:0"><small id="sellabel">Selected location</small><strong id="seltitle">None</strong><span id="selsub"></span></div></div>
         <div class="tile"><small>IP address</small><strong class="mono" id="tip">—</strong></div>
         <div class="tile"><small>Session</small><strong class="mono" id="timer">00:00:00</strong></div>
+        <button class="tile wide gtile" id="gtile"><span class="gico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M12 22s7-6.500 7-12a7 7 0 1 0-14 0c0 5.500 7 12 7 12Z"/><circle cx="12" cy="10" r="2.600"/></svg></span><div style="min-width:0"><small>GPS location</small><strong id="gtitle">Off</strong><span id="gsub">Websites see your real location</span></div><em>Open map →</em></button>
       </div>
     </div>
     <div class="leftfoot"><span id="ver"></span><button class="ghost" id="logout">Sign out</button></div>
@@ -209,20 +311,75 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
 
   <div class="right">
     <div class="bar">
-      <h3>Your locations</h3><span class="count" id="count">0</span>
-      <span style="flex:1"></span><input class="search" id="search" type="search" placeholder="Search country, city or IP" style="margin-left:0" hidden>
-      <button class="addbtn" id="add" title="Type in a proxy yourself">+ Add manually</button>
-      <button class="iconbtn" id="refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11A8 8 0 0 0 6 6.300L4 8M4 4v4h4M4 13a8 8 0 0 0 14 4.700l2-1.700M20 20v-4h-4"/></svg></button>
+      <div class="tabs"><button id="tablist" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Locations</button><button id="tabgps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linejoin="round"><path d="M12 22s7-6.500 7-12a7 7 0 1 0-14 0c0 5.500 7 12 7 12Z"/><circle cx="12" cy="10" r="2.600"/></svg>GPS map</button></div>
+      <h3 id="bartitle">Your locations</h3><span class="count listonly" id="count">0</span>
+      <span style="flex:1"></span><input class="search listonly" id="search" type="search" placeholder="Search country, city or IP" style="margin-left:0" hidden>
+      <button class="addbtn listonly" id="add" title="Type in a proxy yourself">+ Add manually</button>
+      <button class="iconbtn listonly" id="refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11A8 8 0 0 0 6 6.300L4 8M4 4v4h4M4 13a8 8 0 0 0 14 4.700l2-1.700M20 20v-4h-4"/></svg></button>
     </div>
-    <div class="scroll">
+    <div class="gpsview" id="gpsview" hidden>
+      <div id="gmap"></div>
+      <div class="gsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.500-3.500"/></svg><input id="gq" type="search" placeholder="Search a state, city or country" autocomplete="off" spellcheck="false"><div class="gresults" id="gresults" hidden></div></div>
+      <div class="gzoom"><button id="gzin" title="Zoom in">+</button><button id="gzout" title="Zoom out">−</button><button id="gworld" title="Show the whole world"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.500 2.600 3.800 5.600 3.800 9s-1.300 6.400-3.800 9c-2.500-2.600-3.800-5.600-3.800-9S9.500 5.600 12 3Z"/></svg></button></div>
+      <div class="gpanel">
+        <div class="gstatus" id="gstatus"><i></i><b id="gstext">GPS is off. Websites see your real location.</b><span id="gtimer"></span></div>
+        <div class="gplace"><div class="flag" id="gpico"></div><div><small id="gplabel">Chosen place</small><strong id="gpname">Click the map or search for a place</strong><span id="gpxy"></span></div></div>
+        <button class="ggo" id="ggo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.600 6.800a7.600 7.600 0 1 0 10.800 0"/></svg><span id="ggotext">Set my GPS here</span></button>
+        <div class="grow" id="grow" hidden><button class="ghost" id="gshow">Show where my GPS is</button><button class="ghost" id="goff" style="color:#fda4a4">Turn off</button></div>
+        <div class="gopt"><div><b>Match my GPS to the connected proxy</b><span>When you connect, the GPS moves to your proxy's city.</span></div><button class="sw" id="gauto" aria-label="Match my GPS to the connected proxy"></button></div>
+        <div class="gext" id="gext"><i></i><b id="gexttext">Browser add-on not detected yet.</b><button id="gextbtn">Set up</button></div>
+        <div id="gpbox"><div class="ghead"><span>Your proxies</span><button id="gmatch">⚡ Auto match</button></div><div class="gstrip" id="gstrip"></div></div>
+      </div>
+    </div>
+    <div class="scroll listview">
       <div id="err" class="err" hidden></div>
       <div id="list"></div>
       <div id="none" class="empty" hidden>No location matches your search.</div>
       <div id="empty" class="empty" hidden><strong>No active proxies</strong>You have no active proxy on this account yet. Buy one and it appears here.<br><button class="primary" data-open="/panel/buy/">Buy a proxy</button><button class="addbtn" id="add2">Add a proxy manually</button></div>
     </div>
-    <div class="tip"><b>Click a location to use it. While connected, clicking another location switches to it. Keep this window open while you browse (you can minimise it); closing it disconnects.</b><button class="ghost" data-open="/panel/buy/">Buy proxies</button></div>
+    <div class="tip listview"><b>Click a location to use it. While connected, clicking another location switches to it. Keep this window open while you browse (you can minimise it); closing it disconnects.</b><button class="ghost" data-open="/panel/buy/">Buy proxies</button></div>
   </div>
 </section>
+
+<!-- GPS map: welcome -->
+<div class="veil" id="gintro" hidden>
+  <div class="modal intro">
+    <div class="art" aria-hidden="true"><svg viewBox="0 0 320 210">
+      <defs><radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#6d5efc" stop-opacity=".55"/><stop offset="1" stop-color="#6d5efc" stop-opacity="0"/></radialGradient><linearGradient id="sea" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b2fc4"/><stop offset="1" stop-color="#2563eb"/></linearGradient><clipPath id="disc"><circle cx="160" cy="112" r="66"/></clipPath></defs>
+      <circle cx="160" cy="112" r="104" fill="url(#glow)"/>
+      <ellipse class="orbit" cx="160" cy="112" rx="118" ry="34" fill="none" stroke="#8b7bff" stroke-width="1.500" stroke-dasharray="3 7" opacity=".7"/>
+      <circle cx="160" cy="112" r="66" fill="url(#sea)"/>
+      <g clip-path="url(#disc)"><g class="lands" fill="#8b7bff" opacity=".55"><path d="M40 80c14-10 34-12 46-2s8 22-4 28-22 2-30 12-22 2-22-12 2-20 10-26Z"/><path d="M120 62c16-8 40-4 44 10s-10 18-22 22-12 20-26 16-14-20-10-30 6-14 14-18Z"/><path d="M196 96c12-6 30 0 32 12s-8 22-20 24-22-6-22-18 2-14 10-18Z"/><path d="M252 70c14-8 34-6 42 6s0 22-12 26-26-2-32-12-6-14 2-20Z"/><path d="M300 110c12-4 28 2 30 14s-10 18-22 18-18-8-16-18 2-12 8-14Z"/><path d="M362 80c14-10 34-12 46-2s8 22-4 28-22 2-30 12-22 2-22-12 2-20 10-26Z"/><path d="M442 62c16-8 40-4 44 10s-10 18-22 22-12 20-26 16-14-20-10-30 6-14 14-18Z"/></g>
+      <ellipse cx="160" cy="112" rx="26" ry="66" fill="none" stroke="#fff" stroke-opacity=".22"/><ellipse cx="160" cy="112" rx="50" ry="66" fill="none" stroke="#fff" stroke-opacity=".16"/><path d="M94 112h132M100 84h120M100 140h120" stroke="#fff" stroke-opacity=".16"/></g>
+      <circle cx="160" cy="112" r="66" fill="none" stroke="#b3aaff" stroke-opacity=".5"/>
+      <g class="d1"><circle cx="124" cy="96" r="4" fill="#34d399"/><circle class="rip" cx="124" cy="96" r="4" fill="none" stroke="#34d399"/></g>
+      <g class="d2"><circle cx="196" cy="134" r="4" fill="#fbbf24"/><circle class="rip" cx="196" cy="134" r="4" fill="none" stroke="#fbbf24"/></g>
+      <g class="pinb"><path d="M170 98s15-14 15-25.500a15 15 0 1 0-30 0C155 84 170 98 170 98Z" fill="#fff"/><circle cx="170" cy="72.500" r="6" fill="#6d5efc"/></g>
+      <g class="sat"><circle r="7" fill="#11141f" stroke="#8b7bff" stroke-width="1.500"/><circle r="2.500" fill="#b3aaff"/></g>
+    </svg></div>
+    <h3>Put your browser's GPS anywhere</h3>
+    <p>Click the map, search for a state, city or country, or pick one of your proxies. Websites in Chrome and Edge then see that place as your location.</p>
+    <div class="feat"><i>🗺️</i><div><b>Every country and state</b><span>Zoom, click and search the whole world.</span></div></div>
+    <div class="feat"><i>⚡</i><div><b>Auto match</b><span>One click puts your GPS where your proxy is.</span></div></div>
+    <div class="feat"><i>🧩</i><div><b>One-time browser add-on</b><span>A small ZaxProxy add-on passes the place to websites.</span></div></div>
+    <div class="btns"><button class="primary" id="gintrogo" type="button">Open the map</button></div>
+  </div>
+</div>
+
+<!-- GPS map: browser add-on -->
+<div class="veil" id="gsetup" hidden>
+  <div class="modal wide">
+    <h3>Add ZaxProxy GPS to your browser</h3>
+    <p>Do this once in Chrome or Edge. It lets websites see the place you choose on the map.</p>
+    <ol class="steps">
+      <li><b>Open the extensions page.</b> In your browser's address bar type this and press Enter:<br><code>chrome://extensions</code> &nbsp;(in Edge: <code>edge://extensions</code>)</li>
+      <li><b>Switch on Developer mode.</b> It is a switch at the top right of that page (bottom left in Edge).</li>
+      <li><b>Click "Load unpacked"</b> and choose this folder:<br><code id="gpath">ZaxProxy GPS add-on</code><br><button id="gfolder" type="button">Show the folder</button></li>
+      <li><b>Come back here.</b> The line under the button turns green within a minute. Reload any website that was already open.</li>
+    </ol>
+    <div class="btns"><button class="primary" id="gsetupclose" type="button">Done</button></div>
+  </div>
+</div>
 
 <!-- Add a proxy by hand -->
 <div class="veil" id="veil" hidden>
@@ -239,6 +396,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
   </form>
 </div>
 
+<script src="/leaflet/leaflet.js"></script>
 <script>
 (function () {
   var key = (location.hash.match(/k=([a-f0-9]+)/) || [])[1] || sessionStorage.getItem('zk') || '';
@@ -326,6 +484,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
     }
     $('none').hidden = !(n === 0 && s.proxies.length + man.length > 0);
     if (s.notice && !$('err').textContent) fail($('err'), s.notice);
+    drawGps();
   }
   function show(s) {
     if (s && s.signedIn !== undefined) {
@@ -396,6 +555,164 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
       if ($('lauto').checked && !s.connected) { var p = pick(); if (p) connect(p.id); }
     }).catch(function () { $('lbtn').disabled = false; $('lbtn').textContent = 'Sign in'; fail($('lerr'), 'ZaxProxy Connect is not responding. Close it and open it again.'); });
   };
+  /* ---------- GPS map ---------- */
+  var gmap = null, gpick = null, glive = null, gring = null, gproxyLayer = null, gchosen = null, gview = 'list', gqTimer = 0, gqSeq = 0;
+  function fmt(v) { return (+v).toFixed(5); }
+  function same(a, b) { return a && b && Math.abs(a.lat - b.lat) < 0.00002 && Math.abs(a.lng - b.lng) < 0.00002; }
+  function gstate() { return (last && last.gps) || { on: false }; }
+  function stored(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+  function pinIcon(live) { return L.divIcon({ className: '', iconSize: [34, 44], iconAnchor: [17, 42], html: '<div class="pin' + (live ? ' live' : '') + '"><svg viewBox="0 0 38 48"><path d="M19 47S36 31 36 18A17 17 0 1 0 2 18c0 13 17 29 17 29Z" fill="' + (live ? '#10b981' : '#6d5efc') + '" stroke="#fff" stroke-width="2"/><circle cx="19" cy="18" r="6.500" fill="#fff"/></svg></div>' }); }
+  function setView(v) {
+    gview = v; $('tablist').className = v === 'list' ? 'on' : ''; $('tabgps').className = v === 'gps' ? 'on' : '';
+    [].forEach.call(document.querySelectorAll('.listview'), function (n) { n.hidden = v !== 'list'; });
+    [].forEach.call(document.querySelectorAll('.listonly'), function (n) { n.style.display = v === 'list' ? '' : 'none'; });
+    $('gpsview').hidden = v !== 'gps'; $('bartitle').textContent = v === 'gps' ? 'GPS map' : 'Your locations';
+    if (v === 'gps') { initMap(); gmap.invalidateSize(); if (!stored('gseen')) $('gintro').hidden = false; }
+    draw();
+  }
+  function initMap() {
+    if (gmap) return;
+    gmap = L.map('gmap', { zoomControl: false, worldCopyJump: true, minZoom: 2, maxZoom: 18, maxBounds: [[-85, -720], [85, 720]], maxBoundsViscosity: .8 }).setView([22, 10], 2);
+    gmap.attributionControl.setPrefix(false);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }).addTo(gmap);
+    gpick = L.marker([0, 0], { icon: pinIcon(false), interactive: false, zIndexOffset: 500 });
+    glive = L.marker([0, 0], { icon: pinIcon(true), interactive: false, zIndexOffset: 600 });
+    gring = L.circle([0, 0], { radius: 60, color: '#10b981', weight: 1, fillOpacity: .12, interactive: false });
+    gproxyLayer = L.layerGroup().addTo(gmap);
+    gmap.on('click', function (e) { $('gresults').hidden = true; var lng = ((e.latlng.lng + 180) % 360 + 360) % 360 - 180; gchoose(e.latlng.lat, lng, '', null); });
+    var g = gstate(); if (g.on) setTimeout(function () { gmap.setView([g.lat, g.lng], 9); }, 50);
+  }
+  function placeName(a, fallback) {
+    if (!a) return fallback || '';
+    var area = a.city || a.town || a.village || a.municipality || a.suburb || a.county || a.state_district || '';
+    return [area, a.state || a.region || a.province || '', a.country || ''].filter(function (v, i, all) { return v && all.indexOf(v) === i; }).join(', ') || fallback || '';
+  }
+  function gchoose(lat, lng, label, proxy, zoom) {
+    gchosen = { lat: +lat, lng: +lng, label: label || '', proxy: proxy || null };
+    if (zoom && gmap) gmap.flyTo([lat, lng], Math.max(gmap.getZoom(), zoom), { duration: .8 });
+    drawGps();
+    if (!label) {
+      var mine = gchosen;
+      call('geo/reverse', { lat: +lat, lng: +lng }).then(function (d) {
+        if (gchosen !== mine) return;
+        mine.label = placeName(d && d.place && d.place.address, d && d.place && d.place.display_name) || 'Open sea or unnamed place'; drawGps();
+      }).catch(function () { if (gchosen === mine) { mine.label = fmt(lat) + ', ' + fmt(lng); drawGps(); } });
+    }
+  }
+  function proxyLabel(p) { return [p.place, p.country].filter(Boolean).join(', '); }
+  function locate(p, cb) {
+    if (p.lat != null) { cb(true); return; }
+    var saved = (stored('pxyloc') || {})[p.ip]; if (saved) { p.lat = saved[0]; p.lng = saved[1]; cb(true); return; }
+    call('geo/search', { q: proxyLabel(p) }).then(function (d) {
+      var r = d && d.results && d.results[0]; if (!r) { cb(false); return; }
+      p.lat = +r.lat; p.lng = +r.lon; var all = stored('pxyloc') || {}; all[p.ip] = [p.lat, p.lng]; stored('pxyloc', all); cb(true);
+    }).catch(function () { cb(false); });
+  }
+  function gchooseProxy(p, thenStart) {
+    locate(p, function (ok) {
+      if (!ok) { fail($('err'), ''); gtoast('Could not find where this proxy is. Search for ' + (p.country || 'its country') + ' instead.'); return; }
+      gchoose(p.lat, p.lng, proxyLabel(p), p, 9); if (thenStart) gstart();
+    });
+  }
+  var gtoastTimer;
+  function gtoast(text) { $('gstext').textContent = text; clearTimeout(gtoastTimer); gtoastTimer = setTimeout(drawGps, 4000); }
+  function remember(c) { var list = (stored('grecent') || []).filter(function (r) { return !same(r, c); }); list.unshift({ lat: c.lat, lng: c.lng, label: c.label }); stored('grecent', list.slice(0, 6)); }
+  function gstart() {
+    if (!gchosen) return; var c = gchosen;
+    call('gps/set', { lat: c.lat, lng: c.lng, label: c.label || (fmt(c.lat) + ', ' + fmt(c.lng)) }).then(function (s) {
+      if (s.ok === false) { gtoast(s.error || 'Could not set the GPS.'); return; }
+      remember(c); show(s);
+      if (!s.gps.ext && !stored('gsetupseen')) { stored('gsetupseen', 1); openGsetup(); }
+    });
+  }
+  function gstop() { call('gps/off', {}).then(show); }
+  function openGsetup() { $('gintro').hidden = true; $('gsetup').hidden = false; call('gps/folder', { show: false }).then(function (d) { if (d && d.path) $('gpath').textContent = d.path; }).catch(function () {}); }
+  function drawGps() {
+    var s = last; if (!s || !s.signedIn) return;
+    var g = gstate(), on = !!g.on;
+    // the tile on the left
+    $('gtile').className = 'tile wide gtile' + (on ? ' on' : '');
+    $('gtitle').textContent = on ? (g.label || fmt(g.lat) + ', ' + fmt(g.lng)) : 'Off';
+    $('gsub').textContent = on ? (g.ext ? 'Websites see this place' : 'Add the browser add-on to finish') : 'Websites see your real location';
+    if (!gmap) return;
+    var here = on && gchosen && same(gchosen, g), c = gchosen || (on ? { lat: g.lat, lng: g.lng, label: g.label } : null);
+    $('gstatus').className = 'gstatus' + (on ? ' on' : '');
+    $('gstext').textContent = on ? 'GPS is set to ' + (g.label || fmt(g.lat) + ', ' + fmt(g.lng)) : 'GPS is off. Websites see your real location.';
+    if (on) { glive.setLatLng([g.lat, g.lng]).addTo(gmap); gring.setLatLng([g.lat, g.lng]).addTo(gmap); } else { glive.remove(); gring.remove(); }
+    if (gchosen && !here) gpick.setLatLng([gchosen.lat, gchosen.lng]).addTo(gmap); else gpick.remove();
+    $('gplabel').textContent = c && c.proxy ? 'Your proxy · ' + c.proxy.ip : (here || (on && !gchosen) ? 'Your GPS is here' : 'Chosen place');
+    $('gpname').textContent = c ? (c.label || 'Finding the name of this place…') : 'Click the map or search for a place';
+    $('gpxy').textContent = c ? fmt(c.lat) + ', ' + fmt(c.lng) : '';
+    var ico = $('gpico'); ico.textContent = ''; if (c && c.proxy && c.proxy.flag) ico.textContent = c.proxy.flag; else ico.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22s7-6.500 7-12a7 7 0 1 0-14 0c0 5.500 7 12 7 12Z"/><circle cx="12" cy="10" r="2.600"/></svg>';
+    var go = $('ggo'); go.disabled = !c; go.className = 'ggo' + (on && (here || !gchosen) ? ' off' : c ? ' pulse' : '');
+    $('ggotext').textContent = on && (here || !gchosen) ? 'Turn off GPS change' : on ? 'Move my GPS here' : c && c.proxy ? 'Set my GPS to this proxy' : 'Set my GPS here';
+    $('grow').hidden = !(on && gchosen && !here);
+    $('gauto').className = 'sw' + (g.auto ? ' on' : '');
+    $('gext').className = 'gext' + (g.ext ? ' ok' : '');
+    $('gexttext').textContent = g.ext ? 'Browser add-on connected.' : 'Browser add-on not detected yet.';
+    $('gextbtn').textContent = g.ext ? 'Help' : 'Set up';
+    var list = s.proxies || [], strip = $('gstrip'); $('gpbox').hidden = !list.length; strip.textContent = ''; gproxyLayer.clearLayers();
+    list.slice().sort(function (x, y) { return (y.id === s.connected) - (x.id === s.connected); }).forEach(function (p) {
+      var sel = gchosen && gchosen.proxy && gchosen.proxy.id === p.id, isLive = on && p.lat != null && same({ lat: p.lat, lng: p.lng }, g);
+      var card = el('button', 'gcard' + (isLive ? ' live' : sel ? ' sel' : '')); card.appendChild(el('i', '', p.flag || '🌐'));
+      var d = el('div'); d.appendChild(el('b', '', p.place || p.country)); d.appendChild(el('span', '', (p.id === s.connected ? 'Connected · ' : p.place ? p.country + ' · ' : '') + p.ip)); card.appendChild(d);
+      card.onclick = function () { gchooseProxy(p, false); }; strip.appendChild(card);
+      if (p.lat == null) { if (!p.asked) { p.asked = 1; locate(p, function (ok) { if (ok) drawGps(); }); } return; }
+      var m = L.marker([p.lat, p.lng], { zIndexOffset: 300, icon: L.divIcon({ className: 'pxywrap', iconSize: [0, 0], html: '<div class="pxy' + (sel ? ' sel' : '') + '"><i></i><span></span></div>' }) });
+      m.on('add', function () { var n = m.getElement(); if (n) { n.querySelector('i').textContent = p.flag || '🌐'; n.querySelector('span').textContent = (p.place || p.country).split(',')[0]; } });
+      m.on('click', function (e) { L.DomEvent.stopPropagation(e); gchooseProxy(p, false); });
+      gproxyLayer.addLayer(m);
+    });
+  }
+  // positions found by name are remembered across refreshes of the list
+  var showBase = show;
+  show = function (s) {
+    if (s && s.proxies && last && last.proxies) { var old = {}; last.proxies.forEach(function (p) { old[p.id] = p; }); s.proxies.forEach(function (p) { var o = old[p.id]; if (o && p.lat == null && o.lat != null) { p.lat = o.lat; p.lng = o.lng; } }); }
+    showBase(s);
+  };
+  $('tablist').onclick = function () { setView('list'); }; $('tabgps').onclick = function () { setView('gps'); }; $('gtile').onclick = function () { setView('gps'); };
+  $('gzin').onclick = function () { gmap.zoomIn(); }; $('gzout').onclick = function () { gmap.zoomOut(); }; $('gworld').onclick = function () { gmap.flyTo([22, 10], 2, { duration: .8 }); };
+  $('ggo').onclick = function () { var g = gstate(); if (g.on && (!gchosen || same(gchosen, g))) { gstop(); return; } gstart(); };
+  $('goff').onclick = gstop;
+  $('gshow').onclick = function () { var g = gstate(); if (g.on) gmap.flyTo([g.lat, g.lng], Math.max(gmap.getZoom(), 10), { duration: .8 }); };
+  $('gauto').onclick = function () { call('gps/auto', { on: !gstate().auto }).then(show); };
+  $('gextbtn').onclick = openGsetup;
+  $('gfolder').onclick = function () { call('gps/folder', { show: true }).then(function (d) { if (d && d.path) $('gpath').textContent = d.path; }); };
+  $('gsetupclose').onclick = function () { $('gsetup').hidden = true; };
+  $('gintrogo').onclick = function () { $('gintro').hidden = true; stored('gseen', 1); };
+  $('gmatch').onclick = function () {
+    var list = (last && last.proxies) || [], hit = null; list.forEach(function (p) { if (p.id === last.connected) hit = p; });
+    if (!hit && list.length === 1) hit = list[0];
+    if (hit) gchooseProxy(hit, true); else gtoast('You are not connected to a proxy. Click the proxy you want below.');
+  };
+  function gsearch() {
+    var q = $('gq').value.trim(), mine = ++gqSeq, box = $('gresults');
+    if (q.length < 2) { box.hidden = true; return; }
+    var m = q.match(/^\s*(-?\d{1,2}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/);
+    if (m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180) { box.hidden = true; gchoose(+m[1], +m[2], '', null, 12); return; }
+    box.hidden = false; box.textContent = ''; box.appendChild(el('p', '', 'Searching…'));
+    call('geo/search', { q: q }).then(function (d) {
+      if (mine !== gqSeq) return; box.textContent = '';
+      if (!d || d.ok === false) { box.appendChild(el('p', '', (d && d.error) || 'Could not search.')); return; }
+      if (!d.results.length) { box.appendChild(el('p', '', 'No place found. Try the name of a state, city or country.')); return; }
+      d.results.forEach(function (r) {
+        var b = el('button'), a = r.address || {}, title = r.name || a.city || a.state || a.country || String(r.display_name || '').split(',')[0];
+        b.appendChild(el('b', '', title)); b.appendChild(el('span', '', r.display_name || ''));
+        b.onclick = function () { box.hidden = true; $('gq').value = title; var kind = r.addresstype || r.type || ''; gchoose(+r.lat, +r.lon, placeName(r.address, r.display_name), null, kind === 'country' ? 5 : (kind === 'state' || kind === 'region' || kind === 'province') ? 7 : 11); };
+        box.appendChild(b);
+      });
+    }).catch(function () { if (mine === gqSeq) { box.textContent = ''; box.appendChild(el('p', '', 'Could not search. Check your internet connection.')); } });
+  }
+  $('gq').addEventListener('input', function () { clearTimeout(gqTimer); gqTimer = setTimeout(gsearch, 600); });
+  $('gq').addEventListener('keydown', function (e) { if (e.key === 'Enter') { clearTimeout(gqTimer); gsearch(); } if (e.key === 'Escape') $('gresults').hidden = true; });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { $('gsetup').hidden = true; if (!$('gintro').hidden) { $('gintro').hidden = true; stored('gseen', 1); } } });
+  addEventListener('resize', function () { if (gmap) gmap.invalidateSize(); });
+  setInterval(function () {
+    var g = gstate(); if (!g.on || !g.since) { $('gtimer').textContent = ''; return; }
+    var t = Math.max(0, Math.floor(Date.now() / 1000 - g.since)), two = function (v) { return (v < 10 ? '0' : '') + v; };
+    $('gtimer').textContent = two(Math.floor(t / 3600)) + ':' + two(Math.floor(t % 3600 / 60)) + ':' + two(t % 60);
+  }, 1000);
+
   setInterval(function () {
     if (!last || !last.connected || !since) return;
     var t = Math.max(0, Math.floor((Date.now() - since) / 1000)), two = function (v) { return (v < 10 ? '0' : '') + v; };

@@ -42,6 +42,7 @@ $guides = array(
 		'notes' => array(
 			'To change location, click another proxy in the list while connected. The app switches to it.',
 			'To stop using the proxy, click the power button again. Closing the window also disconnects, so keep it open (you can minimise it) while you browse.',
+			'<strong>GPS map:</strong> click <strong>GPS map</strong> in the app to choose any state, city or country, or switch on <strong>Match my GPS to the connected proxy</strong>. Websites in Chrome and Edge then see that place as your location. The first time, the app shows how to add the small <strong>ZaxProxy GPS</strong> add-on to your browser.',
 			'Windows may show a blue <strong>Windows protected your PC</strong> box the first time, because the program is new. Click <strong>More info</strong>, then <strong>Run anyway</strong>.',
 			'Have a proxy from somewhere else? Click <strong>+ Add manually</strong> and type its IP address, <strong>SOCKS5 port</strong>, username and password.',
 			'<strong>Without the app:</strong> open Settings, Network &amp; internet, Proxy, click <strong>Set up</strong> next to <strong>Use a proxy server</strong>, and type the IP address and the <strong>HTTP(S) port</strong> from My proxies. Your browser then asks for the proxy username and password.',

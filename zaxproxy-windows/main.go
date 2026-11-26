@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	version = "1.3.1"
+	version = "1.4.0"
 )
 
 //go:embed ui.html
@@ -49,6 +49,9 @@ type Proxy struct {
 	Password string `json:"password"`
 	Left     string `json:"left"`
 	State    string `json:"state"`
+	// Where the address is on the map, when the website knows it.
+	Lat *float64 `json:"lat"`
+	Lng *float64 `json:"lng"`
 }
 
 // Expired is a proxy that has run out: shown for information, never connectable.
@@ -75,6 +78,7 @@ type app struct {
 	since     int64 // when the current connection started (unix seconds)
 	relay     *relay
 	site      string
+	gps       gpsState // the place chosen on the GPS map
 }
 
 var a = &app{}
@@ -148,6 +152,9 @@ func main() {
 	a.token = cfg.Token
 	a.name = cfg.Name
 	a.manual = unpackManual(cfg.Manual)
+	a.gps.Auto = cfg.GPSAuto
+	writeExtension()
+	startGPSListener()
 	// A previous run that ended badly may have left Windows pointing at our relay: put it back.
 	recoverSystemProxy(cfg)
 
@@ -165,6 +172,13 @@ func main() {
 	mux.HandleFunc("/api/refresh", guard(handleRefresh))
 	mux.HandleFunc("/api/connect", guard(handleConnect))
 	mux.HandleFunc("/api/disconnect", guard(handleDisconnect))
+	mux.HandleFunc("/leaflet/", handleAsset)
+	mux.HandleFunc("/api/gps/set", guard(handleGPSSet))
+	mux.HandleFunc("/api/gps/off", guard(handleGPSOff))
+	mux.HandleFunc("/api/gps/auto", guard(handleGPSAuto))
+	mux.HandleFunc("/api/gps/folder", guard(handleGPSFolder))
+	mux.HandleFunc("/api/geo/search", guard(handleGeoSearch))
+	mux.HandleFunc("/api/geo/reverse", guard(handleGeoReverse))
 	mux.HandleFunc("/api/manual/add", guard(handleManualAdd))
 	mux.HandleFunc("/api/manual/remove", guard(handleManualRemove))
 	mux.HandleFunc("/api/quit", guard(func(w http.ResponseWriter, r *http.Request) {
@@ -218,7 +232,7 @@ func handleUI(w http.ResponseWriter, r *http.Request) {
 	b, _ := uiFS.ReadFile("ui.html")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'")
+	w.Header().Set("Content-Security-Policy", "default-src 'self' 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self'; frame-ancestors 'none'")
 	w.Header().Set("X-Frame-Options", "DENY")
 	w.Write(b)
 }
@@ -256,14 +270,16 @@ func readBody(r *http.Request, v any) error {
 }
 
 type publicProxy struct {
-	ID      int64  `json:"id"`
-	Country string `json:"country"`
-	Type    string `json:"type"`
-	Place   string `json:"place"`
-	Flag    string `json:"flag"`
-	IP      string `json:"ip"`
-	Left    string `json:"left"`
-	State   string `json:"state"`
+	ID      int64    `json:"id"`
+	Country string   `json:"country"`
+	Type    string   `json:"type"`
+	Place   string   `json:"place"`
+	Flag    string   `json:"flag"`
+	IP      string   `json:"ip"`
+	Left    string   `json:"left"`
+	State   string   `json:"state"`
+	Lat     *float64 `json:"lat"`
+	Lng     *float64 `json:"lng"`
 }
 
 func (x *app) snapshot() map[string]any {
@@ -271,13 +287,13 @@ func (x *app) snapshot() map[string]any {
 	defer x.mu.Unlock()
 	list := make([]publicProxy, 0, len(x.proxies))
 	for _, p := range x.proxies { // passwords stay inside the program; the page never receives them
-		list = append(list, publicProxy{p.ID, p.Country, p.Type, p.Place, p.Flag, p.IP, p.Left, p.State})
+		list = append(list, publicProxy{p.ID, p.Country, p.Type, p.Place, p.Flag, p.IP, p.Left, p.State, p.Lat, p.Lng})
 	}
 	old := x.expired
 	if old == nil {
 		old = []Expired{}
 	}
-	return map[string]any{"ok": true, "signedIn": x.token != "", "name": x.name, "proxies": list, "manual": x.manualList(), "expired": old, "notice": x.notice, "connected": x.connected, "since": x.since, "version": version}
+	return map[string]any{"ok": true, "signedIn": x.token != "", "name": x.name, "proxies": list, "manual": x.manualList(), "expired": old, "notice": x.notice, "gps": x.gpsView(), "connected": x.connected, "since": x.since, "version": version}
 }
 
 func handleState(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, a.snapshot()) }
@@ -433,6 +449,7 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 		where = chosen.Place + ", " + chosen.Country
 	}
 	trayStatus(true, where+" · "+chosen.IP)
+	a.gpsFollow(chosen)
 	writeJSON(w, 200, a.snapshot())
 }
 
@@ -446,6 +463,9 @@ func (x *app) disconnect() {
 	rl := x.relay
 	was := x.connected
 	x.relay, x.connected, x.since = nil, 0, 0
+	if x.gps.Auto && was != 0 { // the GPS followed the proxy, so it goes back with it
+		x.gps.On, x.gps.Since = false, 0
+	}
 	x.mu.Unlock()
 	if was != 0 || rl != nil {
 		restoreSystemProxy()
@@ -473,8 +493,9 @@ type config struct {
 	PrevOn    uint32 `json:"prev_on,omitempty"`
 	PrevProxy string `json:"prev_proxy,omitempty"`
 	PrevSkip  string `json:"prev_skip,omitempty"`
-	Manual    string `json:"manual,omitempty"` // proxies typed in by hand, protected the same way as the token
-	Relay     string `json:"relay,omitempty"`  // the local relay address Windows was pointed at
+	GPSAuto   bool   `json:"gps_auto,omitempty"` // match the GPS to the connected proxy
+	Manual    string `json:"manual,omitempty"`   // proxies typed in by hand, protected the same way as the token
+	Relay     string `json:"relay,omitempty"`    // the local relay address Windows was pointed at
 }
 
 func configPath() string {
@@ -521,6 +542,7 @@ func (x *app) save() {
 	x.mu.Lock()
 	c.Token, c.Name = x.token, x.name
 	c.Manual = packManual(x.manual)
+	c.GPSAuto = x.gps.Auto
 	x.mu.Unlock()
 	writeConfig(c)
 }

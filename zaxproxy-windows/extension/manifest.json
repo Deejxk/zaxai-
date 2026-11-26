@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "ZaxProxy GPS",
+  "version": "1.0.0",
+  "description": "Websites see the location you choose on the map in ZaxProxy Connect. Works only while ZaxProxy Connect is open and its GPS is switched on.",
+  "icons": { "32": "icon32.png", "128": "icon128.png" },
+  "action": { "default_title": "ZaxProxy GPS", "default_popup": "popup.html", "default_icon": { "32": "icon32.png" } },
+  "background": { "service_worker": "sw.js" },
+  "permissions": ["alarms"],
+  "host_permissions": ["http://127.0.0.1/*"],
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["inject.js"], "run_at": "document_start", "all_frames": true, "world": "MAIN" },
+    { "matches": ["<all_urls>"], "js": ["bridge.js"], "run_at": "document_start", "all_frames": true }
+  ]
+}
