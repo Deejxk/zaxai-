@@ -375,6 +375,131 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                <!-- GPS location: opens the map; can follow the connected proxy -->
+                <LinearLayout
+                    android:id="@+id/gps_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_card"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="46dp"
+                            android:layout_height="46dp">
+
+                            <View
+                                android:id="@+id/gps_halo"
+                                android:layout_width="46dp"
+                                android:layout_height="46dp"
+                                android:alpha="0.3"
+                                android:background="@drawable/bg_gps_ico" />
+
+                            <ImageView
+                                android:id="@+id/gps_ico"
+                                android:layout_width="38dp"
+                                android:layout_height="38dp"
+                                android:layout_gravity="center"
+                                android:background="@drawable/bg_gps_ico"
+                                android:importantForAccessibility="no"
+                                android:padding="8dp"
+                                android:src="@drawable/ic_pin" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.08"
+                                android:text="@string/gps_head"
+                                android:textAllCaps="true"
+                                android:textColor="@color/muted"
+                                android:textSize="10.5sp" />
+
+                            <TextView
+                                android:id="@+id/gps_sub"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:text="@string/gps_off"
+                                android:textColor="@color/text"
+                                android:textSize="14.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/gps_open"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="8dp"
+                            android:background="@drawable/bg_btn"
+                            android:paddingLeft="14dp"
+                            android:paddingTop="9dp"
+                            android:paddingRight="14dp"
+                            android:paddingBottom="9dp"
+                            android:text="@string/gps_open"
+                            android:textColor="@color/white"
+                            android:textSize="13.5sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="6dp"
+                        android:background="@color/border" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/gps_auto"
+                                android:textColor="@color/text"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/gps_auto_sub"
+                                android:textColor="@color/muted"
+                                android:textSize="12.5sp" />
+                        </LinearLayout>
+
+                        <Switch
+                            android:id="@+id/gps_auto"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="8dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
                 <TextView
                     android:id="@+id/message"
                     android:layout_width="match_parent"

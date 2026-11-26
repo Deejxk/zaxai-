@@ -70,4 +70,14 @@
     <string name="manual_rejected">The proxy did not accept this username and password. Check them and try again.</string>
     <string name="manual_not_socks">This address answered, but not as a SOCKS5 proxy. Use the SOCKS5 port, not the HTTP port.</string>
     <string name="empty_sub_manual">Buy a proxy on the website, or add one manually.</string>
+    <string name="gps_channel">GPS location</string>
+    <string name="gps_notif_title">GPS location is set by ZaxProxy Connect</string>
+    <string name="gps_notif_stop">Turn off</string>
+    <string name="gps_head">GPS location</string>
+    <string name="gps_off">Off · your phone shows its real location</string>
+    <string name="gps_on">Set to %1$s</string>
+    <string name="gps_open">Open map</string>
+    <string name="gps_auto">Match my GPS to the connected proxy</string>
+    <string name="gps_auto_sub">When you connect, your GPS moves to the same city as your proxy.</string>
+    <string name="gps_no_position">This proxy has no map position yet. Open the map and choose the place yourself.</string>
 </resources>

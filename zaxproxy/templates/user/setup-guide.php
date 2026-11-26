@@ -75,6 +75,7 @@ $guides = array(
 		'notes' => array(
 			'To change location, tap another proxy in the list while connected. The app switches to it.',
 			'To stop using the proxy, open ZaxProxy Connect and tap the power button again.',
+			'<strong>GPS map:</strong> tap <strong>Open map</strong> in the app to move this phone\'s GPS to any state, city or country, or switch on <strong>Match my GPS to the connected proxy</strong>. The first time, the app shows a one-minute phone setup (Developer options, <strong>Select mock location app</strong>).',
 			'Android asks you to allow the install because the app comes from our website and not from the Play Store.',
 			'Have a proxy from somewhere else? Tap <strong>+ Add manually</strong> and type its IP address, <strong>SOCKS5 port</strong>, username and password.',
 			'<strong>Without the app (Wi-Fi only):</strong> open Settings, Wi-Fi, hold your network, choose Modify, set Proxy to Manual, then type the IP address and the HTTP(S) port from My proxies.',

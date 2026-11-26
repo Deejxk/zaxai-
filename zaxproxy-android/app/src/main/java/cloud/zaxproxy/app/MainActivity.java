@@ -71,6 +71,10 @@ public class MainActivity extends Activity {
     private JSONObject pending;   // waiting for Android's permission dialog
     private long connectingId;    // the location being connected right now
     private ObjectAnimator pulse;
+    private ObjectAnimator gpsPulse;
+    private TextView gpsSub;
+    private View gpsHalo, gpsIco;
+    private android.widget.Switch gpsAuto;
     private String pulseMode = "";
 
     private final BroadcastReceiver stateReceiver = new BroadcastReceiver() {
@@ -134,6 +138,18 @@ public class MainActivity extends Activity {
         findViewById(R.id.link_forgot).setOnClickListener(v -> open("/panel/forgot/"));
         findViewById(R.id.btn_buy).setOnClickListener(v -> open("/panel/buy/"));
         findViewById(R.id.btn_add).setOnClickListener(v -> showAddManual());
+        gpsSub = findViewById(R.id.gps_sub);
+        gpsHalo = findViewById(R.id.gps_halo);
+        gpsIco = findViewById(R.id.gps_ico);
+        gpsAuto = findViewById(R.id.gps_auto);
+        findViewById(R.id.gps_card).setOnClickListener(v -> startActivity(new Intent(this, GpsActivity.class)));
+        findViewById(R.id.gps_open).setOnClickListener(v -> startActivity(new Intent(this, GpsActivity.class)));
+        gpsAuto.setChecked(manualPrefs.getBoolean("gps_auto", false));
+        gpsAuto.setOnCheckedChangeListener((b, on) -> {
+            manualPrefs.edit().putBoolean("gps_auto", on).apply();
+            String[] st = state();
+            if (on && st != null) followGps(byId(activeId(st))); // already connected: match now
+        });
         findViewById(R.id.btn_refresh).setOnClickListener(v -> {
             v.animate().rotationBy(360).setDuration(600).start();
             refresh(true);
@@ -170,6 +186,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         IntentFilter f = new IntentFilter(TunnelService.ACTION_STATE);
+        f.addAction(MockService.ACTION_STATE);
         if (Build.VERSION.SDK_INT >= 33) {
             registerReceiver(stateReceiver, f, Context.RECEIVER_NOT_EXPORTED);
         } else {
@@ -247,6 +264,7 @@ public class MainActivity extends Activity {
     private void signOut() {
         final String t = token();
         disconnect();
+        if (MockService.running) GpsActivity.end(this);
         prefs.edit().clear().apply();
         proxies = new JSONArray();
         expired = new JSONArray();
@@ -427,6 +445,7 @@ public class MainActivity extends Activity {
                 render();
                 return;
             }
+            if (manualPrefs.getBoolean("gps_auto", false)) followGps(p);
             ui.postDelayed(() -> {
                 connectingId = 0;
                 render();
@@ -437,6 +456,8 @@ public class MainActivity extends Activity {
     private void disconnect() {
         if (state() == null) return;
         startService(new Intent(this, TunnelService.class).setAction(TunnelService.ACTION_DISCONNECT));
+        // The GPS followed the proxy, so it goes back to the real location with it.
+        if (manualPrefs.getBoolean("gps_auto", false) && MockService.running) GpsActivity.end(this);
         ui.postDelayed(this::render, 700);
     }
 
@@ -502,6 +523,7 @@ public class MainActivity extends Activity {
             selSub.setText((place.isEmpty() ? shown.optString("type") : shown.optString("country")) + " · " + shown.optString("ip") + (shown.optLong("id") < 0 ? ":" + shown.optInt("port") : ""));
         }
 
+        renderGps();
         count.setText(String.valueOf(proxies.length() + manual.length()));
         search.setVisibility(proxies.length() >= SEARCH_FROM ? View.VISIBLE : View.GONE);
         empty.setVisibility(proxies.length() + manual.length() == 0 ? View.VISIBLE : View.GONE);
@@ -655,6 +677,45 @@ public class MainActivity extends Activity {
             }
             return true;
         });
+    }
+
+    /* ---------- GPS location ---------- */
+
+    private void renderGps() {
+        boolean on = MockService.running;
+        String where = MockService.label == null || MockService.label.isEmpty() ? String.format(Locale.US, "%.4f, %.4f", MockService.lat, MockService.lng) : MockService.label;
+        gpsSub.setText(on ? getString(R.string.gps_on, where) : getString(R.string.gps_off));
+        gpsSub.setTextColor(getColor(on ? R.color.ok : R.color.text));
+        gpsIco.setBackgroundResource(on ? R.drawable.bg_gps_ico_on : R.drawable.bg_gps_ico);
+        gpsHalo.setBackgroundResource(on ? R.drawable.bg_gps_ico_on : R.drawable.bg_gps_ico);
+        if (gpsPulse == null) {
+            gpsPulse = ObjectAnimator.ofPropertyValuesHolder(gpsHalo,
+                    PropertyValuesHolder.ofFloat(View.SCALE_X, 0.85f, 1.25f),
+                    PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.85f, 1.25f),
+                    PropertyValuesHolder.ofFloat(View.ALPHA, 0.4f, 0f));
+            gpsPulse.setDuration(1600);
+            gpsPulse.setRepeatCount(ValueAnimator.INFINITE);
+            gpsPulse.setInterpolator(new AccelerateDecelerateInterpolator());
+            gpsPulse.start();
+        }
+    }
+
+    /** Moves the phone's GPS to where a proxy is. Opens the map when the phone still needs setting up. */
+    private void followGps(JSONObject p) {
+        if (p == null) return;
+        if (p.isNull("lat") || p.isNull("lng") || !p.has("lat")) {
+            Toast.makeText(this, R.string.gps_no_position, Toast.LENGTH_LONG).show();
+            return;
+        }
+        double lat = p.optDouble("lat"), lng = p.optDouble("lng");
+        String place = p.optString("place");
+        String label = place.isEmpty() ? p.optString("country") : place + ", " + p.optString("country");
+        if (GpsActivity.mockAllowed(this) && GpsActivity.locationGranted(this)) {
+            GpsActivity.begin(this, lat, lng, label);
+            ui.postDelayed(this::render, 900);
+        } else {
+            startActivity(new Intent(this, GpsActivity.class).putExtra("lat", lat).putExtra("lng", lng).putExtra("label", label).putExtra("proxy", p.optLong("id")));
+        }
     }
 
     private TextView sectionHead(String text) {

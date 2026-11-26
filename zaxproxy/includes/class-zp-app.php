@@ -202,27 +202,40 @@ class ZP_App {
 		}
 		$ip = (string) $ip;
 		if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-			return array( '', '' );
+			return array( '', '', null, null );
 		}
-		$hit = isset( $map[ $ip ] ) ? $map[ $ip ] : null;
-		if ( $hit && ( '' !== $hit[0] . $hit[1] || $hit[2] > time() - DAY_IN_SECONDS ) ) {
-			return array( $hit[0], $hit[1] ); // known, or tried within the last day
+		// Each entry: city, region, when it was looked up, latitude, longitude.
+		$hit   = isset( $map[ $ip ] ) ? $map[ $ip ] : null;
+		$known = $hit ? array( $hit[0], $hit[1], isset( $hit[3] ) ? $hit[3] : null, isset( $hit[4] ) ? $hit[4] : null ) : array( '', '', null, null );
+		// Entries saved before map positions existed (three values) are looked up again once.
+		if ( $hit && array_key_exists( 3, $hit ) && ( ( '' !== $hit[0] . $hit[1] && null !== $known[2] ) || $hit[2] > time() - DAY_IN_SECONDS ) ) {
+			return $known; // complete, or tried within the last day
 		}
 		if ( $budget <= 0 ) {
-			return array( '', '' );
+			return $known;
 		}
 		--$budget;
-		$url  = apply_filters( 'zaxproxy_geo_url', 'https://ipwho.is/' . rawurlencode( $ip ) . '?fields=success,city,region', $ip );
+		$url  = apply_filters( 'zaxproxy_geo_url', 'https://ipwho.is/' . rawurlencode( $ip ) . '?fields=success,city,region,latitude,longitude', $ip );
 		$res  = wp_remote_get( $url, array( 'timeout' => 4, 'redirection' => 0 ) );
 		$data = is_wp_error( $res ) ? null : json_decode( (string) wp_remote_retrieve_body( $res ), true );
 		$city = is_array( $data ) && ! empty( $data['city'] ) ? mb_substr( sanitize_text_field( (string) $data['city'] ), 0, 60 ) : '';
 		$reg  = is_array( $data ) && ! empty( $data['region'] ) ? mb_substr( sanitize_text_field( (string) $data['region'] ), 0, 60 ) : '';
-		$map[ $ip ] = array( $city, $reg, time() );
+		$lat  = is_array( $data ) && isset( $data['latitude'] ) && is_numeric( $data['latitude'] ) && abs( (float) $data['latitude'] ) <= 90 ? round( (float) $data['latitude'], 4 ) : null;
+		$lng  = is_array( $data ) && isset( $data['longitude'] ) && is_numeric( $data['longitude'] ) && abs( (float) $data['longitude'] ) <= 180 ? round( (float) $data['longitude'], 4 ) : null;
+		if ( null === $lat || null === $lng ) {
+			$lat = null;
+			$lng = null;
+		}
+		if ( '' === $city . $reg && $hit ) { // a failed retry must not wipe what was known
+			$city = $hit[0];
+			$reg  = $hit[1];
+		}
+		$map[ $ip ] = array( $city, $reg, time(), $lat, $lng );
 		if ( count( $map ) > 3000 ) {
 			$map = array_slice( $map, -2500, null, true );
 		}
 		update_option( 'zp_geo', $map, false );
-		return array( $city, $reg );
+		return array( $city, $reg, $lat, $lng );
 	}
 
 	private static function payload( $user ) {
@@ -244,6 +257,8 @@ class ZP_App {
 				'city'     => $geo[0],
 				'region'   => $geo[1],
 				'place'    => implode( ', ', array_filter( array( $geo[0], $geo[1] !== $geo[0] ? $geo[1] : '' ) ) ),
+				'lat'      => $geo[2], // where the address is on the map (null until known)
+				'lng'      => $geo[3],
 				'port'     => (int) $p->socks5_port,
 				'username' => (string) $p->login,
 				'password' => (string) $p->password,
