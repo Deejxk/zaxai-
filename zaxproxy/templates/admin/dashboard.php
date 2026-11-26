@@ -33,7 +33,11 @@ $max = max( 1, max( $days ) );
 <?php elseif ( is_wp_error( $upstream ) ) : ?>
 	<div class="zp-alert zp-alert--error"><?php echo zp_icon( 'x', 18 ); // phpcs:ignore ?><span>Provider API error: <?php echo esc_html( $upstream->get_error_message() ); ?></span><a class="zp-btn zp-btn--sm zp-btn--soft" href="<?php echo esc_url( zp_admin_url( 'settings' ) ); ?>">Check settings</a></div>
 <?php elseif ( is_array( $last_err ) ) : ?>
-	<div class="zp-alert zp-alert--error"><?php echo zp_icon( 'x', 18 ); // phpcs:ignore ?><span>A customer order was blocked on <?php echo esc_html( zp_date( $last_err['time'] ) ); ?>: <?php echo esc_html( $last_err['message'] ); ?>. Top up or check your provider account.</span></div>
+	<form method="post" class="zp-alert zp-alert--error">
+		<?php zp_nonce_field( 'dismiss_api_error' ); ?>
+		<?php echo zp_icon( 'bell', 18 ); // phpcs:ignore ?><span>A customer order was blocked on <?php echo esc_html( zp_date( $last_err['time'] ) ); ?>: <?php echo esc_html( rtrim( $last_err['message'], '.' ) ); ?>. Top up or check your provider account. This notice clears by itself after the next successful order.</span>
+		<button class="zp-btn zp-btn--sm zp-btn--soft" type="submit">Dismiss</button>
+	</form>
 <?php endif; ?>
 
 <section class="zp-stats">

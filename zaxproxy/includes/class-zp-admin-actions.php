@@ -98,6 +98,11 @@ class ZP_Admin_Actions {
 				}
 				break;
 
+			case 'dismiss_api_error':
+				delete_option( 'zaxproxy_last_api_error' );
+				zp_flash( 'Notice cleared.' );
+				break;
+
 			case 'sync_all':
 				ZP_API::flush_cache();
 				ZP_Orders::cron_sync();

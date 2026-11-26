@@ -271,6 +271,7 @@ class ZP_Orders {
 				array( 'status' => 'processing', 'upstream_order' => isset( $res['orderNumber'] ) ? (string) $res['orderNumber'] : '', 'updated_at' => zp_now() ),
 				array( 'id' => $order_id )
 			);
+			delete_option( 'zaxproxy_last_api_error' ); // the provider accepted an order, so any earlier account problem is over
 			self::notify_sale( $order_id, $user_id, $reseller, $quote['total'], $quote['platform'], $desc );
 			self::sync_type( $spec['type'] );
 			return $order_id;
@@ -501,6 +502,7 @@ class ZP_Orders {
 				return self::public_error( $res );
 			}
 			self::set_status( $order_id, 'completed' );
+			delete_option( 'zaxproxy_last_api_error' );
 			self::notify_sale( $order_id, $user_id, $reseller, $q['total'], $q['platform'], $desc );
 			self::sync_type( $t['type'] );
 			return $order_id;
