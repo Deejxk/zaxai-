@@ -122,11 +122,6 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
 .modal .eye{height:44px}
 .eye:hover{color:var(--text)}.eye svg{width:20px;height:20px}.eye .slash{display:none}
 .eye.on{color:#b3aaff}.eye.on .slash{display:block}
-.addbtn{height:38px;padding:0 14px;border-radius:11px;background:var(--surface);border:1px solid var(--line);color:#cfc9ff;font-size:13px;font-weight:700;white-space:nowrap;transition:border-color .2s}
-.addbtn:hover{border-color:var(--brand)}
-.rm{flex:none;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--faint);font-size:18px;line-height:1;border:1px solid transparent}
-.rm:hover{color:var(--bad);border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.1)}
-.empty .addbtn{margin:16px 0 0 8px;height:44px}
 .veil{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:rgba(5,7,14,.72);backdrop-filter:blur(6px)}
 .veil[hidden]{display:none}
 .modal{width:100%;max-width:460px;max-height:100%;overflow-y:auto;padding:24px 26px 22px;border-radius:20px;background:var(--panel);border:1px solid var(--line);box-shadow:0 30px 80px -20px #000;animation:pop .22s ease-out}
@@ -245,7 +240,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
 .power{zoom:var(--pz,1)}
 @media (max-height:780px){.power{--pz:.8}.stage h2{margin-top:10px;font-size:22px}.tiles{margin-top:12px}}
 @media (max-height:680px){.power{--pz:.62}.tile{padding:8px 12px}.left{padding-top:14px;padding-bottom:12px}}
-@media (max-width:980px){.shell{grid-template-columns:320px minmax(0,1fr)}.bar .search{width:170px}.chips .chip:first-child{display:none}.addbtn{padding:0 10px}.bar,.scroll{padding-left:16px;padding-right:16px}.act{min-width:84px}}
+@media (max-width:980px){.shell{grid-template-columns:320px minmax(0,1fr)}.bar .search{width:170px}.chips .chip:first-child{display:none}.bar,.scroll{padding-left:16px;padding-right:16px}.act{min-width:84px}}
 </style>
 <link rel="stylesheet" href="/leaflet/leaflet.css">
 </head>
@@ -315,7 +310,6 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
       <div class="tabs"><button id="tablist" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Locations</button><button id="tabgps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linejoin="round"><path d="M12 22s7-6.500 7-12a7 7 0 1 0-14 0c0 5.500 7 12 7 12Z"/><circle cx="12" cy="10" r="2.600"/></svg>GPS map</button></div>
       <h3 id="bartitle">Your locations</h3><span class="count listonly" id="count">0</span>
       <span style="flex:1"></span><input class="search listonly" id="search" type="search" placeholder="Search country, city or IP" style="margin-left:0" hidden>
-      <button class="addbtn listonly" id="add" title="Type in a proxy yourself">+ Add manually</button>
       <button class="iconbtn listonly" id="refresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.900" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11A8 8 0 0 0 6 6.300L4 8M4 4v4h4M4 13a8 8 0 0 0 14 4.700l2-1.700M20 20v-4h-4"/></svg></button>
     </div>
     <div class="gpsview" id="gpsview" hidden>
@@ -337,7 +331,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
       <div id="err" class="err" hidden></div>
       <div id="list"></div>
       <div id="none" class="empty" hidden>No location matches your search.</div>
-      <div id="empty" class="empty" hidden><strong>No active proxies</strong>You have no active proxy on this account yet. Buy one and it appears here.<br><button class="primary" data-open="/panel/buy/">Buy a proxy</button><button class="addbtn" id="add2">Add a proxy manually</button></div>
+      <div id="empty" class="empty" hidden><strong>No active proxies</strong>You have no active proxy on this account yet. Buy one and it appears here.<br><button class="primary" data-open="/panel/buy/">Buy a proxy</button></div>
     </div>
     <div class="tip listview"><b>Click a location to use it. While connected, clicking another location switches to it. Keep this window open while you browse (you can minimise it); closing it disconnects.</b><button class="ghost" data-open="/panel/buy/">Buy proxies</button></div>
   </div>
@@ -383,21 +377,6 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
   </div>
 </div>
 
-<!-- Add a proxy by hand -->
-<div class="veil" id="veil" hidden>
-  <form class="modal" id="mform" autocomplete="off">
-    <h3>Add a proxy manually</h3>
-    <p>Type the details of any SOCKS5 proxy. It is saved on this PC only. Tip: you can paste <b>ip:port:username:password</b> into the first box.</p>
-    <div id="merr" class="err" hidden></div>
-    <div class="two"><div><label for="mhost">IP address or host</label><input class="field" id="mhost" type="text" placeholder="185.12.34.56" spellcheck="false"></div>
-    <div><label for="mport">SOCKS5 port</label><input class="field" id="mport" type="text" inputmode="numeric" placeholder="1080" maxlength="5"></div></div>
-    <div class="two eq"><div><label for="muser">Username</label><input class="field" id="muser" type="text" spellcheck="false"></div>
-    <div><label for="mpass">Password</label><div class="pw"><input class="field" id="mpass" type="password"><button type="button" class="eye" tabindex="-1" title="Show password" aria-label="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linejoin="round" stroke-linecap="round"><path d="M2 12c2.500-4.500 6-6.500 10-6.500s7.500 2 10 6.500c-2.500 4.500-6 6.500-10 6.500S4.500 16.500 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="slash" d="M4 4l16 16"/></svg></button></div></div></div>
-    <label for="mname">Name (optional)</label><input class="field" id="mname" type="text" maxlength="40" placeholder="e.g. Work proxy">
-    <div class="btns"><button class="ghost" type="button" id="mcancel">Cancel</button><button class="primary" type="submit" id="msave">Save and connect</button></div>
-  </form>
-</div>
-
 <script src="/leaflet/leaflet.js"></script>
 <script>
 (function () {
@@ -412,7 +391,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
   }
   document.addEventListener('click', function (e) { var b = e.target.closest('[data-open]'); if (b) { e.preventDefault(); call('open', { path: b.getAttribute('data-open') }); } });
   function fail(el, text) { el.textContent = text || ''; el.hidden = !text; }
-  function all() { return last ? (last.proxies || []).concat(last.manual || []) : []; }
+  function all() { return last ? (last.proxies || []) : []; }
   function find(id) { var hit = null; all().forEach(function (p) { if (p.id === id) hit = p; }); return hit; }
   function pick() { return find(chosen) || all()[0] || null; }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
@@ -429,17 +408,16 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
     $('left').style.setProperty('--glow', on ? 'rgba(16,185,129,.34)' : busy ? 'rgba(245,158,11,.3)' : 'rgba(109,94,252,.34)');
     $('st').className = mode === 'idle' ? '' : mode;
     $('st').textContent = on ? 'Protected' : (busy ? 'Connecting…' : 'Not connected');
-    $('stsub').textContent = on ? 'This PC is using your proxy' : (busy ? 'Please wait a moment' : (all().length ? 'Click the button to connect' : 'Buy a proxy or add one manually'));
+    $('stsub').textContent = on ? 'This PC is using your proxy' : (busy ? 'Please wait a moment' : (all().length ? 'Click the button to connect' : 'Buy a proxy to get started'));
     $('sellabel').textContent = on ? 'Connected to' : 'Selected location';
     $('selflag').textContent = shown ? shown.flag : '🌐';
     $('seltitle').textContent = shown ? (shown.place || shown.country) : 'None';
-    var man = s.manual || [];
     $('selsub').textContent = shown ? (shown.place ? shown.country + ' · ' : '') + shown.type : '';
     $('tip').textContent = shown ? shown.ip : '—';
     if (!on) $('timer').textContent = '00:00:00';
-    $('count').textContent = s.proxies.length + man.length;
+    $('count').textContent = s.proxies.length;
     $('search').hidden = s.proxies.length < 6;
-    $('empty').hidden = s.proxies.length + man.length > 0;
+    $('empty').hidden = s.proxies.length > 0;
     var q = $('search').hidden ? '' : $('search').value.trim().toLowerCase(), list = $('list'), n = 0, sel = pick();
     list.textContent = '';
     s.proxies.slice().sort(function (x, y) { return (y.id === s.connected) - (x.id === s.connected); }).forEach(function (p) {
@@ -454,25 +432,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
       row.onclick = function () { choose(p); };
       list.appendChild(row);
     });
-        var mine = man.filter(function (p) { return !q || (p.country + ' ' + p.ip + ' manual').toLowerCase().indexOf(q) >= 0; });
-    if (mine.length) {
-      list.appendChild(el('div', 'sec', 'Added manually (' + mine.length + ')'));
-      mine.forEach(function (p) {
-        n++;
-        var isOn = !!on && p.id === s.connected, isBusy = busy === p.id, isSel = !on && sel && p.id === sel.id;
-        var row = el('div', 'row' + (isOn ? ' on' : (isSel || isBusy) ? ' sel' : '')); row.setAttribute('role', 'button');
-        row.appendChild(el('div', 'flag', p.flag));
-        var m = el('div', 'main'); m.appendChild(el('strong', '', p.country)); m.appendChild(el('div', 'addr', p.ip)); row.appendChild(m);
-        var chips = el('div', 'chips'); chips.appendChild(el('span', 'chip', 'Manual')); row.appendChild(chips);
-        row.appendChild(el('div', 'act', isOn ? 'Connected' : isBusy ? 'Connecting…' : on ? 'Switch' : isSel ? 'Selected' : 'Select'));
-        var rm = el('button', 'rm', '×'); rm.title = 'Remove this proxy';
-        rm.onclick = function (e) { e.stopPropagation(); if (busy) return; call('manual/remove', { id: p.id }).then(show); };
-        row.appendChild(rm);
-        row.onclick = function () { choose(p); };
-        list.appendChild(row);
-      });
-    }
-    var old = s.expired || [];
+        var old = s.expired || [];
     if (old.length && !q) {
       list.appendChild(el('div', 'sec', 'Expired (' + old.length + ')'));
       old.forEach(function (p) {
@@ -484,7 +444,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
         list.appendChild(row);
       });
     }
-    $('none').hidden = !(n === 0 && s.proxies.length + man.length > 0);
+    $('none').hidden = !(n === 0 && s.proxies.length > 0);
     if (s.notice && !$('err').textContent) fail($('err'), s.notice);
     drawGps();
   }
@@ -509,7 +469,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
   $('power').onclick = function () {
     if (busy || !last) return;
     if (last.connected) { disconnect(); return; }
-    var p = pick(); if (!p) { fail($('err'), 'Buy a proxy on the website and click the refresh button, or click "Add manually".'); return; }
+    var p = pick(); if (!p) { fail($('err'), 'Buy a proxy on the website, then click the refresh button.'); return; }
     connect(p.id);
   };
   document.addEventListener('click', function (e) {
@@ -519,32 +479,6 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
   });
   function hidePw() { [].forEach.call(document.querySelectorAll('.pw input'), function (i) { i.type = 'password'; }); [].forEach.call(document.querySelectorAll('.eye'), function (b) { b.classList.remove('on'); }); }
   $('search').oninput = draw;
-  /* add a proxy by hand */
-  function openAdd() { fail($('merr'), ''); $('mform').reset(); $('veil').hidden = false; $('mhost').focus(); }
-  function closeAdd() { $('veil').hidden = true; $('mpass').value = ''; hidePw(); }
-  $('add').onclick = openAdd; $('add2').onclick = openAdd; $('mcancel').onclick = closeAdd;
-  $('veil').onmousedown = function (e) { if (e.target === this) closeAdd(); };
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('veil').hidden) closeAdd(); });
-  // "ip:port:user:pass" (or user:pass@ip:port) pasted into the first box fills every box
-  function spread() {
-    var v = $('mhost').value.trim().replace(/^[a-z0-9]+:\/\//i, ''), at = v.lastIndexOf('@'), cred = '';
-    if (at > 0) { cred = v.slice(0, at); v = v.slice(at + 1); }
-    var parts = v.split(':');
-    if (parts.length < 2 || !/^\d{1,5}$/.test(parts[1])) return;
-    $('mhost').value = parts[0]; $('mport').value = parts[1];
-    if (cred) { var c = cred.indexOf(':'); $('muser').value = c < 0 ? cred : cred.slice(0, c); $('mpass').value = c < 0 ? '' : cred.slice(c + 1); }
-    else if (parts.length >= 4) { $('muser').value = parts[2]; $('mpass').value = parts.slice(3).join(':'); }
-  }
-  $('mhost').addEventListener('paste', function () { setTimeout(spread, 0); }); $('mhost').addEventListener('blur', spread);
-  $('mport').oninput = function () { this.value = this.value.replace(/\D/g, ''); };
-  $('mform').onsubmit = function (e) {
-    e.preventDefault(); spread(); fail($('merr'), '');
-    call('manual/add', { name: $('mname').value, host: $('mhost').value.trim(), port: parseInt($('mport').value, 10) || 0, username: $('muser').value.trim(), password: $('mpass').value }).then(function (s) {
-      if (s.ok === false) { fail($('merr'), s.error); return; }
-      closeAdd(); show(s);
-      if (s.added) { chosen = s.added; localStorage.setItem('zsel', String(chosen)); connect(chosen); }
-    }).catch(function () { fail($('merr'), 'ZaxProxy Connect is not responding. Close it and open it again.'); });
-  };
   $('refresh').onclick = function () { var b = this; b.classList.add('spin'); setTimeout(function () { b.classList.remove('spin'); }, 700); fail($('err'), ''); call('refresh', {}).then(function (s) { if (s.ok === false) fail($('err'), s.error); show(s); }); };
   $('logout').onclick = function () { call('logout', {}).then(show); };
   $('lform').onsubmit = function (e) {

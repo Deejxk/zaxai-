@@ -539,21 +539,6 @@
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/btn_add"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginRight="8dp"
-                        android:background="@drawable/bg_btn_ghost"
-                        android:paddingLeft="12dp"
-                        android:paddingTop="7dp"
-                        android:paddingRight="12dp"
-                        android:paddingBottom="7dp"
-                        android:text="@string/add_manual"
-                        android:textColor="#CFC9FF"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <TextView
                         android:id="@+id/count"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

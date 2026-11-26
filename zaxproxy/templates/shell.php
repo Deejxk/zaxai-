@@ -52,6 +52,9 @@ $zp_rs_on = $zp_rs && 'reseller' === $view;
 			<h1 class="zp-top__title"><?php echo esc_html( $shell['title'] ); ?></h1>
 			<div class="zp-top__actions">
 				<?php echo $shell['chip']; // phpcs:ignore ?>
+				<?php if ( ! $shell['admin'] ) : ?>
+					<button class="zp-iconbtn zp-baleye" id="zp-baleye" type="button" title="Hide or show your balance" aria-label="Hide or show your balance"><span class="zp-baleye__on"><?php echo zp_icon( 'eye', 18 ); // phpcs:ignore ?></span><span class="zp-baleye__off"><svg class="zp-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.600-7 10-7 10 7 10 7-3.600 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg></span></button>
+				<?php endif; ?>
 				<?php if ( current_user_can( 'manage_options' ) ) : ?>
 					<a class="zp-iconbtn zp-switch" href="<?php echo esc_url( $shell['admin'] ? zp_url( 'dashboard' ) : zp_admin_url() ); ?>" title="<?php echo $shell['admin'] ? 'Switch to user panel' : 'Switch to admin panel'; ?>" aria-label="<?php echo $shell['admin'] ? 'Switch to user panel' : 'Switch to admin panel'; ?>"><?php echo zp_icon( $shell['admin'] ? 'user' : 'shield' ); // phpcs:ignore ?></a>
 				<?php endif; ?>

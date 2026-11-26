@@ -53,6 +53,10 @@
     if (opener) { openSheet(opener.getAttribute('data-zp-sheet')); }
     if (e.target.closest('[data-zp-close]')) { var s = e.target.closest('.zp-sheet'); if (s) s.hidden = true; }
     if (e.target.closest('#zp-theme,[data-zp-theme-toggle]')) { toggleTheme(); }
+    if (e.target.closest('#zp-baleye')) { // hide or show the wallet balance; remembered on this device
+      var hid = document.documentElement.classList.toggle('zp-hidebal');
+      try { localStorage.setItem('zp-hidebal', hid ? '1' : '0'); } catch (err) {}
+    }
     if (e.target.closest('#zp-install,[data-zp-install]')) { installApp(); }
     var rf = e.target.closest('#zp-refresh');
     if (rf && !rf.classList.contains('is-spinning')) {

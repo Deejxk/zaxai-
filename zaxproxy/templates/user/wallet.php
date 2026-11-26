@@ -52,7 +52,7 @@ $holder = $user->display_name ? $user->display_name : $user->user_login;
 		<section class="zp-wcard zp-anim">
 			<div class="zp-wcard__top"><span class="zp-wcard__brand"><?php echo zp_logo( 30 ); // phpcs:ignore ?><?php echo esc_html( zp_get( 'brand' ) ); ?></span><span class="zp-wcard__chip"><?php echo esc_html( zp_get( 'currency_code' ) ); ?> wallet</span></div>
 			<span class="zp-wcard__label">Available balance</span>
-			<strong class="zp-wcard__amount" data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>" data-decimals="2"><?php echo esc_html( zp_money( $balance ) ); ?></strong>
+			<strong class="zp-wcard__amount" data-zp-bal data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>" data-decimals="2"><?php echo esc_html( zp_money( $balance ) ); ?></strong>
 			<div class="zp-wcard__foot">
 				<div><span>Account holder</span><strong><?php echo esc_html( $holder ); ?></strong></div>
 				<div><span>Wallet ID</span><strong class="zp-mono">ZX-<?php echo esc_html( str_pad( (string) $user->ID, 6, '0', STR_PAD_LEFT ) ); ?></strong></div>

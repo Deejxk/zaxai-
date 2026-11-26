@@ -370,6 +370,7 @@ if ( $index ) {
 }
 ?>
 <meta name="theme-color" content="#0b0d14" id="zp-theme-color">
+<script>try{if(localStorage.getItem('zp-hidebal')==='1')document.documentElement.classList.add('zp-hidebal')}catch(e){}</script>
 <?php if ( ZP_Shield::alias_on() ) : ?><script>window.zpPlain=function(){try{if(document.cookie.indexOf('zp_plain=')<0){document.cookie='zp_plain=1; path=/; max-age=86400; samesite=lax';location.reload();}}catch(e){}};</script><?php endif; ?>
 <link rel="manifest" href="<?php echo esc_url( zp_route_url( 'zp-manifest' ) ); ?>">
 <meta name="mobile-web-app-capable" content="yes">

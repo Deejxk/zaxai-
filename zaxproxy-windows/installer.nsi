@@ -4,7 +4,7 @@ Unicode true
 
 !define APP "ZaxProxy Connect"
 !define EXE "ZaxProxy-Connect.exe"
-!define VER "1.5.0"
+!define VER "1.6.0"
 !define REG "Software\Microsoft\Windows\CurrentVersion\Uninstall\ZaxProxyConnect"
 
 Name "${APP}"
@@ -15,7 +15,7 @@ RequestExecutionLevel user
 SetCompressor /SOLID lzma
 BrandingText "${APP} ${VER}"
 
-VIProductVersion "1.5.0.0"
+VIProductVersion "1.6.0.0"
 VIAddVersionKey "ProductName" "${APP}"
 VIAddVersionKey "CompanyName" "ZaxProxy"
 VIAddVersionKey "FileDescription" "${APP} Setup"

@@ -44,7 +44,6 @@ $guides = array(
 			'To stop using the proxy, click the power button again. Closing the window also disconnects, so keep it open (you can minimise it) while you browse.',
 			'<strong>GPS map:</strong> click <strong>GPS map</strong> in the app to choose any state, city or country, or switch on <strong>Match my GPS to the connected proxy</strong>. A ZaxProxy browser window (Chrome or Edge) opens by itself, and every website in that window sees the place you chose. There is nothing to install.',
 			'Windows may show a blue <strong>Windows protected your PC</strong> box the first time, because the program is new. Click <strong>More info</strong>, then <strong>Run anyway</strong>.',
-			'Have a proxy from somewhere else? Click <strong>+ Add manually</strong> and type its IP address, <strong>SOCKS5 port</strong>, username and password.',
 			'<strong>Without the app:</strong> open Settings, Network &amp; internet, Proxy, click <strong>Set up</strong> next to <strong>Use a proxy server</strong>, and type the IP address and the <strong>HTTP(S) port</strong> from My proxies. Your browser then asks for the proxy username and password.',
 		),
 	),
@@ -78,7 +77,6 @@ $guides = array(
 			'To stop using the proxy, open ZaxProxy Connect and tap the power button again.',
 			'<strong>GPS map:</strong> tap <strong>Open map</strong> in the app to move this phone\'s GPS to any state, city or country, or switch on <strong>Match my GPS to the connected proxy</strong>. The first time, the app shows a one-minute phone setup (Developer options, <strong>Select mock location app</strong>).',
 			'Android asks you to allow the install because the app comes from our website and not from the Play Store.',
-			'Have a proxy from somewhere else? Tap <strong>+ Add manually</strong> and type its IP address, <strong>SOCKS5 port</strong>, username and password.',
 			'<strong>Without the app (Wi-Fi only):</strong> open Settings, Wi-Fi, hold your network, choose Modify, set Proxy to Manual, then type the IP address and the HTTP(S) port from My proxies.',
 		),
 	),
@@ -234,7 +232,7 @@ if ( ! empty( $zp_setup_only ) ) {
 	</div>
 	<div class="zp-faq" style="margin-top:14px">
 		<details><summary>It asks for a username and password again and again<?php echo zp_icon( 'plus', 18 ); // phpcs:ignore ?></summary><p>This happens when you set a proxy by hand and the username or password was typed wrongly. Copy them from My proxies with the copy button instead of typing, and make sure there is no space at the start or the end.</p></details>
-		<details><summary>The internet stops working after I connect<?php echo zp_icon( 'plus', 18 ); // phpcs:ignore ?></summary><p>Check three things: the port matches the type (HTTP(S) port for Windows and Wi-Fi settings, SOCKS5 port for Potatso and for "Add manually" in ZaxProxy Connect), the proxy has not expired, and the IP address has no missing digit. Then disconnect and connect again.</p></details>
+		<details><summary>The internet stops working after I connect<?php echo zp_icon( 'plus', 18 ); // phpcs:ignore ?></summary><p>Check three things: the port matches the type (HTTP(S) port for Windows and Wi-Fi settings, SOCKS5 port for Potatso), the proxy has not expired, and the IP address has no missing digit. Then disconnect and connect again.</p></details>
 		<details><summary>"What is my IP" still shows my own location<?php echo zp_icon( 'plus', 18 ); // phpcs:ignore ?></summary><p>The proxy is not switched on yet. On a phone, look for the key or VPN icon at the top of the screen. In ZaxProxy Connect the button must be green and say "Protected". Close and reopen your browser and check again.</p></details>
 		<details><summary>Can I use the same proxy on my phone and my computer?<?php echo zp_icon( 'plus', 18 ); // phpcs:ignore ?></summary><p>Yes. Sign in to ZaxProxy Connect on each device and choose the same proxy. For accounts, it is safer to use each account from one device and one proxy only.</p></details>
 	</div>

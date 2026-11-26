@@ -88,7 +88,7 @@ $pct     = function ( $n ) use ( $active ) {
 		<div class="zp-here__item"><span class="zp-here__ico"><?php echo zp_icon( 'phone', 18 ); // phpcs:ignore ?></span><div><span>Device GPS location</span><strong data-here="gps">Not shown yet</strong><small class="zp-mono" data-here="gpsxy"></small><small data-here="gpsnote">Tap Show to see where this device really is.</small></div><button type="button" class="zp-here__btn" data-here="gpsbtn">Show</button></div>
 	</div>
 	<div class="zp-rhero__today">
-		<div><span>Wallet balance</span><strong data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>"><?php echo esc_html( zp_money( $balance ) ); ?></strong></div>
+		<div><span>Wallet balance</span><strong data-zp-bal data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>"><?php echo esc_html( zp_money( $balance ) ); ?></strong></div>
 		<div><span>Active proxies</span><strong data-zp-count="<?php echo (int) $active; ?>"><?php echo (int) $active; ?></strong></div>
 		<div><span>Expiring in 3 days</span><strong data-zp-count="<?php echo (int) $soon; ?>"><?php echo (int) $soon; ?></strong></div>
 		<div><span>Next expiry</span><strong><?php echo $next ? esc_html( zp_time_left( $next ) ) : '—'; ?></strong></div>
@@ -102,7 +102,7 @@ $pct     = function ( $n ) use ( $active ) {
 <section class="zp-kpis">
 	<a class="zp-kpi zp-anim" style="--d:1" href="<?php echo esc_url( zp_url( 'wallet' ) ); ?>">
 		<div class="zp-kpi__top"><span class="zp-stat__ico zp-tone-violet"><?php echo zp_icon( 'wallet' ); // phpcs:ignore ?></span></div>
-		<span class="zp-kpi__label">Wallet balance</span><strong class="zp-kpi__value" data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>"><?php echo esc_html( zp_money( $balance ) ); ?></strong><span class="zp-kpi__sub">Tap to add funds</span>
+		<span class="zp-kpi__label">Wallet balance</span><strong class="zp-kpi__value" data-zp-bal data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>"><?php echo esc_html( zp_money( $balance ) ); ?></strong><span class="zp-kpi__sub">Tap to add funds</span>
 	</a>
 	<a class="zp-kpi zp-anim" style="--d:2" href="<?php echo esc_url( zp_url( 'proxies' ) ); ?>">
 		<div class="zp-kpi__top"><span class="zp-stat__ico zp-tone-cyan"><?php echo zp_icon( 'globe' ); // phpcs:ignore ?></span><?php if ( $soon ) : ?><b class="zp-trend zp-trend--down"><?php echo (int) $soon; ?> expiring</b><?php endif; ?></div>

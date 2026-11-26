@@ -95,39 +95,4 @@ final class Api {
         in.close();
         return out.toString("UTF-8");
     }
-
-    /**
-     * Asks a proxy the first two questions of SOCKS5 (hello, then username and password) so a
-     * typing mistake is caught before it is saved. 0 = fine, 1 = no answer, 2 = wrong username or
-     * password, 3 = something answered that is not a SOCKS5 proxy.
-     */
-    static int checkSocks5(String host, int port, String user, String pass) {
-        try (java.net.Socket s = new java.net.Socket()) {
-            s.connect(new java.net.InetSocketAddress(host, port), 9000);
-            s.setSoTimeout(9000);
-            java.io.OutputStream out = s.getOutputStream();
-            java.io.InputStream in = s.getInputStream();
-            boolean auth = !user.isEmpty();
-            out.write(auth ? new byte[]{5, 2, 0, 2} : new byte[]{5, 1, 0});
-            out.flush();
-            int ver = in.read(), method = in.read();
-            if (ver != 5) return ver < 0 ? 1 : 3;
-            if (method == 0) return 0;
-            if (method != 2 || !auth) return 2;
-            byte[] u = user.getBytes(java.nio.charset.StandardCharsets.UTF_8), p = pass.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
-            b.write(1);
-            b.write(u.length);
-            b.write(u, 0, u.length);
-            b.write(p.length);
-            b.write(p, 0, p.length);
-            out.write(b.toByteArray());
-            out.flush();
-            in.read();
-            int status = in.read();
-            return status == 0 ? 0 : status < 0 ? 1 : 2;
-        } catch (Exception e) {
-            return 1;
-        }
-    }
 }

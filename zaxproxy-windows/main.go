@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	version = "1.5.0"
+	version = "1.6.0"
 )
 
 //go:embed ui.html
@@ -71,7 +71,6 @@ type app struct {
 	token     string
 	name      string
 	proxies   []Proxy
-	manual    []Proxy // typed in by hand; kept on this computer only
 	expired   []Expired
 	notice    string
 	connected int64
@@ -151,7 +150,6 @@ func main() {
 	cfg := loadConfig()
 	a.token = cfg.Token
 	a.name = cfg.Name
-	a.manual = unpackManual(cfg.Manual)
 	a.gps.Auto = cfg.GPSAuto
 	writeExtension()
 	startGPSListener()
@@ -180,8 +178,6 @@ func main() {
 	mux.HandleFunc("/api/gps/browser", guard(handleGPSBrowser))
 	mux.HandleFunc("/api/geo/search", guard(handleGeoSearch))
 	mux.HandleFunc("/api/geo/reverse", guard(handleGeoReverse))
-	mux.HandleFunc("/api/manual/add", guard(handleManualAdd))
-	mux.HandleFunc("/api/manual/remove", guard(handleManualRemove))
 	mux.HandleFunc("/api/quit", guard(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"ok": true})
 		go func() { time.Sleep(300 * time.Millisecond); quit() }()
@@ -294,7 +290,7 @@ func (x *app) snapshot() map[string]any {
 	if old == nil {
 		old = []Expired{}
 	}
-	return map[string]any{"ok": true, "signedIn": x.token != "", "name": x.name, "proxies": list, "manual": x.manualList(), "expired": old, "notice": x.notice, "gps": x.gpsView(), "connected": x.connected, "since": x.since, "version": version}
+	return map[string]any{"ok": true, "signedIn": x.token != "", "name": x.name, "proxies": list, "expired": old, "notice": x.notice, "gps": x.gpsView(), "connected": x.connected, "since": x.since, "version": version}
 }
 
 func handleState(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, a.snapshot()) }
@@ -380,7 +376,7 @@ func (x *app) refresh() error {
 	}
 	x.mu.Lock()
 	x.proxies, x.expired, x.name = res.Proxies, res.Expired, res.User.Name
-	gone := x.connected > 0 // only account proxies can run out; hand-typed ones are left alone
+	gone := x.connected != 0
 	for _, p := range res.Proxies {
 		if p.ID == x.connected {
 			gone = false
@@ -413,12 +409,6 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 			chosen = &p
 		}
 	}
-	for i := range a.manual {
-		if a.manual[i].ID == in.ID {
-			p := a.manual[i]
-			chosen = &p
-		}
-	}
 	a.mu.Unlock()
 	if chosen == nil {
 		writeJSON(w, 404, map[string]any{"ok": false, "error": "That proxy is no longer in your list. Click Refresh."})
@@ -429,9 +419,6 @@ func handleConnect(w http.ResponseWriter, r *http.Request) {
 	rl, err := startRelay("127.0.0.1:0", *chosen) // any free local port
 	if err != nil {
 		msg := err.Error()
-		if chosen.ID < 0 {
-			msg = "Could not connect through this proxy. Check the IP address, the SOCKS5 port, the username and the password, and that the proxy has not expired."
-		}
 		writeJSON(w, 502, map[string]any{"ok": false, "error": msg})
 		return
 	}
@@ -497,7 +484,6 @@ type config struct {
 	PrevSkip    string `json:"prev_skip,omitempty"`
 	BrowserMode string `json:"browser_mode,omitempty"` // how the ZaxProxy browser window was last opened successfully
 	GPSAuto     bool   `json:"gps_auto,omitempty"`     // match the GPS to the connected proxy
-	Manual      string `json:"manual,omitempty"`       // proxies typed in by hand, protected the same way as the token
 	Relay       string `json:"relay,omitempty"`        // the local relay address Windows was pointed at
 }
 
@@ -544,7 +530,6 @@ func (x *app) save() {
 	c := loadConfig()
 	x.mu.Lock()
 	c.Token, c.Name = x.token, x.name
-	c.Manual = packManual(x.manual)
 	c.GPSAuto = x.gps.Auto
 	x.mu.Unlock()
 	writeConfig(c)

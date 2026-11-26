@@ -1267,3 +1267,15 @@ a,button,[role="button"],label,summary,.zp-tab,.zp-btn,.zs-btn{touch-action:mani
   .zp-proxies{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){.zpp-orbits,.zpp-links,.zpp-node,.zpp-hub,.zpp-pulse,.zp-plife__bar i{animation:none}.zpp-pulse{opacity:0}}
+
+/* ---------- Hide / show the wallet balance ---------- */
+.zp-baleye{width:34px;height:38px;margin-left:-4px;border-radius:12px}
+.zp-baleye__off{display:none}
+html.zp-hidebal .zp-baleye__on{display:none}html.zp-hidebal .zp-baleye__off{display:inline-flex}
+html.zp-hidebal .zp-top__actions .zp-chip:not(.zp-chip--admin) span,html.zp-hidebal [data-zp-bal]{position:relative;-webkit-text-fill-color:transparent;user-select:none}
+html.zp-hidebal .zp-top__actions .zp-chip:not(.zp-chip--admin) span::after,html.zp-hidebal [data-zp-bal]::after{content:"••••••";position:absolute;left:0;top:0;-webkit-text-fill-color:currentColor;letter-spacing:.06em}
+html.zp-hidebal .zp-top__actions .zp-chip:not(.zp-chip--admin) span{display:inline-block;min-width:3.4em;overflow:hidden;max-width:3.6em;white-space:nowrap}
+/* Small phones: the balance pill drops its icon and the eye gets slimmer, so the header still fits. */
+@media (max-width:430px){.zp-top__actions .zp-chip:not(.zp-chip--admin) .zp-ico{display:none}.zp-top__actions .zp-chip:not(.zp-chip--admin){padding:0 11px}.zp-baleye{width:26px;margin-left:-8px;border-color:transparent;background:none;box-shadow:none}}
+@media (max-width:340px){.zp-top__actions>#zp-refresh{display:none}}
+@media (max-width:380px){.zp-top__actions>.zp-switch{display:none}} /* the admin switch is also in the account menu */

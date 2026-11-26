@@ -61,6 +61,10 @@ func (x *app) gpsView() gpsState {
 	return g
 }
 
+func badText(s string, max int) bool {
+	return len(s) > max || strings.ContainsAny(s, "\r\n\t\x00")
+}
+
 func validSpot(lat, lng float64) bool {
 	return !math.IsNaN(lat) && !math.IsNaN(lng) && math.Abs(lat) <= 90 && math.Abs(lng) <= 180
 }
