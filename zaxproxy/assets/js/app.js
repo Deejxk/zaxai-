@@ -175,12 +175,17 @@
       btn.disabled = true; btn.textContent = 'Finding…';
       navigator.geolocation.getCurrentPosition(function (pos) {
         var la = pos.coords.latitude.toFixed(6), lo = pos.coords.longitude.toFixed(6);
-        gps.textContent = la + ', ' + lo;
+        var xy = q('gpsxy'); xy.textContent = la + ', ' + lo;
+        if (gps.textContent === 'Not shown yet' || gps.textContent === 'Not available') gps.textContent = 'Finding the place…';
+        fetch(ZP.notify.url + (ZP.notify.url.indexOf('?') < 0 ? '?' : '&') + 'do=gpsplace&lat=' + la + '&lng=' + lo, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } })
+          .then(function (r) { return r.json(); }).then(function (d) {
+            gps.textContent = [d.area, d.state, d.country].filter(Boolean).join(', ') || 'Place name not available';
+          }).catch(function () { gps.textContent = 'Place name not available'; });
         note.textContent = 'Accurate to about ' + Math.round(pos.coords.accuracy) + ' m · ';
         var a = document.createElement('a'); a.href = 'https://www.google.com/maps?q=' + la + ',' + lo; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = 'Open in Maps'; note.appendChild(a);
         btn.disabled = false; btn.textContent = 'Refresh';
       }, function (err) {
-        gps.textContent = 'Not available';
+        gps.textContent = 'Not available'; q('gpsxy').textContent = '';
         note.textContent = err && err.code === 1 ? 'Location is blocked for this site. Allow it in your browser or phone settings, then tap Show.' : 'Could not get a GPS fix. Turn on location on this device and try again.';
         btn.disabled = false; btn.textContent = 'Show';
       }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });

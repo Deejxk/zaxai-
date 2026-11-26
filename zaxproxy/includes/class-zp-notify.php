@@ -165,9 +165,10 @@ class ZP_Notify {
 	private static function whereami() {
 		$ip  = self::visitor_ip();
 		$out = array( 'ok' => true, 'ip' => $ip, 'place' => '', 'country' => '', 'isp' => '' );
-		if ( '' === $ip || ! is_user_logged_in() ) {
+		if ( '' === $ip ) {
 			return $out;
 		}
+		// Only ever the caller's own address, remembered for hours: one lookup per address at most.
 		$key = 'zp_here_' . md5( $ip );
 		$hit = get_transient( $key );
 		if ( ! is_array( $hit ) ) {
@@ -195,10 +196,47 @@ class ZP_Notify {
 		return $out;
 	}
 
+	/** Turns a GPS position into "area, state, country". The position is rounded first (about 1 km). */
+	private static function gps_place( $lat, $lng ) {
+		$out = array( 'ok' => true, 'area' => '', 'state' => '', 'country' => '' );
+		if ( ! is_numeric( $lat ) || ! is_numeric( $lng ) || abs( (float) $lat ) > 90 || abs( (float) $lng ) > 180 ) {
+			return array( 'ok' => false ) + $out;
+		}
+		$lat = number_format( (float) $lat, 2, '.', '' );
+		$lng = number_format( (float) $lng, 2, '.', '' );
+		$key = 'zp_gps_' . md5( $lat . ',' . $lng );
+		$hit = get_transient( $key );
+		if ( ! is_array( $hit ) ) {
+			if ( zp_throttled( 'gpsplace', 30, HOUR_IN_SECONDS ) ) {
+				return $out;
+			}
+			$url  = apply_filters( 'zaxproxy_gps_url', 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&accept-language=en&lat=' . $lat . '&lon=' . $lng );
+			$res  = wp_remote_get( $url, array( 'timeout' => 6, 'redirection' => 0, 'user-agent' => 'ZaxProxy/' . ZP_VERSION . ' (' . wp_parse_url( home_url(), PHP_URL_HOST ) . ')' ) );
+			$data = is_wp_error( $res ) ? null : json_decode( (string) wp_remote_retrieve_body( $res ), true );
+			$addr = is_array( $data ) && isset( $data['address'] ) && is_array( $data['address'] ) ? $data['address'] : array();
+			$pick = function ( $keys ) use ( $addr ) {
+				foreach ( $keys as $k ) {
+					if ( ! empty( $addr[ $k ] ) && is_string( $addr[ $k ] ) ) {
+						return mb_substr( sanitize_text_field( $addr[ $k ] ), 0, 60 );
+					}
+				}
+				return '';
+			};
+			$hit  = array( $pick( array( 'city', 'town', 'village', 'municipality', 'county', 'state_district' ) ), $pick( array( 'state', 'region', 'province' ) ), $pick( array( 'country' ) ) );
+			set_transient( $key, $hit, '' === $hit[2] ? 10 * MINUTE_IN_SECONDS : 30 * DAY_IN_SECONDS );
+		}
+		list( $out['area'], $out['state'], $out['country'] ) = $hit;
+		return $out;
+	}
+
 	public static function endpoint() {
 		nocache_headers();
-		if ( isset( $_GET['do'] ) && 'whereami' === $_GET['do'] ) { // phpcs:ignore
+		$do = isset( $_GET['do'] ) ? sanitize_key( wp_unslash( $_GET['do'] ) ) : ''; // phpcs:ignore
+		if ( 'whereami' === $do ) {
 			wp_send_json( self::whereami() );
+		}
+		if ( 'gpsplace' === $do && is_user_logged_in() ) {
+			wp_send_json( self::gps_place( isset( $_GET['lat'] ) ? wp_unslash( $_GET['lat'] ) : '', isset( $_GET['lng'] ) ? wp_unslash( $_GET['lng'] ) : '' ) ); // phpcs:ignore
 		}
 		if ( ! is_user_logged_in() ) {
 			wp_send_json( array( 'ok' => false ), 401 );

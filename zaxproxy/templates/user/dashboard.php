@@ -84,8 +84,8 @@ $pct     = function ( $n ) use ( $active ) {
 	</div>
 	<div class="zp-here" data-zp-here>
 		<div class="zp-here__item"><span class="zp-here__ico"><?php echo zp_icon( 'globe', 18 ); // phpcs:ignore ?></span><div><span>Your current IP</span><strong class="zp-mono" data-here="ip">Checking…</strong></div></div>
-		<div class="zp-here__item"><span class="zp-here__ico"><?php echo zp_icon( 'server', 18 ); // phpcs:ignore ?></span><div><span>IP location</span><strong data-here="place">Checking…</strong><small data-here="isp"></small></div></div>
-		<div class="zp-here__item"><span class="zp-here__ico"><?php echo zp_icon( 'phone', 18 ); // phpcs:ignore ?></span><div><span>Device GPS</span><strong class="zp-mono" data-here="gps">Not shown yet</strong><small data-here="gpsnote">Uses this device's location. It stays on your device.</small></div><button type="button" class="zp-here__btn" data-here="gpsbtn">Show</button></div>
+		<div class="zp-here__item"><span class="zp-here__ico"><?php echo zp_icon( 'server', 18 ); // phpcs:ignore ?></span><div><span>IP location (state, country)</span><strong data-here="place">Checking…</strong><small data-here="isp"></small></div></div>
+		<div class="zp-here__item"><span class="zp-here__ico"><?php echo zp_icon( 'phone', 18 ); // phpcs:ignore ?></span><div><span>Device GPS location</span><strong data-here="gps">Not shown yet</strong><small class="zp-mono" data-here="gpsxy"></small><small data-here="gpsnote">Tap Show to see where this device really is.</small></div><button type="button" class="zp-here__btn" data-here="gpsbtn">Show</button></div>
 	</div>
 	<div class="zp-rhero__today">
 		<div><span>Wallet balance</span><strong data-zp-count="<?php echo esc_attr( $balance ); ?>" data-prefix="<?php echo esc_attr( $sym ); ?>"><?php echo esc_html( zp_money( $balance ) ); ?></strong></div>
@@ -185,10 +185,15 @@ $pct     = function ( $n ) use ( $active ) {
 			<?php echo zp_empty( 'empty-proxies', 'No proxies yet', 'Your purchased proxies will show up here with credentials and expiry dates.', zp_url( 'buy' ), 'Buy your first proxy' ); // phpcs:ignore ?>
 		<?php else : ?>
 			<ul class="zp-list">
-				<?php foreach ( $proxies as $p ) : ?>
+				<?php
+				$geo_budget = 3; // new look-ups per page view; known ones are free
+				foreach ( $proxies as $p ) :
+					$geo   = ZP_App::geo( $p->ip, $geo_budget );
+					$where = implode( ', ', array_unique( array_filter( array( $geo[0], $geo[1], zp_country_name( $p->country ) ) ) ) );
+					?>
 					<li>
 						<span class="zp-flag"><?php echo esc_html( zp_flag( $p->country ) ); ?></span>
-						<div class="zp-list__main"><strong class="zp-mono"><?php echo esc_html( $p->ip ); ?></strong><span><?php echo esc_html( zp_type_label( $p->proxy_type ) . ' · ' . zp_country_name( $p->country ) ); ?></span></div>
+						<div class="zp-list__main"><strong class="zp-mono"><?php echo esc_html( $p->ip ); ?></strong><span><?php echo esc_html( zp_type_label( $p->proxy_type ) . ' · ' . $where ); ?></span></div>
 						<div class="zp-list__side"><?php echo zp_badge( ZP_Orders::proxy_state( $p ) ); // phpcs:ignore ?><span><?php echo esc_html( zp_time_left( $p->date_end ) ); ?></span></div>
 					</li>
 				<?php endforeach; ?>
