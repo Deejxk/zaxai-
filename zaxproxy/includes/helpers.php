@@ -15,7 +15,7 @@ function zp_defaults() {
 		'markup_isp'          => 30,
 		'markup_mobile'       => 30,
 		'registration'        => 1,
-		'app_public'          => 0,
+		'app_public'          => 1,
 		'landing'             => 1,
 		'currency_code'       => 'NGN',
 		'currency_symbol'     => '₦',
@@ -468,7 +468,7 @@ function zp_faqs() {
 	return array(
 		'How fast are proxies delivered?'            => 'Most orders are delivered to your dashboard within a few minutes of payment. During busy periods setup can take a little longer; the order shows as Processing until your proxies appear.',
 		'Which protocols are supported?'             => 'IPv4, ISP and mobile proxies work over both HTTP(S) and SOCKS5 using separate ports. For IPv6 you choose the protocol when ordering.',
-		'How do I connect a proxy to my phone or computer?' => 'Your dashboard has step-by-step guides with an animated walkthrough for Windows, Android and iPhone. On Android you can use the Tun2Socks app, and on iPhone the Potatso app: you only type the IP address, port, username and password shown on your proxy.',
+		'How do I connect a proxy to my phone or computer?' => 'Your dashboard has step-by-step guides with an animated walkthrough for Windows, Android and iPhone. On Windows and Android, install the ZaxProxy Connect app, sign in and tap Connect: there is nothing to type. On iPhone, use the Potatso app with the IP address, port, username and password shown on your proxy.',
 		'How do I authenticate?'                     => 'Choose username and password, or whitelist your own IPv4 address when ordering so no credentials are needed.',
 		'Are the proxies private?'                   => 'Yes. Each proxy is issued to a single customer for the whole rental period.',
 		'Can I extend a proxy before it expires?'    => 'Yes. Open My proxies, select the proxies and choose Extend. The new period is added to the current expiry date. IPv6 batches are renewed as a whole order.',
@@ -585,7 +585,7 @@ function zp_faq_groups() {
 			'What does ' . $brand . ' sell?'                 => 'We rent private IPv4, IPv6, ISP and mobile proxies for 30, 60 or 90 days. Each proxy is issued to one customer only and is delivered to your dashboard with its IP, port and login details.',
 			'Which proxy type should I choose?'              => 'IPv4 is the everyday choice and works everywhere. IPv6 is the cheapest per IP and suits large volumes on IPv6-ready sites. ISP proxies look like ordinary home connections and suit accounts that need extra trust. Mobile proxies come from 4G carriers and are trusted most by apps and social platforms.',
 			'Do I need technical knowledge?'                 => 'No. You copy the IP, port, username and password from your dashboard into your browser, phone or tool. Our Help center explains the steps.',
-			'How do I connect a proxy to my phone or computer?' => 'Your dashboard has step-by-step guides with an animated walkthrough for Windows, Android and iPhone. On Android you can use the Tun2Socks app and on iPhone the Potatso app: you only type the IP address, port, username and password shown on your proxy.',
+			'How do I connect a proxy to my phone or computer?' => 'Your dashboard has step-by-step guides with an animated walkthrough for Windows, Android and iPhone. On Windows and Android, install the ZaxProxy Connect app, sign in and tap Connect: there is nothing to type. On iPhone, use the Potatso app with the IP address, port, username and password shown on your proxy.',
 			'Are the proxies private?'                       => 'Yes. Each proxy is issued to a single customer for the whole rental period.',
 		),
 		'Orders and delivery'  => array(
