@@ -1187,14 +1187,14 @@ a,button,[role="button"],label,summary,.zp-tab,.zp-btn,.zs-btn{touch-action:mani
 @media (max-width:900px){input,select,textarea{font-size:16px!important}}
 
 /* ---------- My proxies (v2) ---------- */
-.zp-phero{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr 300px;gap:10px 24px;align-items:center;padding:26px 28px;border-radius:24px;background:var(--zp-grad);background-size:180% 180%;animation:zp-gradient 14s ease infinite;color:#fff;box-shadow:0 30px 60px -34px rgba(79,99,240,.9)}
-.zp-phero h2{font-size:30px;font-weight:800;letter-spacing:-.03em;margin:10px 0 4px;color:#fff}
-.zp-phero p{color:#fff;opacity:.92;font-size:15px;max-width:520px;margin:0}
-.zp-phero__stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:18px;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.2);max-width:620px}
-.zp-phero__stats div{padding:12px 14px;background:rgba(10,12,30,.28);display:flex;flex-direction:column;gap:1px;min-width:0}
-.zp-phero__stats strong{font-size:21px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.zp-phero__stats span{font-size:12.5px;color:#fff;opacity:.92}
-.zp-phero__art svg{display:block;width:100%;height:auto;overflow:visible}
+.zp-mphero{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr 300px;gap:10px 24px;align-items:center;padding:26px 28px;border-radius:24px;background:var(--zp-grad);background-size:180% 180%;animation:zp-gradient 14s ease infinite;color:#fff;box-shadow:0 30px 60px -34px rgba(79,99,240,.9)}
+.zp-mphero h2{font-size:30px;font-weight:800;letter-spacing:-.03em;margin:10px 0 4px;color:#fff}
+.zp-mphero p{color:#fff;opacity:.92;font-size:15px;max-width:520px;margin:0}
+.zp-mphero__stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:18px;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.2);max-width:620px}
+.zp-mphero__stats div{padding:12px 14px;background:rgba(10,12,30,.28);display:flex;flex-direction:column;gap:1px;min-width:0}
+.zp-mphero__stats strong{font-size:21px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zp-mphero__stats span{font-size:12.5px;color:#fff;opacity:.92}
+.zp-mphero__art svg{display:block;width:100%;height:auto;overflow:visible}
 .zpp-orbits{transform-origin:150px 110px;animation:zpp-spin 40s linear infinite}
 .zpp-links{animation:zpp-dash 2.4s linear infinite}
 .zpp-node{animation:zp-floaty 6s ease-in-out infinite}
@@ -1254,13 +1254,13 @@ a,button,[role="button"],label,summary,.zp-tab,.zp-btn,.zs-btn{touch-action:mani
 .zp-pcopy:hover{background:var(--zp-brand);border-color:var(--zp-brand);color:#fff}
 .zp-pcopy:active{transform:scale(.9)}
 .zp-proxy footer{padding-top:10px;border-top:1px solid var(--zp-border)}
-@media (max-width:900px){.zp-phero{grid-template-columns:1fr 200px;padding:22px}.zp-phero h2{font-size:26px}}
+@media (max-width:900px){.zp-mphero{grid-template-columns:1fr 200px;padding:22px}.zp-mphero h2{font-size:26px}}
 @media (max-width:640px){
-  .zp-phero{grid-template-columns:1fr;padding:20px 18px}
-  .zp-phero__art{position:absolute;right:-46px;top:-18px;width:190px;opacity:.5;pointer-events:none}
-  .zp-phero__main{position:relative}
-  .zp-phero p{max-width:74%}
-  .zp-phero__stats{grid-template-columns:1fr 1fr}
+  .zp-mphero{grid-template-columns:1fr;padding:20px 18px}
+  .zp-mphero__art{position:absolute;right:-46px;top:-18px;width:190px;opacity:.5;pointer-events:none}
+  .zp-mphero__main{position:relative}
+  .zp-mphero p{max-width:74%}
+  .zp-mphero__stats{grid-template-columns:1fr 1fr}
   .zp-ptools{grid-template-columns:1fr auto}.zp-ptools .zp-input--search{grid-column:1/-1}
   .zp-pchips{flex-wrap:nowrap;overflow-x:auto;margin:0;padding:0 0 2px;scrollbar-width:none}.zp-pchips::-webkit-scrollbar{display:none}.zp-pchips a{flex:none}
   .zp-plinks{display:flex;overflow-x:auto;margin:0;padding:2px 0 6px;scrollbar-width:none;scroll-snap-type:x proximity}.zp-plinks::-webkit-scrollbar{display:none}.zp-plink{flex:none;width:236px;scroll-snap-align:start}

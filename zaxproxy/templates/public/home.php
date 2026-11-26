@@ -36,34 +36,62 @@ $features = array(
 	array( 'ticket', 'Real support', 'Open a ticket from your dashboard and a person on our team replies.' ),
 );
 ?>
-<section class="zp-phero">
-	<div class="zp-phero__glow" aria-hidden="true"></div>
-	<div class="zp-wrap zp-phero__in">
-		<div class="zp-phero__text">
-			<span class="zp-ptag zp-anim"><i></i>IPv4 · IPv6 · ISP · Mobile</span>
-			<h1 class="zp-anim" style="--d:1">Private proxies, <em>ready in minutes.</em></h1>
-			<p class="zp-anim" style="--d:2">Rent fast, dedicated IP addresses from locations around the world. Pay in <?php echo esc_html( $cur ); ?> by bank transfer, get your proxies delivered straight to your dashboard, and manage everything from your phone or computer.</p>
-			<div class="zp-row zp-anim" style="--d:3">
+<section class="zl-hero">
+	<div class="zl-hero__bg" aria-hidden="true"><i></i><i></i><i></i></div>
+	<div class="zp-wrap zl-hero__in">
+		<div class="zl-hero__text">
+			<span class="zl-pill zp-anim"><i></i><?php echo esc_html( implode( ' · ', wp_list_pluck( $types, 'label' ) ) ); ?></span>
+			<h1 class="zp-anim" style="--d:1">Private proxies,<br><em>ready in minutes.</em></h1>
+			<p class="zp-anim" style="--d:2"><?php echo esc_html( $brand ); ?> gives you fast, dedicated IP addresses from around the world. Pay in <?php echo esc_html( $cur ); ?>, get them delivered to your dashboard, and connect with one tap on Android and Windows.</p>
+			<div class="zl-hero__cta zp-anim" style="--d:3">
 				<a class="zp-btn zp-btn--primary zp-btn--lg" href="<?php echo esc_url( $cta ); ?>"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?>Get started</a>
 				<a class="zp-btn zp-btn--ghost zp-btn--lg" href="<?php echo esc_url( zp_route_url( 'pricing' ) ); ?>">See pricing</a>
 			</div>
-			<ul class="zp-phero__ticks zp-anim" style="--d:4">
-				<li><?php echo zp_icon( 'check', 16 ); // phpcs:ignore ?>HTTP(S) &amp; SOCKS5</li>
-				<li><?php echo zp_icon( 'check', 16 ); // phpcs:ignore ?>Automatic delivery</li>
-				<li><?php echo zp_icon( 'check', 16 ); // phpcs:ignore ?>30, 60 and 90 day plans</li>
-				<li><?php echo zp_icon( 'check', 16 ); // phpcs:ignore ?>Installable app</li>
+			<ul class="zl-ticks zp-anim" style="--d:4">
+				<li><?php echo zp_icon( 'check', 15 ); // phpcs:ignore ?>HTTP(S) &amp; SOCKS5</li>
+				<li><?php echo zp_icon( 'check', 15 ); // phpcs:ignore ?>Automatic delivery</li>
+				<li><?php echo zp_icon( 'check', 15 ); // phpcs:ignore ?>30, 60 and 90 days</li>
+				<li><?php echo zp_icon( 'check', 15 ); // phpcs:ignore ?>One IP, one customer</li>
 			</ul>
 		</div>
-		<div class="zp-phero__art zp-anim" style="--d:2"><div class="zp-phero__orb"><?php echo zp_illustration( 'network' ); // phpcs:ignore ?></div></div>
-	</div>
-</section>
 
-<section class="zp-pstrip">
+		<div class="zl-stage zp-anim" style="--d:2" aria-hidden="true">
+			<div class="zl-stage__ring zl-stage__ring--1"></div>
+			<div class="zl-stage__ring zl-stage__ring--2"></div>
+			<svg class="zl-globe" viewBox="0 0 240 240">
+				<defs>
+					<linearGradient id="zl-sea" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b7bff"/><stop offset=".55" stop-color="#5b46e8"/><stop offset="1" stop-color="#2563eb"/></linearGradient>
+					<clipPath id="zl-disc"><circle cx="120" cy="120" r="92"/></clipPath>
+				</defs>
+				<circle cx="120" cy="120" r="92" fill="url(#zl-sea)"/>
+				<g clip-path="url(#zl-disc)">
+					<g class="zl-globe__lands" fill="#fff" fill-opacity=".2">
+						<path d="M-20 80c18-13 44-15 60-3s10 28-5 36-28 3-39 15-28 3-28-15 3-26 12-33Z"/><path d="M84 56c21-10 52-5 57 13s-13 23-29 28-15 26-33 21-18-26-13-39 8-18 18-23Z"/><path d="M182 100c16-8 39 0 42 16s-10 28-26 31-28-8-28-23 3-18 12-24Z"/><path d="M254 66c18-10 44-8 54 8s0 28-15 33-33-3-41-15-8-18 2-26Z"/><path d="M316 118c16-5 36 3 39 18s-13 23-28 23-23-10-21-23 3-15 10-18Z"/><path d="M396 80c18-13 44-15 60-3s10 28-5 36-28 3-39 15-28 3-28-15 3-26 12-33Z"/><path d="M500 56c21-10 52-5 57 13s-13 23-29 28-15 26-33 21-18-26-13-39 8-18 18-23Z"/>
+					</g>
+					<ellipse cx="120" cy="120" rx="36" ry="92" fill="none" stroke="#fff" stroke-opacity=".28"/><ellipse cx="120" cy="120" rx="70" ry="92" fill="none" stroke="#fff" stroke-opacity=".2"/>
+					<path d="M28 120h184M38 80h164M38 160h164" stroke="#fff" stroke-opacity=".2"/>
+					<ellipse cx="88" cy="78" rx="52" ry="34" fill="#fff" opacity=".12"/>
+				</g>
+				<g class="zl-ping zl-ping--1"><circle cx="78" cy="98" r="5" fill="#34d399"/><circle class="zl-ping__r" cx="78" cy="98" r="5" fill="none" stroke="#34d399" stroke-width="2"/></g>
+				<g class="zl-ping zl-ping--2"><circle cx="160" cy="150" r="5" fill="#fbbf24"/><circle class="zl-ping__r" cx="160" cy="150" r="5" fill="none" stroke="#fbbf24" stroke-width="2"/></g>
+				<g class="zl-ping zl-ping--3"><circle cx="150" cy="78" r="5" fill="#fff"/><circle class="zl-ping__r" cx="150" cy="78" r="5" fill="none" stroke="#fff" stroke-width="2"/></g>
+				<path class="zl-arc" d="M78 98Q112 40 150 78" fill="none" stroke="#fff" stroke-width="1.600" stroke-dasharray="4 6" stroke-linecap="round"/>
+				<path class="zl-arc" d="M150 78Q186 108 160 150" fill="none" stroke="#fff" stroke-width="1.600" stroke-dasharray="4 6" stroke-linecap="round"/>
+			</svg>
+			<div class="zl-badge"><?php echo zp_logo( 46 ); // phpcs:ignore ?></div>
+			<div class="zl-float zl-float--a"><span class="zp-flag">🇺🇸</span><div><strong class="zp-mono">205.120.31.217</strong><small>IPv4 · Dallas, Texas</small></div><b><i></i>Connected</b></div>
+			<div class="zl-float zl-float--b"><span class="zl-float__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22s7-6.500 7-12a7 7 0 1 0-14 0c0 5.500 7 12 7 12Z"/><circle cx="12" cy="10" r="2.600"/></svg></span><div><strong>GPS matched</strong><small>Same city as your proxy</small></div></div>
+			<div class="zl-float zl-float--c"><span class="zl-float__ico zl-float__ico--zap"><?php echo zp_icon( 'zap', 18 ); // phpcs:ignore ?></span><div><strong>Delivered</strong><small>in minutes, day or night</small></div></div>
+		</div>
+	</div>
+
 	<div class="zp-wrap">
-		<div class="zp-reveal"><strong><?php echo count( $types ); ?></strong><span>Proxy networks: <?php echo esc_html( implode( ', ', wp_list_pluck( $types, 'label' ) ) ); ?></span></div>
-		<div class="zp-reveal" style="--d:1"><strong><?php echo $places ? (int) $places . '+' : 'Global'; ?></strong><span><?php echo $places ? 'Countries to choose from' : 'Locations around the world'; ?></span></div>
-		<div class="zp-reveal" style="--d:2"><strong>30 · 60 · 90</strong><span>Day plans, extend any time</span></div>
-		<div class="zp-reveal" style="--d:3"><strong>24/7</strong><span>Automatic ordering and delivery</span></div>
+		<div class="zl-nums">
+			<div class="zp-reveal"><span class="zl-ico zl-ico--float"><?php echo zp_icon( 'layers', 20 ); // phpcs:ignore ?></span><div><strong><?php echo count( $types ); ?></strong><span>Proxy networks</span></div></div>
+			<div class="zp-reveal" style="--d:1"><span class="zl-ico zl-ico--spin"><?php echo zp_icon( 'globe', 20 ); // phpcs:ignore ?></span><div><strong><?php echo $places ? (int) $places . '+' : 'Global'; ?></strong><span><?php echo $places ? 'Countries' : 'Locations'; ?></span></div></div>
+			<div class="zp-reveal" style="--d:2"><span class="zl-ico zl-ico--tick"><?php echo zp_icon( 'clock', 20 ); // phpcs:ignore ?></span><div><strong>30 · 60 · 90</strong><span>Day plans</span></div></div>
+			<div class="zp-reveal" style="--d:3"><span class="zl-ico zl-ico--flash"><?php echo zp_icon( 'zap', 20 ); // phpcs:ignore ?></span><div><strong>24/7</strong><span>Automatic delivery</span></div></div>
+		</div>
 	</div>
 </section>
 
@@ -77,7 +105,7 @@ $features = array(
 				$i++;
 				?>
 				<a class="zp-type zp-reveal" style="--d:<?php echo (int) $i; ?>" href="<?php echo esc_url( is_user_logged_in() ? zp_url( 'buy', array( 'type' => $slug ) ) : zp_url( 'register' ) ); ?>">
-					<span class="zp-type__ico"><?php echo zp_icon( $t['icon'], 22 ); // phpcs:ignore ?></span>
+					<span class="zp-type__ico zl-ico zl-ico--<?php echo esc_attr( array( 'float', 'spin', 'pulse', 'swing' )[ ( $i - 1 ) % 4 ] ); ?>"><?php echo zp_icon( $t['icon'], 22 ); // phpcs:ignore ?></span>
 					<strong><?php echo esc_html( $t['label'] ); ?> proxies</strong>
 					<span><?php echo esc_html( $t['desc'] ); ?></span>
 					<?php if ( isset( $prices[ $slug ] ) ) : ?><b class="zp-type__price">from <?php echo esc_html( zp_money( $prices[ $slug ]['price'] ) ); ?><small> / <?php echo (int) $prices[ $slug ]['days']; ?> days</small></b><?php endif; ?>
@@ -109,9 +137,9 @@ $features = array(
 <section class="zp-psec zp-psec--alt">
 	<div class="zp-wrap">
 		<div class="zp-phead2 zp-reveal"><span class="zp-eyebrow">What people use it for</span><h2>One tool, many jobs</h2><p>Whatever you do online, a clean dedicated IP makes it faster and more reliable.</p></div>
-		<div class="zp-grid3">
+		<div class="zp-grid3 zl-grid">
 			<?php foreach ( $uses as $n => $u ) : ?>
-				<div class="zp-card zp-pfeature zp-reveal" style="--d:<?php echo (int) ( $n % 3 ) + 1; ?>"><span class="zp-type__ico"><?php echo zp_icon( $u[0], 22 ); // phpcs:ignore ?></span><strong><?php echo esc_html( $u[1] ); ?></strong><p><?php echo esc_html( $u[2] ); ?></p></div>
+				<div class="zp-card zp-pfeature zp-reveal" style="--d:<?php echo (int) ( $n % 3 ) + 1; ?>"><span class="zp-type__ico zl-ico zl-ico--<?php echo esc_attr( array( 'float', 'pulse', 'swing', 'flash', 'tick', 'pulse' )[ $n % 6 ] ); ?>"><?php echo zp_icon( $u[0], 22 ); // phpcs:ignore ?></span><strong><?php echo esc_html( $u[1] ); ?></strong><p><?php echo esc_html( $u[2] ); ?></p></div>
 			<?php endforeach; ?>
 		</div>
 	</div>
@@ -120,9 +148,9 @@ $features = array(
 <section class="zp-psec">
 	<div class="zp-wrap">
 		<div class="zp-phead2 zp-reveal"><span class="zp-eyebrow">Why <?php echo esc_html( $brand ); ?></span><h2>Built to stay out of your way</h2><p>Everything you need to buy, use and manage proxies, without the complicated parts.</p></div>
-		<div class="zp-grid3">
+		<div class="zp-grid3 zl-grid">
 			<?php foreach ( $features as $n => $f ) : ?>
-				<div class="zp-card zp-pfeature zp-reveal" style="--d:<?php echo (int) ( $n % 3 ) + 1; ?>"><span class="zp-type__ico"><?php echo zp_icon( $f[0], 22 ); // phpcs:ignore ?></span><strong><?php echo esc_html( $f[1] ); ?></strong><p><?php echo esc_html( $f[2] ); ?></p></div>
+				<div class="zp-card zp-pfeature zp-reveal" style="--d:<?php echo (int) ( $n % 3 ) + 1; ?>"><span class="zp-type__ico zl-ico zl-ico--<?php echo esc_attr( array( 'flash', 'pulse', 'spin', 'swing', 'tick', 'spin', 'float', 'float', 'swing' )[ $n % 9 ] ); ?>"><?php echo zp_icon( $f[0], 22 ); // phpcs:ignore ?></span><strong><?php echo esc_html( $f[1] ); ?></strong><p><?php echo esc_html( $f[2] ); ?></p></div>
 			<?php endforeach; ?>
 		</div>
 	</div>
@@ -141,6 +169,34 @@ $features = array(
 </section>
 
 <section class="zp-psec">
+	<div class="zp-wrap">
+		<div class="zl-apps">
+			<div class="zl-phone zp-reveal" aria-hidden="true">
+				<div class="zl-phone__screen">
+					<div class="zl-phone__top"><?php echo zp_logo( 20 ); // phpcs:ignore ?><span><?php echo esc_html( $brand ); ?> Connect</span></div>
+					<div class="zl-power"><i></i><i></i><b><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.200" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.600 6.800a7.600 7.600 0 1 0 10.800 0"/></svg></b></div>
+					<strong class="zl-phone__state">Protected</strong>
+					<small>Tap to disconnect</small>
+					<div class="zl-phone__row"><span class="zp-flag">🇬🇧</span><div><strong>London, England</strong><small>United Kingdom · IPv4</small></div></div>
+					<div class="zl-phone__row zl-phone__row--gps"><span class="zl-float__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22s7-6.500 7-12a7 7 0 1 0-14 0c0 5.500 7 12 7 12Z"/><circle cx="12" cy="10" r="2.600"/></svg></span><div><strong>GPS set to London</strong><small>Matches your proxy</small></div></div>
+				</div>
+			</div>
+			<div class="zp-reveal" style="--d:1">
+				<span class="zp-eyebrow"><?php echo esc_html( $brand ); ?> Connect</span>
+				<h2>Connect with one tap. No settings to type.</h2>
+				<p>Install the <?php echo esc_html( $brand ); ?> Connect app on Android or Windows, sign in, and every proxy you bought is already there. Tap the button and you are connected.</p>
+				<div class="zl-applist">
+					<div><span class="zl-ico zl-ico--pulse"><?php echo zp_icon( 'phone', 20 ); // phpcs:ignore ?></span><div><strong>Android and Windows apps</strong><span>Your proxies appear by themselves. Switch location with one tap.</span></div></div>
+					<div><span class="zl-ico zl-ico--float"><svg class="zp-ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linejoin="round"><path d="M12 22s7-6.500 7-12a7 7 0 1 0-14 0c0 5.500 7 12 7 12Z"/><circle cx="12" cy="10" r="2.600"/></svg></span><div><strong>GPS map built in</strong><span>Put your GPS in the same city as your proxy, or anywhere in the world.</span></div></div>
+					<div><span class="zl-ico zl-ico--swing"><?php echo zp_icon( 'shield', 20 ); // phpcs:ignore ?></span><div><strong>iPhone too</strong><span>A step-by-step guide gets your iPhone or iPad connected in two minutes.</span></div></div>
+				</div>
+				<a class="zp-btn zp-btn--primary" href="<?php echo esc_url( $cta ); ?>">Get the app <?php echo zp_icon( 'arrow', 18 ); // phpcs:ignore ?></a>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section class="zp-psec zp-psec--alt">
 	<div class="zp-wrap">
 		<div class="zp-psplit">
 			<div class="zp-reveal">
@@ -167,7 +223,7 @@ $features = array(
 	</div>
 </section>
 
-<section class="zp-psec zp-psec--alt">
+<section class="zp-psec">
 	<div class="zp-wrap">
 		<div class="zp-preseller zp-reveal">
 			<div>
@@ -188,7 +244,7 @@ $features = array(
 	</div>
 </section>
 
-<section class="zp-psec">
+<section class="zp-psec zp-psec--alt">
 	<div class="zp-wrap zp-pnarrow">
 		<div class="zp-phead2 zp-reveal"><span class="zp-eyebrow">Questions</span><h2>Good to know</h2></div>
 		<div class="zp-card zp-faq zp-reveal">
@@ -200,7 +256,7 @@ $features = array(
 	</div>
 </section>
 
-<section class="zp-psec" style="padding-top:0">
+<section class="zp-psec">
 	<div class="zp-wrap">
 		<div class="zp-pcta zp-reveal">
 			<div><h2>Ready when you are.</h2><p>Create a free account and buy your first proxy today. No subscription, no setup fee.</p></div>

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ZaxProxy
  * Description: Standalone proxy store: customers buy, manage and extend IPv4 / IPv6 / ISP / mobile proxies (proxy-ipv4.com API) from a dedicated user panel, with a separate admin panel outside wp-admin.
- * Version: 1.18.0
+ * Version: 1.19.0
  * Requires PHP: 7.4
  * Requires at least: 5.8
  * Author: ZaxProxy
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ZP_VERSION', '1.18.0' );
+define( 'ZP_VERSION', '1.19.0' );
 define( 'ZP_FILE', __FILE__ );
 define( 'ZP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ZP_USER_BASE', 'panel' );
@@ -74,7 +74,7 @@ register_deactivation_hook( __FILE__, array( 'ZP_Install', 'deactivate' ) );
 register_deactivation_hook( __FILE__, array( 'ZP_Shield', 'teardown' ) );
 
 add_action( 'plugins_loaded', array( 'ZP_Install', 'maybe_upgrade' ) );
-// From 1.18.0 the Windows and Android guides are built around ZaxProxy Connect, so the apps are
+// From 1.19.0 the Windows and Android guides are built around ZaxProxy Connect, so the apps are
 // shown to customers. Done once: the switch in Settings still turns them off again.
 add_action(
 	'init',

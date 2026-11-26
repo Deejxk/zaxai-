@@ -32,19 +32,19 @@ $chip     = function ( $state ) use ( $f_type, $f_q ) {
 };
 $geo_budget = 4; // new place look-ups per page view; known ones are free
 ?>
-<section class="zp-phero zp-anim">
-	<div class="zp-phero__main">
+<section class="zp-mphero zp-anim">
+	<div class="zp-mphero__main">
 		<span class="zp-rhero__status<?php echo $live ? '' : ' is-off'; ?>"><i></i><?php echo $live ? esc_html( $live . ( 1 === $live ? ' proxy online' : ' proxies online' ) ) : 'No active proxies'; ?></span>
 		<h2>My proxies</h2>
 		<p><?php echo $live ? 'Every proxy you own, with its details ready to copy. Connect with one tap in ZaxProxy Connect.' : 'Your proxies are delivered here the moment an order is ready.'; ?></p>
-		<div class="zp-phero__stats">
+		<div class="zp-mphero__stats">
 			<div><strong data-zp-count="<?php echo (int) $live; ?>"><?php echo (int) $live; ?></strong><span>Active</span></div>
 			<div><strong data-zp-count="<?php echo (int) $tot['expiring']; ?>"><?php echo (int) $tot['expiring']; ?></strong><span>Expiring soon</span></div>
 			<div><strong data-zp-count="<?php echo count( $places ); ?>"><?php echo count( $places ); ?></strong><span><?php echo 1 === count( $places ) ? 'Country' : 'Countries'; ?></span></div>
 			<div><strong><?php echo $next ? esc_html( zp_time_left( gmdate( 'Y-m-d H:i:s', $next ) ) ) : '—'; ?></strong><span>Next expiry</span></div>
 		</div>
 	</div>
-	<div class="zp-phero__art" aria-hidden="true">
+	<div class="zp-mphero__art" aria-hidden="true">
 		<svg viewBox="0 0 300 220">
 			<defs>
 				<radialGradient id="zpp-glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
