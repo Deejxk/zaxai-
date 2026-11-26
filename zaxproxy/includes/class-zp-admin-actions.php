@@ -185,6 +185,8 @@ class ZP_Admin_Actions {
 			'types'               => array_values( array_intersect( array_keys( zp_types() ), $types ) ),
 			'registration'        => zp_post( 'registration' ) ? 1 : 0,
 			'landing'             => zp_post( 'landing' ) ? 1 : 0,
+			'google_verify'       => ZP_SEO::clean_code( isset( $_POST['google_verify'] ) ? wp_unslash( $_POST['google_verify'] ) : '' ), // phpcs:ignore
+			'bing_verify'         => ZP_SEO::clean_code( isset( $_POST['bing_verify'] ) ? wp_unslash( $_POST['bing_verify'] ) : '' ), // phpcs:ignore
 			'app_public'          => zp_post( 'app_public' ) ? 1 : 0,
 			'min_deposit'         => max( 0.5, (float) zp_post( 'min_deposit' ) ),
 			'max_deposit'         => max( 1, (float) zp_post( 'max_deposit' ) ),

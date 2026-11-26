@@ -11,7 +11,14 @@ $admin  = 'admin-login' === $view;
 <!doctype html>
 <html lang="en">
 <head>
-<?php ZP_Router::head( $titles[ $view ] ); ?>
+<?php
+// Sign in and sign up are pages people search for by name, so search engines may list them.
+$zp_auth_desc = array(
+	'login'    => 'Sign in to your ' . $brand . ' account to buy, renew and manage your private proxies.',
+	'register' => 'Create a free ' . $brand . ' account and get private IPv4, IPv6, ISP and mobile proxies in minutes.',
+);
+ZP_Router::head( $titles[ $view ], isset( $zp_auth_desc[ $view ] ) && empty( $_GET ) && ! zp_reseller_ctx(), isset( $zp_auth_desc[ $view ] ) ? $zp_auth_desc[ $view ] : '' ); // phpcs:ignore
+?>
 </head>
 <body class="zp-body zp-auth-body">
 <?php ZP_Router::splash(); ?>

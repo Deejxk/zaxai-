@@ -359,9 +359,16 @@ class ZP_Router {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <script>(function(){var d=document,stop=function(e){e.preventDefault()};['gesturestart','gesturechange','gestureend'].forEach(function(n){d.addEventListener(n,stop,{passive:false})});d.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});var last=0;d.addEventListener('touchend',function(e){var now=Date.now(),t=e.target;if(now-last<320&&!(t&&t.closest&&t.closest('a,button,input,textarea,select,label,summary,[role=button],[data-zp-copy],.zp-country,.zp-typepick__item')))e.preventDefault();last=now},{passive:false});d.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault()},{passive:false})})();</script>
-<title><?php echo esc_html( $title . ' · ' . $brand ); ?></title>
+<?php $full_title = false !== stripos( $title, $brand ) ? $title : $title . ' · ' . $brand; // a title that already names the brand is used as it is ?>
+<title><?php echo esc_html( $full_title ); ?></title>
 <?php if ( $description ) : ?><meta name="description" content="<?php echo esc_attr( $description ); ?>"><?php endif; ?>
-<?php echo $index ? '' : '<meta name="robots" content="noindex">' . "\n"; // phpcs:ignore ?>
+<?php
+if ( $index ) {
+	ZP_SEO::head( $full_title, $description );
+} else {
+	echo '<meta name="robots" content="noindex">' . "\n";
+}
+?>
 <meta name="theme-color" content="#0b0d14" id="zp-theme-color">
 <?php if ( ZP_Shield::alias_on() ) : ?><script>window.zpPlain=function(){try{if(document.cookie.indexOf('zp_plain=')<0){document.cookie='zp_plain=1; path=/; max-age=86400; samesite=lax';location.reload();}}catch(e){}};</script><?php endif; ?>
 <link rel="manifest" href="<?php echo esc_url( zp_route_url( 'zp-manifest' ) ); ?>">

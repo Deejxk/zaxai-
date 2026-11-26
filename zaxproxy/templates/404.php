@@ -12,7 +12,7 @@ $home = home_url( '/' );
 <!doctype html>
 <html lang="en">
 <head>
-<?php ZP_Router::head( 'Page not found', true ); ?>
+<?php ZP_Router::head( 'Page not found' ); ?>
 <meta name="robots" content="noindex">
 <style>
 .zp-nf{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px;text-align:center}

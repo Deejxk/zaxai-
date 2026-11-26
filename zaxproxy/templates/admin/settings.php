@@ -76,5 +76,14 @@ $toggle  = function ( $name, $label, $hint ) use ( $s ) {
 		<?php $toggle( 'landing', 'Public website', 'Serve the ZaxProxy home, pricing, FAQ, contact and legal pages instead of the default site theme.' ); ?>
 	</section>
 
+	<section class="zp-card zp-anim" style="--d:6">
+		<div class="zp-card__head"><h3><?php echo zp_icon( 'search', 18 ); // phpcs:ignore ?> Google and search engines</h3><?php echo zp_badge( $s['google_verify'] ? 'active' : 'closed' ); // phpcs:ignore ?></div>
+		<p class="zp-muted" style="margin-bottom:14px">To get listed on Google faster: open Google Search Console, add this website with the <strong>URL prefix</strong> option, choose <strong>HTML tag</strong>, and paste the tag (or just its code) here. After saving, click Verify in Search Console and submit this sitemap: <span class="zp-mono"><?php echo esc_html( ZP_SEO::origin() . '/sitemap.xml' ); ?></span></p>
+		<div class="zp-fieldrow" style="margin-top:0">
+			<label class="zp-field"><span>Google verification code</span><div class="zp-input"><input type="text" name="google_verify" value="<?php echo esc_attr( $s['google_verify'] ); ?>" maxlength="300" placeholder="Paste the code or the whole tag" autocomplete="off"></div></label>
+			<label class="zp-field"><span>Bing verification code (optional)</span><div class="zp-input"><input type="text" name="bing_verify" value="<?php echo esc_attr( $s['bing_verify'] ); ?>" maxlength="300" placeholder="Paste the code or the whole tag" autocomplete="off"></div></label>
+		</div>
+	</section>
+
 	<div class="zp-savebar"><button class="zp-btn zp-btn--primary zp-btn--lg" type="submit">Save settings</button></div>
 </form>

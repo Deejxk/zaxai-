@@ -7,11 +7,11 @@ $brand  = zp_get( 'brand' );
 $flash  = zp_take_flash();
 $legal  = include ZP_DIR . 'templates/public/legal.php';
 $titles = array(
-	'home'    => array( 'Private proxies in minutes', 'Buy private IPv4, IPv6, ISP and mobile proxies. Pay in ' . zp_get( 'currency_code' ) . ', get instant delivery and manage everything from one dashboard.' ),
-	'pricing' => array( 'Pricing', 'Simple proxy pricing in ' . zp_get( 'currency_code' ) . '. Pay only for what you rent.' ),
-	'faq'     => array( 'FAQ', 'Answers to common questions about ' . $brand . ' proxies, payments and delivery.' ),
-	'about'   => array( 'About us', 'Who we are and why we built ' . $brand . '.' ),
-	'contact' => array( 'Contact', 'Get in touch with the ' . $brand . ' team.' ),
+	'home'    => array( $brand . ': Private IPv4, IPv6, ISP and Mobile Proxies', $brand . ' sells private IPv4, IPv6, ISP and 4G mobile proxies with HTTP and SOCKS5. Pay in ' . zp_get( 'currency_code' ) . ', get your proxies in minutes and manage them from one dashboard.' ),
+	'pricing' => array( 'Proxy Pricing: IPv4, IPv6, ISP and Mobile Proxies', 'See ' . $brand . ' proxy prices in ' . zp_get( 'currency_code' ) . ' for IPv4, IPv6, ISP and mobile proxies. Rent for 30, 60 or 90 days and pay only for what you use.' ),
+	'faq'     => array( 'Proxy FAQ: Setup, Payments and Delivery', 'Answers to common questions about ' . $brand . ' proxies: how to connect on Windows, Android and iPhone, how to pay, delivery times and refunds.' ),
+	'about'   => array( 'About ' . $brand, $brand . ' is a private proxy provider. Learn who we are, what we sell and why customers trust us with their IPv4, IPv6, ISP and mobile proxies.' ),
+	'contact' => array( 'Contact ' . $brand . ' Support', 'Get in touch with the ' . $brand . ' team for help with proxies, payments or your account. We answer around the clock.' ),
 );
 $is_legal = isset( $legal[ $view ] );
 $title    = $is_legal ? $legal[ $view ]['title'] : $titles[ $view ][0];

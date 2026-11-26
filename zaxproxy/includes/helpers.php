@@ -17,6 +17,8 @@ function zp_defaults() {
 		'registration'        => 1,
 		'app_public'          => 1,
 		'landing'             => 1,
+		'google_verify'       => '',
+		'bing_verify'         => '',
 		'currency_code'       => 'NGN',
 		'currency_symbol'     => '₦',
 		'fx_rate'             => 1600,
