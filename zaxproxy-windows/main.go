@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	version = "1.4.0"
+	version = "1.5.0"
 )
 
 //go:embed ui.html
@@ -177,6 +177,7 @@ func main() {
 	mux.HandleFunc("/api/gps/off", guard(handleGPSOff))
 	mux.HandleFunc("/api/gps/auto", guard(handleGPSAuto))
 	mux.HandleFunc("/api/gps/folder", guard(handleGPSFolder))
+	mux.HandleFunc("/api/gps/browser", guard(handleGPSBrowser))
 	mux.HandleFunc("/api/geo/search", guard(handleGeoSearch))
 	mux.HandleFunc("/api/geo/reverse", guard(handleGeoReverse))
 	mux.HandleFunc("/api/manual/add", guard(handleManualAdd))
@@ -465,6 +466,7 @@ func (x *app) disconnect() {
 	x.relay, x.connected, x.since = nil, 0, 0
 	if x.gps.Auto && was != 0 { // the GPS followed the proxy, so it goes back with it
 		x.gps.On, x.gps.Since = false, 0
+		go browserSync(false)
 	}
 	x.mu.Unlock()
 	if was != 0 || rl != nil {
@@ -489,13 +491,14 @@ type config struct {
 	Token string `json:"token,omitempty"` // protected with the Windows account (DPAPI) before it is written
 	Name  string `json:"name,omitempty"`
 	// What the Windows proxy setting was before we changed it, so it can be put back even after a crash.
-	Changed   bool   `json:"changed,omitempty"`
-	PrevOn    uint32 `json:"prev_on,omitempty"`
-	PrevProxy string `json:"prev_proxy,omitempty"`
-	PrevSkip  string `json:"prev_skip,omitempty"`
-	GPSAuto   bool   `json:"gps_auto,omitempty"` // match the GPS to the connected proxy
-	Manual    string `json:"manual,omitempty"`   // proxies typed in by hand, protected the same way as the token
-	Relay     string `json:"relay,omitempty"`    // the local relay address Windows was pointed at
+	Changed     bool   `json:"changed,omitempty"`
+	PrevOn      uint32 `json:"prev_on,omitempty"`
+	PrevProxy   string `json:"prev_proxy,omitempty"`
+	PrevSkip    string `json:"prev_skip,omitempty"`
+	BrowserMode string `json:"browser_mode,omitempty"` // how the ZaxProxy browser window was last opened successfully
+	GPSAuto     bool   `json:"gps_auto,omitempty"`     // match the GPS to the connected proxy
+	Manual      string `json:"manual,omitempty"`       // proxies typed in by hand, protected the same way as the token
+	Relay       string `json:"relay,omitempty"`        // the local relay address Windows was pointed at
 }
 
 func configPath() string {

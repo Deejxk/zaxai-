@@ -110,6 +110,29 @@ func recoverSystemProxy(c config) {
 }
 
 // openBrowser asks Windows to open the address with the default browser, trying three ways.
+// findBrowser returns Chrome if it is installed, otherwise Edge (which every Windows 10/11 PC has).
+func findBrowser() (path, name string) {
+	if p := os.Getenv("ZAX_BROWSER"); p != "" {
+		return p, "the browser"
+	}
+	roots := []string{os.Getenv("ProgramFiles"), os.Getenv("ProgramFiles(x86)"), os.Getenv("LocalAppData")}
+	for _, c := range []struct{ rel, name string }{
+		{`Google\Chrome\Application\chrome.exe`, "Chrome"},
+		{`Microsoft\Edge\Application\msedge.exe`, "Edge"},
+	} {
+		for _, r := range roots {
+			if r == "" {
+				continue
+			}
+			p := filepath.Join(r, c.rel)
+			if _, err := os.Stat(p); err == nil {
+				return p, c.name
+			}
+		}
+	}
+	return "", ""
+}
+
 func openBrowser(url string) error {
 	verb, _ := windows.UTF16PtrFromString("open")
 	target, _ := windows.UTF16PtrFromString(url)

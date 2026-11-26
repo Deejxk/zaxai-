@@ -1,12 +1,14 @@
 // Asks ZaxProxy Connect (on this computer only) which place its map is set to.
 // Nothing is sent anywhere else, and nothing about the pages you visit is sent at all.
+try { importScripts('mode.js'); } catch (e) {}
+const SRC = self.ZAX_SRC || 'own';
 const PORTS = [47831, 47832, 47833, 47834, 47835];
 let port = 0, cache = null, cachedAt = 0;
 
 async function ask(p) {
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 700);
   try {
-    const r = await fetch('http://127.0.0.1:' + p + '/gps', { signal: ctl.signal, cache: 'no-store' });
+    const r = await fetch('http://127.0.0.1:' + p + '/gps?src=' + SRC, { signal: ctl.signal, cache: 'no-store' });
     const d = await r.json();
     return d && d.app === 'zaxproxy' ? d : null;
   } catch (e) { return null; } finally { clearTimeout(timer); }
@@ -31,3 +33,4 @@ chrome.alarms.create('zax', { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener(() => { cachedAt = 0; state(); });
 chrome.runtime.onInstalled.addListener(() => state());
 chrome.runtime.onStartup.addListener(() => state());
+state(); // report in as soon as the add-on is running

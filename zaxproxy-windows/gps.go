@@ -41,6 +41,11 @@ type gpsState struct {
 	Auto  bool    `json:"auto"`  // follow the connected proxy
 	Ext   bool    `json:"ext"`   // the browser add-on has asked recently
 	Ready bool    `json:"ready"` // the local address the add-on uses is open
+	// The ZaxProxy browser window (opened by this program, GPS applied automatically).
+	Browser      bool   `json:"browser"`
+	BrowserName  string `json:"browserName"`
+	BrowserTabs  int    `json:"browserTabs"`
+	BrowserError string `json:"browserError"`
 }
 
 var (
@@ -52,6 +57,7 @@ func (x *app) gpsView() gpsState {
 	g := x.gps
 	g.Ext = time.Now().Unix()-gpsSeen.Load() < 100
 	g.Ready = gpsReady.Load()
+	g.Browser, g.BrowserName, g.BrowserTabs = browserStatus()
 	return g
 }
 
@@ -66,12 +72,14 @@ func (x *app) gpsSet(lat, lng float64, label string) {
 	}
 	x.gps.On, x.gps.Lat, x.gps.Lng, x.gps.Label = true, lat, lng, label
 	x.mu.Unlock()
+	go browserSync(true) // opens the ZaxProxy browser window if it is not open yet
 }
 
 func (x *app) gpsOff() {
 	x.mu.Lock()
 	x.gps.On, x.gps.Since = false, 0
 	x.mu.Unlock()
+	go browserSync(false)
 }
 
 // gpsFollow moves the GPS to where a proxy is, when "match my GPS to the connected proxy" is on.
@@ -103,7 +111,11 @@ func startGPSListener() {
 			http.NotFound(w, r)
 			return
 		}
-		gpsSeen.Store(time.Now().Unix())
+		if r.URL.Query().Get("src") == "auto" {
+			gpsSeenAuto.Store(time.Now().Unix()) // the add-on inside the ZaxProxy browser window
+		} else {
+			gpsSeen.Store(time.Now().Unix())
+		}
 		a.mu.Lock()
 		g := a.gps
 		a.mu.Unlock()
@@ -134,6 +146,12 @@ func writeExtension() {
 		b, e := assetsFS.ReadFile(path)
 		if e == nil {
 			_ = os.WriteFile(filepath.Join(dir, filepath.Base(path)), b, 0o644)
+			// The ZaxProxy browser window loads its own copy, which says who it is.
+			if filepath.Base(path) == "mode.js" {
+				b = []byte("self.ZAX_SRC = 'auto';\n")
+			}
+			_ = os.MkdirAll(browserAddonDir(), 0o755)
+			_ = os.WriteFile(filepath.Join(browserAddonDir(), filepath.Base(path)), b, 0o644)
 		}
 		return nil
 	})
@@ -197,6 +215,16 @@ func handleGPSAuto(w http.ResponseWriter, r *http.Request) {
 	if in.On {
 		a.gpsFollow(now) // already connected: match straight away
 	}
+	writeJSON(w, 200, a.snapshot())
+}
+
+// handleGPSBrowser opens the ZaxProxy browser window (or brings the GPS choice to it again).
+func handleGPSBrowser(w http.ResponseWriter, r *http.Request) {
+	if err := browserOpen(); err != nil {
+		writeJSON(w, 500, map[string]any{"ok": false, "error": err.Error()})
+		return
+	}
+	browserSync(false)
 	writeJSON(w, 200, a.snapshot())
 }
 

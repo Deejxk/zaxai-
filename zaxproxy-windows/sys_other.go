@@ -21,7 +21,15 @@ func unprotect(s string) (string, error) {
 	return s, nil
 }
 func trayStatus(on bool, label string) {}
-func focusWindow()                     { log.Println("[test] window to front") }
+
+// findBrowser: the test build is told which browser to use.
+func findBrowser() (path, name string) {
+	if p := os.Getenv("ZAX_BROWSER"); p != "" {
+		return p, "the browser"
+	}
+	return "", ""
+}
+func focusWindow() { log.Println("[test] window to front") }
 func runWindow(url string) {
 	log.Println("[test] open", url)
 	ch := make(chan os.Signal, 1)

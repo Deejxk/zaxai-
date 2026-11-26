@@ -199,6 +199,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
 .gext.ok{border-style:solid}.gext.ok i{background:var(--ok)}
 .gext b{flex:1;font-weight:400}
 .gext button{flex:none;height:30px;padding:0 11px;border-radius:9px;background:var(--surface2);border:1px solid var(--line);font-size:12px;font-weight:700;color:#cfc9ff}
+.gown{display:block;margin:6px auto 0;font-size:12px;color:var(--faint);text-decoration:underline}.gown:hover{color:var(--muted)}
 .ghead{display:flex;align-items:center;justify-content:space-between;margin:12px 2px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
 .ghead button{font-size:12px;letter-spacing:0;text-transform:none;font-weight:700;color:#b3aaff}
 .gstrip{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px}
@@ -327,7 +328,8 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
         <button class="ggo" id="ggo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.600 6.800a7.600 7.600 0 1 0 10.800 0"/></svg><span id="ggotext">Set my GPS here</span></button>
         <div class="grow" id="grow" hidden><button class="ghost" id="gshow">Show where my GPS is</button><button class="ghost" id="goff" style="color:#fda4a4">Turn off</button></div>
         <div class="gopt"><div><b>Match my GPS to the connected proxy</b><span>When you connect, the GPS moves to your proxy's city.</span></div><button class="sw" id="gauto" aria-label="Match my GPS to the connected proxy"></button></div>
-        <div class="gext" id="gext"><i></i><b id="gexttext">Browser add-on not detected yet.</b><button id="gextbtn">Set up</button></div>
+        <div class="gext" id="gext"><i></i><b id="gexttext">The ZaxProxy browser opens by itself when you set the GPS.</b><button id="gextbtn">Open browser</button></div>
+        <button class="gown" id="gown">Use my own Chrome or Edge instead</button>
         <div id="gpbox"><div class="ghead"><span>Your proxies</span><button id="gmatch">⚡ Auto match</button></div><div class="gstrip" id="gstrip"></div></div>
       </div>
     </div>
@@ -358,10 +360,10 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
       <g class="sat"><circle r="7" fill="#11141f" stroke="#8b7bff" stroke-width="1.500"/><circle r="2.500" fill="#b3aaff"/></g>
     </svg></div>
     <h3>Put your browser's GPS anywhere</h3>
-    <p>Click the map, search for a state, city or country, or pick one of your proxies. Websites in Chrome and Edge then see that place as your location.</p>
+    <p>Click the map, search for a state, city or country, or pick one of your proxies. A ZaxProxy browser window opens by itself, and every website in it sees that place as your location.</p>
     <div class="feat"><i>🗺️</i><div><b>Every country and state</b><span>Zoom, click and search the whole world.</span></div></div>
     <div class="feat"><i>⚡</i><div><b>Auto match</b><span>One click puts your GPS where your proxy is.</span></div></div>
-    <div class="feat"><i>🧩</i><div><b>One-time browser add-on</b><span>A small ZaxProxy add-on passes the place to websites.</span></div></div>
+    <div class="feat"><i>✨</i><div><b>Nothing to install</b><span>The app opens a browser window with your GPS already set.</span></div></div>
     <div class="btns"><button class="primary" id="gintrogo" type="button">Open the map</button></div>
   </div>
 </div>
@@ -369,8 +371,8 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
 <!-- GPS map: browser add-on -->
 <div class="veil" id="gsetup" hidden>
   <div class="modal wide">
-    <h3>Add ZaxProxy GPS to your browser</h3>
-    <p>Do this once in Chrome or Edge. It lets websites see the place you choose on the map.</p>
+    <h3>Use your own Chrome or Edge instead</h3>
+    <p>You do not need this: the ZaxProxy browser window already works by itself. Only do this if you want the GPS in your everyday browser profile too.</p>
     <ol class="steps">
       <li><b>Open the extensions page.</b> In your browser's address bar type this and press Enter:<br><code>chrome://extensions</code> &nbsp;(in Edge: <code>edge://extensions</code>)</li>
       <li><b>Switch on Developer mode.</b> It is a switch at the top right of that page (bottom left in Edge).</li>
@@ -621,8 +623,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
     if (!gchosen) return; var c = gchosen;
     call('gps/set', { lat: c.lat, lng: c.lng, label: c.label || (fmt(c.lat) + ', ' + fmt(c.lng)) }).then(function (s) {
       if (s.ok === false) { gtoast(s.error || 'Could not set the GPS.'); return; }
-      remember(c); show(s);
-      if (!s.gps.ext && !stored('gsetupseen')) { stored('gsetupseen', 1); openGsetup(); }
+      remember(c); show(s); setTimeout(poll, 1500); setTimeout(poll, 4000);
     });
   }
   function gstop() { call('gps/off', {}).then(show); }
@@ -633,7 +634,7 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
     // the tile on the left
     $('gtile').className = 'tile wide gtile' + (on ? ' on' : '');
     $('gtitle').textContent = on ? (g.label || fmt(g.lat) + ', ' + fmt(g.lng)) : 'Off';
-    $('gsub').textContent = on ? (g.ext ? 'Websites see this place' : 'Add the browser add-on to finish') : 'Websites see your real location';
+    $('gsub').textContent = on ? (g.browser ? 'Applied in the ZaxProxy browser window' : g.ext ? 'Websites see this place' : 'Opening the ZaxProxy browser…') : 'Websites see your real location';
     if (!gmap) return;
     var here = on && gchosen && same(gchosen, g), c = gchosen || (on ? { lat: g.lat, lng: g.lng, label: g.label } : null);
     $('gstatus').className = 'gstatus' + (on ? ' on' : '');
@@ -648,9 +649,11 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
     $('ggotext').textContent = on && (here || !gchosen) ? 'Turn off GPS change' : on ? 'Move my GPS here' : c && c.proxy ? 'Set my GPS to this proxy' : 'Set my GPS here';
     $('grow').hidden = !(on && gchosen && !here);
     $('gauto').className = 'sw' + (g.auto ? ' on' : '');
-    $('gext').className = 'gext' + (g.ext ? ' ok' : '');
-    $('gexttext').textContent = g.ext ? 'Browser add-on connected.' : 'Browser add-on not detected yet.';
-    $('gextbtn').textContent = g.ext ? 'Help' : 'Set up';
+    var bname = g.browserName && g.browserName !== 'the browser' ? ' (' + g.browserName + ')' : '';
+    $('gext').className = 'gext' + (g.browser ? ' ok' : '');
+    $('gexttext').textContent = g.browserError ? g.browserError : g.browser ? (on ? 'ZaxProxy browser' + bname + ' is open. Every tab in it uses this GPS.' : 'ZaxProxy browser' + bname + ' is open. Set a place to change its GPS.') : (on ? 'Opening the ZaxProxy browser window…' : 'The ZaxProxy browser opens by itself when you set the GPS.');
+    $('gextbtn').hidden = !!g.browser; $('gextbtn').textContent = 'Open browser';
+    $('gown').textContent = g.ext ? 'Your own browser is connected too (add-on)' : 'Use my own Chrome or Edge instead';
     var list = s.proxies || [], strip = $('gstrip'); $('gpbox').hidden = !list.length; strip.textContent = ''; gproxyLayer.clearLayers();
     list.slice().sort(function (x, y) { return (y.id === s.connected) - (x.id === s.connected); }).forEach(function (p) {
       var sel = gchosen && gchosen.proxy && gchosen.proxy.id === p.id, isLive = on && p.lat != null && same({ lat: p.lat, lng: p.lng }, g);
@@ -676,7 +679,8 @@ label{display:block;margin:0 0 6px;font-size:13px;font-weight:600;color:var(--mu
   $('goff').onclick = gstop;
   $('gshow').onclick = function () { var g = gstate(); if (g.on) gmap.flyTo([g.lat, g.lng], Math.max(gmap.getZoom(), 10), { duration: .8 }); };
   $('gauto').onclick = function () { call('gps/auto', { on: !gstate().auto }).then(show); };
-  $('gextbtn').onclick = openGsetup;
+  $('gextbtn').onclick = function () { var b = this; b.disabled = true; call('gps/browser', {}).then(function (s) { b.disabled = false; if (s.ok === false) gtoast(s.error); else show(s); }).catch(function () { b.disabled = false; }); };
+  $('gown').onclick = openGsetup;
   $('gfolder').onclick = function () { call('gps/folder', { show: true }).then(function (d) { if (d && d.path) $('gpath').textContent = d.path; }); };
   $('gsetupclose').onclick = function () { $('gsetup').hidden = true; };
   $('gintrogo').onclick = function () { $('gintro').hidden = true; stored('gseen', 1); };
