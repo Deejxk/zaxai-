@@ -72,6 +72,7 @@ public class MainActivity extends Activity {
     private long connectingId;    // the location being connected right now
     private ObjectAnimator pulse;
     private ObjectAnimator gpsPulse;
+    private View pageHome, pageList, navHome, navList;
     private TextView gpsSub;
     private View gpsHalo, gpsIco;
     private android.widget.Switch gpsAuto;
@@ -138,6 +139,17 @@ public class MainActivity extends Activity {
         findViewById(R.id.link_forgot).setOnClickListener(v -> open("/panel/forgot/"));
         findViewById(R.id.btn_buy).setOnClickListener(v -> open("/panel/buy/"));
         findViewById(R.id.btn_add).setOnClickListener(v -> showAddManual());
+        pageHome = findViewById(R.id.page_home);
+        pageList = findViewById(R.id.page_list);
+        navHome = findViewById(R.id.nav_home);
+        navList = findViewById(R.id.nav_list);
+        navHome.setOnClickListener(v -> showPage(false));
+        navList.setOnClickListener(v -> showPage(true));
+        findViewById(R.id.nav_gps).setOnClickListener(v -> startActivity(new Intent(this, GpsActivity.class)));
+        selected.setOnClickListener(v -> showPage(true)); // tap the chosen location to change it
+        // On shorter phones the one-line explanation goes, so the home page always fits without scrolling.
+        if (!getResources().getBoolean(R.bool.roomy)) findViewById(R.id.gps_auto_sub).setVisibility(View.GONE);
+        showPage(false);
         gpsSub = findViewById(R.id.gps_sub);
         gpsHalo = findViewById(R.id.gps_halo);
         gpsIco = findViewById(R.id.gps_ico);
@@ -268,6 +280,7 @@ public class MainActivity extends Activity {
         prefs.edit().clear().apply();
         proxies = new JSONArray();
         expired = new JSONArray();
+        showPage(false);
         search.setText("");
         render();
         if (t != null) {
@@ -406,6 +419,7 @@ public class MainActivity extends Activity {
         } else {
             render();
         }
+        showPage(false);
     }
 
     private void connect(final JSONObject p) {
@@ -677,6 +691,33 @@ public class MainActivity extends Activity {
             }
             return true;
         });
+    }
+
+    /* ---------- Pages ---------- */
+
+    /** Home is a fixed screen; Locations is the list. */
+    private void showPage(boolean list) {
+        pageHome.setVisibility(list ? View.GONE : View.VISIBLE);
+        pageList.setVisibility(list ? View.VISIBLE : View.GONE);
+        tint(navHome, !list);
+        tint(navList, list);
+        tint(findViewById(R.id.nav_gps), false);
+    }
+
+    private void tint(View item, boolean active) {
+        android.view.ViewGroup g = (android.view.ViewGroup) item;
+        int c = active ? 0xFFB3AAFF : 0xFF7F89A3;
+        ((ImageView) g.getChildAt(0)).setColorFilter(c);
+        ((TextView) g.getChildAt(1)).setTextColor(c);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (mainPanel.getVisibility() == View.VISIBLE && pageList.getVisibility() == View.VISIBLE) {
+            showPage(false);
+            return;
+        }
+        super.onBackPressed();
     }
 
     /* ---------- GPS location ---------- */

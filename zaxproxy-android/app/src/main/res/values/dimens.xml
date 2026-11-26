@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="power_size">138dp</dimen>
+    <dimen name="ring_size">114dp</dimen>
+    <dimen name="disc_size">92dp</dimen>
+    <dimen name="power_icon">42dp</dimen>
+    <dimen name="stage_pad">10dp</dimen>
+    <dimen name="status_gap">8dp</dimen>
+    <dimen name="status_text">21sp</dimen>
+    <dimen name="selected_gap">10dp</dimen>
+    <bool name="roomy">false</bool>
+</resources>
